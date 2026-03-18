@@ -1,0 +1,9 @@
+repositories:
+  coord-dsl:    # Only for FSM generation
+    type: git
+    url: git@github.com:secorolab/coord-dsl.git
+    version: main
+  coord2b:
+    type: git
+    url: https://github.com/rosym-project/coord2b.git
+    version: master

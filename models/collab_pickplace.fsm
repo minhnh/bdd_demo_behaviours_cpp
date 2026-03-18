@@ -1,0 +1,178 @@
+NAME: collab_pickplace
+DESCRIPTION: "FSM for a collaborative pick&place task with human"
+
+STATES:
+    S_START,
+    S_CONFIG,
+    S_IDLE,
+    S_TOUCH_TABLE,
+    S_SLIDE,
+    S_GRASP,
+    S_COLLAB_MOVE,
+    S_RELEASE,
+    S_RECOVER,
+    S_EXIT
+
+START_STATE: @S_START
+CURRENT_STATE: @S_START
+END_STATE: @S_EXIT
+
+EVENTS:
+    E_PICK_APPROACH_START,
+
+    // These trigger transitions
+    E_NEW_GOAL,
+    E_CONFIG_DONE,
+    E_TABLE_TOUCHED,
+    E_OBJ_REACHED,
+    E_GRASP_DONE,
+    E_PLACE_REACHED,
+    E_RELEASE_DONE,
+    E_RECOVER_DONE,
+
+    E_GOAL_CANCELLED,
+    E_STOP,
+    E_STEP
+
+TRANSITIONS:
+    T_START_CONFIG:
+        FROM: @S_START
+        TO: @S_CONFIG
+
+    T_CONFIG_SELF:
+        FROM: @S_CONFIG
+        TO: @S_CONFIG
+    T_CONFIG_IDLE:
+        FROM: @S_CONFIG
+        TO: @S_IDLE
+
+    T_IDLE_SELF:
+        FROM: @S_IDLE
+        TO: @S_IDLE
+    T_IDLE_TOUCH:
+        FROM: @S_IDLE
+        TO: @S_TOUCH_TABLE
+    T_IDLE_EXIT:
+        FROM: @S_IDLE
+        TO: @S_EXIT
+
+    T_TOUCH_SELF:
+        FROM: @S_TOUCH_TABLE
+        TO: @S_TOUCH_TABLE
+    T_TOUCH_SLIDE:
+        FROM: @S_TOUCH_TABLE
+        TO: @S_SLIDE
+    T_TOUCH_RECOVER:
+        FROM: @S_TOUCH_TABLE
+        TO: @S_RECOVER
+
+    T_SLIDE_SLIDE:
+        FROM: @S_SLIDE
+        TO: @S_SLIDE
+    T_SLIDE_GRASP:
+        FROM: @S_SLIDE
+        TO: @S_GRASP
+    T_SLIDE_RECOVER:
+        FROM: @S_SLIDE
+        TO: @S_RECOVER
+
+    T_GRASP_SELF:
+        FROM: @S_GRASP
+        TO: @S_GRASP
+    T_GRASP_COL_MOVE:
+        FROM: @S_GRASP
+        TO: @S_COLLAB_MOVE
+
+    T_COL_MOVE_SELF:
+        FROM: @S_COLLAB_MOVE
+        TO: @S_COLLAB_MOVE
+    T_COL_MOVE_RELEASE:
+        FROM: @S_COLLAB_MOVE
+        TO: @S_RELEASE
+
+    T_RELEASE_SELF:
+        FROM: @S_RELEASE
+        TO: @S_RELEASE
+    T_RELEASE_RECOVER:
+        FROM: @S_RELEASE
+        TO: @S_RECOVER
+
+    T_RECOVER_SELF:
+        FROM: @S_RECOVER
+        TO: @S_RECOVER
+    T_RECOVER_IDLE:
+        FROM: @S_RECOVER
+        TO: @S_IDLE
+
+REACTIONS:
+    // These requires triggering in code
+    R_E_CONFIG_DONE:
+        WHEN: @E_CONFIG_DONE
+        DO: @T_CONFIG_IDLE
+    R_E_NEW_GOAL:
+        WHEN: @E_NEW_GOAL
+        DO: @T_IDLE_TOUCH
+        FIRES: @E_PICK_APPROACH_START
+    R_E_TABLE_TOUCHED:
+        WHEN: @E_TABLE_TOUCHED
+        DO: @T_TOUCH_SLIDE
+    R_E_OBJ_REACHED:
+        WHEN: @E_OBJ_REACHED
+        DO: @T_SLIDE_GRASP
+    R_E_GRASP_DONE:
+        WHEN: @E_GRASP_DONE
+        DO: @T_GRASP_COL_MOVE
+    R_E_PLACE_REACHED:
+        WHEN: @E_PLACE_REACHED
+        DO: @T_COL_MOVE_RELEASE
+    R_E_RELEASE_DONE:
+        WHEN: @E_RELEASE_DONE
+        DO: @T_RELEASE_RECOVER
+    R_E_RECOVER_DONE:
+        WHEN: @E_RELEASE_DONE
+        DO: @T_RECOVER_IDLE
+
+    // Cancel reactions
+    R_E_CANCEL_TOUCH:
+        WHEN: @E_GOAL_CANCELLED
+        DO: @T_TOUCH_RECOVER
+    R_E_CANCEL_SLIDE:
+        WHEN: @E_GOAL_CANCELLED
+        DO: @T_SLIDE_RECOVER
+    R_E_CANCEL_COL_MOVE:
+        WHEN: @E_GOAL_CANCELLED
+        DO: @T_COL_MOVE_RELEASE
+
+    // Exit reactions
+    R_E_STOP_IDLE:
+        WHEN: @E_STOP
+        DO: @T_IDLE_EXIT
+
+    // These are triggered automatically
+    R_E_STEP_START:
+        WHEN: @E_STEP
+        DO: @T_START_CONFIG
+    R_E_STEP_CONFIG:
+        WHEN: @E_STEP
+        DO: @T_CONFIG_SELF
+    R_E_STEP_IDLE:
+        WHEN: @E_STEP
+        DO: @T_IDLE_SELF
+    R_E_STEP_TOUCH:
+        WHEN: @E_STEP
+        DO: @T_TOUCH_SELF
+    R_E_STEP_SLIDE:
+        WHEN: @E_STEP
+        DO: @T_SLIDE_SLIDE
+    R_E_STEP_GRASP:
+        WHEN: @E_STEP
+        DO: @T_GRASP_SELF
+    R_E_STEP_COL_MOVE:
+        WHEN: @E_STEP
+        DO: @T_COL_MOVE_SELF
+    R_E_STEP_RELEASE:
+        WHEN: @E_STEP
+        DO: @T_RELEASE_SELF
+    R_E_STEP_RECOVER:
+        WHEN: @E_STEP
+        DO: @T_RECOVER_SELF

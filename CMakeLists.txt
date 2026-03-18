@@ -5,12 +5,17 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(bdd_ros2_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(bdd_ros2_interfaces REQUIRED)
+find_package(coord2b REQUIRED)
+
+include_directories(
+  include
+  ${coord2b_INCLUDE_DIRS}
+)
 
 add_executable(human_pickplace_mockup_node
   src/human_pickplace_mockup_node.cpp
@@ -19,9 +24,12 @@ add_executable(human_pickplace_mockup_node
 target_include_directories(human_pickplace_mockup_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(human_pickplace_mockup_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(human_pickplace_mockup_node PUBLIC
+  c_std_99 cxx_std_17 cxx_std_20
+)
 target_link_libraries(
   human_pickplace_mockup_node
+  coord2b
   ${bdd_ros2_interfaces_TARGETS}
   ${rclcpp_TARGETS}
   ${rclcpp_action_TARGETS}
