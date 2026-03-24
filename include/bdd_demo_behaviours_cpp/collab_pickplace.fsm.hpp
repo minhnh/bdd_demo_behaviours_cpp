@@ -52,8 +52,8 @@ int main() {
 #ifndef COLLAB_PICKPLACE_FSM_HPP
 #define COLLAB_PICKPLACE_FSM_HPP
 
-#include "coord2b/functions/fsm.h"
-#include "coord2b/functions/event_loop.h"
+#include "coord2b/types/fsm.h"
+#include "coord2b/types/event_loop.h"
 #include <new>
 
 struct fsm_nbx *create_fsm();
@@ -86,6 +86,7 @@ enum e_events {
     E_RELEASE_DONE,
     E_RECOVER_DONE,
     E_GOAL_CANCELLED,
+    E_GOAL_FINISHED,
     E_STOP,
     E_STEP,
     NUM_EVENTS
@@ -303,11 +304,10 @@ inline struct fsm_nbx *create_fsm()
 
           },
           {
-            .conditionEventIndex = E_RELEASE_DONE,
+            .conditionEventIndex = E_RECOVER_DONE,
             .transitionIndex = T_RECOVER_IDLE,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-
+            .numFiredEvents = 1,
+            .firedEventIndices = new unsigned int[1]{ E_GOAL_FINISHED },
           },
           {
             .conditionEventIndex = E_GOAL_CANCELLED,

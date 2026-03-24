@@ -31,6 +31,7 @@ EVENTS:
     E_RECOVER_DONE,
 
     E_GOAL_CANCELLED,
+    E_GOAL_FINISHED,
     E_STOP,
     E_STEP
 
@@ -129,8 +130,9 @@ REACTIONS:
         WHEN: @E_RELEASE_DONE
         DO: @T_RELEASE_RECOVER
     R_E_RECOVER_DONE:
-        WHEN: @E_RELEASE_DONE
+        WHEN: @E_RECOVER_DONE
         DO: @T_RECOVER_IDLE
+        FIRES: @E_GOAL_FINISHED
 
     // Cancel reactions
     R_E_CANCEL_TOUCH:

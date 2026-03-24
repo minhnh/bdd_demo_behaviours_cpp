@@ -9,9 +9,9 @@ launch:
       default: "/bhv_server"
   - node:
       pkg: "bdd_demo_behaviours_cpp"
-      exec: "human_pickplace_mockup_node"
+      exec: "collab_pickplace_node"
       namespace: "$(var ns)"
-      name: "human_pickplace_mockup_node"
+      name: "collab_pickplace_node"
       param:
         - name: "bhv_server_name"
           value: "$(var bhv_server_name)"

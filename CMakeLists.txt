@@ -17,18 +17,19 @@ include_directories(
   ${coord2b_INCLUDE_DIRS}
 )
 
-add_executable(human_pickplace_mockup_node
-  src/human_pickplace_mockup_node.cpp
+add_executable(collab_pickplace_node
+  src/collab_pickplace_node.cpp
+  src/fsm_behaviours.cpp
   src/conversions.cpp
 )
-target_include_directories(human_pickplace_mockup_node PUBLIC
+target_include_directories(collab_pickplace_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(human_pickplace_mockup_node PUBLIC
+target_compile_features(collab_pickplace_node PUBLIC
   c_std_99 cxx_std_17 cxx_std_20
 )
 target_link_libraries(
-  human_pickplace_mockup_node
+  collab_pickplace_node
   coord2b
   ${bdd_ros2_interfaces_TARGETS}
   ${rclcpp_TARGETS}
@@ -36,7 +37,7 @@ target_link_libraries(
   ${rclcpp_components_TARGETS}
 )
 
-install(TARGETS human_pickplace_mockup_node
+install(TARGETS collab_pickplace_node
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch

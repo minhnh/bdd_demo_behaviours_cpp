@@ -21,29 +21,48 @@
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
+#include <string_view>
 #include <thread>
-#include "coord2b/types/fsm.h"
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
 #include "bdd_demo_behaviours_cpp/collab_pickplace.fsm.hpp"
 
-#define LOOP_PERIOD_MICRO_SECS 1000// for 1kHz
-
 namespace bdd_demo_bhv {
-class HumanPickplaceMockupNode : public rclcpp::Node
+
+enum class ExecutionType { Mockup, Simulation, RealRobot };
+
+constexpr std::string_view exec_type_to_str(ExecutionType pExecType)
+{
+    switch (pExecType) {
+    case ExecutionType::Mockup:
+        return "mockup";
+    case ExecutionType::Simulation:
+        return "simulation";
+    case ExecutionType::RealRobot:
+        return "real robot";
+    default:
+        return "unknown";
+    }
+}
+
+class CollabPickplaceNode : public rclcpp::Node
 {
   public:
     using Behaviour = bdd_ros2_interfaces::action::Behaviour;
     using GoalHandleBehaviour = rclcpp_action::ServerGoalHandle<Behaviour>;
 
-    explicit HumanPickplaceMockupNode(const rclcpp::NodeOptions &pOptions = rclcpp::NodeOptions());
+    explicit CollabPickplaceNode(const rclcpp::NodeOptions &pOptions = rclcpp::NodeOptions());
 
-    ~HumanPickplaceMockupNode() override;
+    ~CollabPickplaceNode() override;
+
+    void start_fsm();
 
   private:
     rclcpp_action::Server<Behaviour>::SharedPtr mBhvServerPtr;
 
     std::thread mFsmThread;
+    std::mutex mFsmMutex;
     std::mutex mGoalMutex;
+    ExecutionType mExecCtx;
 
     // Shared data between server handlers & FSM loop
     struct GoalData
@@ -56,13 +75,14 @@ class HumanPickplaceMockupNode : public rclcpp::Node
     std::atomic<bool> mFsmLoopRunning{ false };
     std::atomic<bool> mCancelRequested{ false };
     std::atomic<bool> mFsmIdle{ false };
-    // use unique_ptr to automatically handle mem cleanup in destructor
-    // should only be written to in fsm_loop()
+
+    // Use unique_ptr to automatically handle mem cleanup in destructor.
+    // Should only by modified in fsm_loop().
     std::unique_ptr<fsm_nbx, decltype(&destroy_fsm)> mFsmPtr;
 
     // Functions
     void fsm_loop();
 
-};// HumanPickplaceMockupNode
+};// CollabPickplaceNode
 }// namespace bdd_demo_bhv
 #endif// BDD_DEMO_BEHAVIOURS_CPP__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
