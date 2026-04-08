@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BDD_DEMO_BEHAVIOURS_CPP__CONVERSIONS_HPP_
-#define BDD_DEMO_BEHAVIOURS_CPP__CONVERSIONS_HPP_
+#ifndef BDD_COLLAB_BHV_CPP__CONVERSIONS_HPP_
+#define BDD_COLLAB_BHV_CPP__CONVERSIONS_HPP_
 #include <string>
 #include "unique_identifier_msgs/msg/uuid.hpp"
 
 std::string uuid_to_hex(const unique_identifier_msgs::msg::UUID &pUUIDMsg);
 
-#endif// BDD_DEMO_BEHAVIOURS_CPP__CONVERSIONS_HPP_
+#endif// BDD_COLLAB_BHV_CPP__CONVERSIONS_HPP_

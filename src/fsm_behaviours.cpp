@@ -15,18 +15,18 @@
 #include <chrono>
 #include <rclcpp/rclcpp.hpp>
 #include "coord2b/functions/event_loop.h"
-#include "bdd_demo_behaviours_cpp/collab_pickplace.fsm.hpp"
-#include "bdd_demo_behaviours_cpp/fsm_behaviours.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace.fsm.hpp"
+#include "bdd_collab_bhv_cpp/fsm_behaviours.hpp"
 
-namespace bdb = bdd_demo_bhv;
+namespace bcb = bdd_collab_bhv;
 
-bdb::MockupCollabBehaviour::MockupCollabBehaviour(rclcpp::Time pNow, uint pHeartbeatDurMiliSec)
+bcb::MockupCollabBehaviour::MockupCollabBehaviour(rclcpp::Time pNow, uint pHeartbeatDurMiliSec)
   : mHeartbeatPeriod(std::chrono::milliseconds(pHeartbeatDurMiliSec))
 {
     mNextHeartbeat = pNow + mHeartbeatPeriod;
 }
 
-void bdb::MockupCollabBehaviour::step(std::shared_ptr<rclcpp::Node> pNodePtr,
+void bcb::MockupCollabBehaviour::step(std::shared_ptr<rclcpp::Node> pNodePtr,
   const struct fsm_nbx *pFsmPtr)
 {
     auto now = pNodePtr->get_clock()->now();

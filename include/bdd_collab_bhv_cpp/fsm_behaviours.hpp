@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BDD_DEMO_BEHAVIOURS_CPP__FSM_BEHAVIOURS_HPP_
-#define BDD_DEMO_BEHAVIOURS_CPP__FSM_BEHAVIOURS_HPP_
+#ifndef BDD_COLLAB_BHV_CPP__FSM_BEHAVIOURS_HPP_
+#define BDD_COLLAB_BHV_CPP__FSM_BEHAVIOURS_HPP_
 
 #include <memory>
 #include <rclcpp/time.hpp>
 #include <rclcpp/node.hpp>
 #include "coord2b/types/fsm.h"
 
-namespace bdd_demo_bhv {
+namespace bdd_collab_bhv {
 
 class BehaviourInterface
 {
@@ -41,6 +41,6 @@ class MockupCollabBehaviour : public BehaviourInterface
     rclcpp::Time mNextHeartbeat;
 };
 
-}// namespace bdd_demo_bhv
+}// namespace bdd_collab_bhv
 
-#endif// BDD_DEMO_BEHAVIOURS_CPP__FSM_BEHAVIOURS_HPP_
+#endif// BDD_COLLAB_BHV_CPP__FSM_BEHAVIOURS_HPP_

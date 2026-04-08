@@ -8,7 +8,7 @@ launch:
       name: "bhv_server_name"
       default: "/bhv_server"
   - node:
-      pkg: "bdd_demo_behaviours_cpp"
+      pkg: "bdd_collab_bhv_cpp"
       exec: "collab_pickplace_node"
       namespace: "$(var ns)"
       name: "collab_pickplace_node"

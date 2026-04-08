@@ -26,20 +26,20 @@
 #include <rclcpp_action/server.hpp>
 #include <rclcpp/utilities.hpp>
 #include <utility>
-#include "bdd_demo_behaviours_cpp/collab_pickplace.fsm.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace.fsm.hpp"
 #include "coord2b/functions/event_loop.h"
 #include "coord2b/functions/fsm.h"
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
-#include "bdd_demo_behaviours_cpp/conversions.hpp"
-#include "bdd_demo_behaviours_cpp/fsm_behaviours.hpp"
-#include "bdd_demo_behaviours_cpp/collab_pickplace_node.hpp"
+#include "bdd_collab_bhv_cpp/conversions.hpp"
+#include "bdd_collab_bhv_cpp/fsm_behaviours.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace_node.hpp"
 
 #define TICK_MILI_SECS 1// 1kHz
 #define HEARTBEAT_MILI_SECS 500// 2Hz
 
-namespace bdb = bdd_demo_bhv;
+namespace bcb = bdd_collab_bhv;
 
-bdb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOptions)
+bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOptions)
   : rclcpp::Node("human_pickplace_mockup_node", pOptions), mFsmPtr(create_fsm(), &destroy_fsm)
 {
     if (!mFsmPtr) throw std::runtime_error("FSM creation failed");
@@ -97,7 +97,7 @@ bdb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
       this, serverName, goalHandler, cancelHandler, accepted_handler);
 }
 
-void bdb::CollabPickplaceNode::start_fsm()
+void bcb::CollabPickplaceNode::start_fsm()
 {
     // separate start function from constructor to avoid
     // race condition when calling shared_from_this() in fsm_loop()
@@ -105,7 +105,7 @@ void bdb::CollabPickplaceNode::start_fsm()
     mFsmThread = std::thread(&CollabPickplaceNode::fsm_loop, this);
 }
 
-bdb::CollabPickplaceNode::~CollabPickplaceNode()
+bcb::CollabPickplaceNode::~CollabPickplaceNode()
 {
     mFsmLoopRunning.store(false);
     // join threads to ensure member destructor calls,
@@ -113,7 +113,7 @@ bdb::CollabPickplaceNode::~CollabPickplaceNode()
     if (mFsmThread.joinable()) { mFsmThread.join(); }
 }
 
-void bdb::CollabPickplaceNode::fsm_loop()
+void bcb::CollabPickplaceNode::fsm_loop()
 {
     auto nodePtr = this->shared_from_this();
 
@@ -173,7 +173,7 @@ void bdb::CollabPickplaceNode::fsm_loop()
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    auto nodePtr = std::make_shared<bdb::CollabPickplaceNode>(rclcpp::NodeOptions());
+    auto nodePtr = std::make_shared<bcb::CollabPickplaceNode>(rclcpp::NodeOptions());
     nodePtr->start_fsm();
     rclcpp::spin(nodePtr);
     rclcpp::shutdown();

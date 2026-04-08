@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BDD_DEMO_BEHAVIOURS_CPP__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
-#define BDD_DEMO_BEHAVIOURS_CPP__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
+#ifndef BDD_COLLAB_BHV__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
+#define BDD_COLLAB_BHV__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
 
 #include <atomic>
 #include <memory>
@@ -24,9 +24,9 @@
 #include <string_view>
 #include <thread>
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
-#include "bdd_demo_behaviours_cpp/collab_pickplace.fsm.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace.fsm.hpp"
 
-namespace bdd_demo_bhv {
+namespace bdd_collab_bhv {
 
 enum class ExecutionType { Mockup, Simulation, RealRobot };
 
@@ -84,5 +84,5 @@ class CollabPickplaceNode : public rclcpp::Node
     void fsm_loop();
 
 };// CollabPickplaceNode
-}// namespace bdd_demo_bhv
-#endif// BDD_DEMO_BEHAVIOURS_CPP__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
+}// namespace bdd_collab_bhv
+#endif// BDD_COLLAB_BHV__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
