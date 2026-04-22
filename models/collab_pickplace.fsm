@@ -3,7 +3,6 @@ DESCRIPTION: "FSM for a collaborative pick&place task with human"
 
 STATES:
     S_START,
-    S_CONFIG,
     S_IDLE,
     S_TOUCH_TABLE,
     S_SLIDE,
@@ -22,7 +21,6 @@ EVENTS:
 
     // These trigger transitions
     E_NEW_GOAL,
-    E_CONFIG_DONE,
     E_TABLE_TOUCHED,
     E_OBJ_REACHED,
     E_GRASP_DONE,
@@ -36,15 +34,8 @@ EVENTS:
     E_STEP
 
 TRANSITIONS:
-    T_START_CONFIG:
+    T_START_IDLE:
         FROM: @S_START
-        TO: @S_CONFIG
-
-    T_CONFIG_SELF:
-        FROM: @S_CONFIG
-        TO: @S_CONFIG
-    T_CONFIG_IDLE:
-        FROM: @S_CONFIG
         TO: @S_IDLE
 
     T_IDLE_SELF:
@@ -107,9 +98,6 @@ TRANSITIONS:
 
 REACTIONS:
     // These requires triggering in code
-    R_E_CONFIG_DONE:
-        WHEN: @E_CONFIG_DONE
-        DO: @T_CONFIG_IDLE
     R_E_NEW_GOAL:
         WHEN: @E_NEW_GOAL
         DO: @T_IDLE_TOUCH
@@ -153,10 +141,7 @@ REACTIONS:
     // These are triggered automatically
     R_E_STEP_START:
         WHEN: @E_STEP
-        DO: @T_START_CONFIG
-    R_E_STEP_CONFIG:
-        WHEN: @E_STEP
-        DO: @T_CONFIG_SELF
+        DO: @T_START_IDLE
     R_E_STEP_IDLE:
         WHEN: @E_STEP
         DO: @T_IDLE_SELF

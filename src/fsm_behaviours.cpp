@@ -35,9 +35,7 @@ void bcb::MockupCollabBehaviour::step(std::shared_ptr<rclcpp::Node> pNodePtr,
     RCLCPP_INFO(
       pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name);
 
-    if (pFsmPtr->currentStateIndex == S_CONFIG) {
-        produce_event(pFsmPtr->eventData, E_CONFIG_DONE);
-    } else if (pFsmPtr->currentStateIndex == S_TOUCH_TABLE) {
+    if (pFsmPtr->currentStateIndex == S_TOUCH_TABLE) {
         produce_event(pFsmPtr->eventData, E_TABLE_TOUCHED);
     } else if (pFsmPtr->currentStateIndex == S_SLIDE) {
         produce_event(pFsmPtr->eventData, E_OBJ_REACHED);
