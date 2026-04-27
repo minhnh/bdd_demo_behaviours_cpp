@@ -47,7 +47,7 @@ constexpr std::string_view exec_type_to_str(ExecutionType pExecType)
 class CollabPickplaceNode : public rclcpp::Node
 {
   public:
-    using Behaviour = bdd_ros2_interfaces::action::Behaviour;
+    using Behaviour           = bdd_ros2_interfaces::action::Behaviour;
     using GoalHandleBehaviour = rclcpp_action::ServerGoalHandle<Behaviour>;
 
     explicit CollabPickplaceNode(const rclcpp::NodeOptions &pOptions = rclcpp::NodeOptions());
@@ -59,22 +59,22 @@ class CollabPickplaceNode : public rclcpp::Node
   private:
     rclcpp_action::Server<Behaviour>::SharedPtr mBhvServerPtr;
 
-    std::thread mFsmThread;
-    std::mutex mFsmMutex;
-    std::mutex mGoalMutex;
+    std::thread   mFsmThread;
+    std::mutex    mFsmMutex;
+    std::mutex    mGoalMutex;
     ExecutionType mExecCtx;
 
     // Shared data between server handlers & FSM loop
     struct GoalData
     {
         std::weak_ptr<GoalHandleBehaviour> mGoalHandlerPtr;
-        Behaviour::Goal mGoalCopy;
+        Behaviour::Goal                    mGoalCopy;
     };
 
     std::optional<GoalData> mPendingGoal;
-    std::atomic<bool> mFsmLoopRunning{ false };
-    std::atomic<bool> mCancelRequested{ false };
-    std::atomic<bool> mFsmIdle{ false };
+    std::atomic<bool>       mFsmLoopRunning{ false };
+    std::atomic<bool>       mCancelRequested{ false };
+    std::atomic<bool>       mFsmIdle{ false };
 
     // Use unique_ptr to automatically handle mem cleanup in destructor.
     // Should only by modified in fsm_loop().
@@ -83,6 +83,6 @@ class CollabPickplaceNode : public rclcpp::Node
     // Functions
     void fsm_loop();
 
-};// CollabPickplaceNode
-}// namespace bdd_collab_bhv
-#endif// BDD_COLLAB_BHV__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
+}; // CollabPickplaceNode
+} // namespace bdd_collab_bhv
+#endif // BDD_COLLAB_BHV__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_

@@ -38,9 +38,9 @@ class MockupCollabBehaviour : public BehaviourInterface
 
   private:
     rclcpp::Duration mHeartbeatPeriod;
-    rclcpp::Time mNextHeartbeat;
+    rclcpp::Time     mNextHeartbeat;
 };
 
-}// namespace bdd_collab_bhv
+} // namespace bdd_collab_bhv
 
-#endif// BDD_COLLAB_BHV_CPP__FSM_BEHAVIOURS_HPP_
+#endif // BDD_COLLAB_BHV_CPP__FSM_BEHAVIOURS_HPP_

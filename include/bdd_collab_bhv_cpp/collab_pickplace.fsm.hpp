@@ -56,8 +56,8 @@ int main() {
 #include "coord2b/types/event_loop.h"
 #include <new>
 
-struct fsm_nbx * create_fsm();
-void destroy_fsm(struct fsm_nbx * fsm);
+struct fsm_nbx *create_fsm();
+void            destroy_fsm(struct fsm_nbx *fsm);
 
 // sm states
 enum e_states {
@@ -137,248 +137,237 @@ enum e_reactions {
     NUM_REACTIONS
 };
 
-inline struct fsm_nbx * create_fsm() {
+inline struct fsm_nbx *create_fsm()
+{
 
-    struct fsm_nbx * fsm = new (std::nothrow) fsm_nbx{
-        .numReactions = NUM_REACTIONS,
-        .numTransitions = NUM_TRANSITIONS,
-        .numStates = NUM_STATES,
-        .states = nullptr,
-        .startStateIndex = S_START,
-        .endStateIndex = S_EXIT,
-        .currentStateIndex = S_START,
-        .eventData = nullptr,
-        .reactions = nullptr,
-        .transitions = nullptr
-    };
+    struct fsm_nbx *fsm = new (std::nothrow) fsm_nbx{ .numReactions      = NUM_REACTIONS,
+                                                      .numTransitions    = NUM_TRANSITIONS,
+                                                      .numStates         = NUM_STATES,
+                                                      .states            = nullptr,
+                                                      .startStateIndex   = S_START,
+                                                      .endStateIndex     = S_EXIT,
+                                                      .currentStateIndex = S_START,
+                                                      .eventData         = nullptr,
+                                                      .reactions         = nullptr,
+                                                      .transitions       = nullptr };
     if (!fsm) return nullptr;
 
     // sm states
-    struct state * states = new (std::nothrow) state[NUM_STATES]{
-        {.name = "S_start"}, 
-        {.name = "S_idle"}, 
-        {.name = "S_touch_table"}, 
-        {.name = "S_slide"}, 
-        {.name = "S_grasp"}, 
-        {.name = "S_collab_move"}, 
-        {.name = "S_release"}, 
-        {.name = "S_recover"}, 
-        {.name = "S_exit"} 
+    struct state *states = new (std::nothrow) state[NUM_STATES]{
+        { .name = "S_start" },   { .name = "S_idle" },    { .name = "S_touch_table" },
+        { .name = "S_slide" },   { .name = "S_grasp" },   { .name = "S_collab_move" },
+        { .name = "S_release" }, { .name = "S_recover" }, { .name = "S_exit" }
     };
 
     // sm transition table
-    struct transition * transitions = new (std::nothrow) transition[NUM_TRANSITIONS]{
-        {
-            .startStateIndex = S_START,
-            .endStateIndex = S_IDLE,
-        }, 
-        {
-            .startStateIndex = S_IDLE,
-            .endStateIndex = S_IDLE,
-        }, 
-        {
-            .startStateIndex = S_IDLE,
-            .endStateIndex = S_TOUCH_TABLE,
-        }, 
-        {
-            .startStateIndex = S_IDLE,
-            .endStateIndex = S_EXIT,
-        }, 
-        {
-            .startStateIndex = S_TOUCH_TABLE,
-            .endStateIndex = S_TOUCH_TABLE,
-        }, 
-        {
-            .startStateIndex = S_TOUCH_TABLE,
-            .endStateIndex = S_SLIDE,
-        }, 
-        {
-            .startStateIndex = S_TOUCH_TABLE,
-            .endStateIndex = S_RECOVER,
-        }, 
-        {
-            .startStateIndex = S_SLIDE,
-            .endStateIndex = S_SLIDE,
-        }, 
-        {
-            .startStateIndex = S_SLIDE,
-            .endStateIndex = S_GRASP,
-        }, 
-        {
-            .startStateIndex = S_SLIDE,
-            .endStateIndex = S_RECOVER,
-        }, 
-        {
-            .startStateIndex = S_GRASP,
-            .endStateIndex = S_GRASP,
-        }, 
-        {
-            .startStateIndex = S_GRASP,
-            .endStateIndex = S_COLLAB_MOVE,
-        }, 
-        {
-            .startStateIndex = S_COLLAB_MOVE,
-            .endStateIndex = S_COLLAB_MOVE,
-        }, 
-        {
-            .startStateIndex = S_COLLAB_MOVE,
-            .endStateIndex = S_RELEASE,
-        }, 
-        {
-            .startStateIndex = S_RELEASE,
-            .endStateIndex = S_RELEASE,
-        }, 
-        {
-            .startStateIndex = S_RELEASE,
-            .endStateIndex = S_RECOVER,
-        }, 
-        {
-            .startStateIndex = S_RECOVER,
-            .endStateIndex = S_RECOVER,
-        }, 
-        {
-            .startStateIndex = S_RECOVER,
-            .endStateIndex = S_IDLE,
-        } 
-    };
+    struct transition *transitions =
+      new (std::nothrow) transition[NUM_TRANSITIONS]{ {
+                                                        .startStateIndex = S_START,
+                                                        .endStateIndex   = S_IDLE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_IDLE,
+                                                        .endStateIndex   = S_IDLE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_IDLE,
+                                                        .endStateIndex   = S_TOUCH_TABLE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_IDLE,
+                                                        .endStateIndex   = S_EXIT,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_TOUCH_TABLE,
+                                                        .endStateIndex   = S_TOUCH_TABLE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_TOUCH_TABLE,
+                                                        .endStateIndex   = S_SLIDE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_TOUCH_TABLE,
+                                                        .endStateIndex   = S_RECOVER,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_SLIDE,
+                                                        .endStateIndex   = S_SLIDE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_SLIDE,
+                                                        .endStateIndex   = S_GRASP,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_SLIDE,
+                                                        .endStateIndex   = S_RECOVER,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_GRASP,
+                                                        .endStateIndex   = S_GRASP,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_GRASP,
+                                                        .endStateIndex   = S_COLLAB_MOVE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_COLLAB_MOVE,
+                                                        .endStateIndex   = S_COLLAB_MOVE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_COLLAB_MOVE,
+                                                        .endStateIndex   = S_RELEASE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_RELEASE,
+                                                        .endStateIndex   = S_RELEASE,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_RELEASE,
+                                                        .endStateIndex   = S_RECOVER,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_RECOVER,
+                                                        .endStateIndex   = S_RECOVER,
+                                                      },
+                                                      {
+                                                        .startStateIndex = S_RECOVER,
+                                                        .endStateIndex   = S_IDLE,
+                                                      } };
 
     // sm reaction table
-    struct event_reaction * reactions = new (std::nothrow) event_reaction[NUM_REACTIONS]{
+    struct event_reaction *reactions = new (std::nothrow) event_reaction[NUM_REACTIONS]{
         {
-            .conditionEventIndex = E_NEW_GOAL,
-            .transitionIndex = T_IDLE_TOUCH,
-            .numFiredEvents = 1,
-            .firedEventIndices = new unsigned int[1]{
-                E_PICK_APPROACH_START 
-            },
-        }, 
+          .conditionEventIndex = E_NEW_GOAL,
+          .transitionIndex     = T_IDLE_TOUCH,
+          .numFiredEvents      = 1,
+          .firedEventIndices   = new unsigned int[1]{ E_PICK_APPROACH_START },
+        },
         {
-            .conditionEventIndex = E_TABLE_TOUCHED,
-            .transitionIndex = T_TOUCH_SLIDE,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_TABLE_TOUCHED,
+          .transitionIndex     = T_TOUCH_SLIDE,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_OBJ_REACHED,
-            .transitionIndex = T_SLIDE_GRASP,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_OBJ_REACHED,
+          .transitionIndex     = T_SLIDE_GRASP,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_GRASP_DONE,
-            .transitionIndex = T_GRASP_COL_MOVE,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_GRASP_DONE,
+          .transitionIndex     = T_GRASP_COL_MOVE,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_PLACE_REACHED,
-            .transitionIndex = T_COL_MOVE_RELEASE,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_PLACE_REACHED,
+          .transitionIndex     = T_COL_MOVE_RELEASE,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_RELEASE_DONE,
-            .transitionIndex = T_RELEASE_RECOVER,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_RELEASE_DONE,
+          .transitionIndex     = T_RELEASE_RECOVER,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_RECOVER_DONE,
-            .transitionIndex = T_RECOVER_IDLE,
-            .numFiredEvents = 1,
-            .firedEventIndices = new unsigned int[1]{
-                E_GOAL_FINISHED 
-            },
-        }, 
+          .conditionEventIndex = E_RECOVER_DONE,
+          .transitionIndex     = T_RECOVER_IDLE,
+          .numFiredEvents      = 1,
+          .firedEventIndices   = new unsigned int[1]{ E_GOAL_FINISHED },
+        },
         {
-            .conditionEventIndex = E_GOAL_CANCELLED,
-            .transitionIndex = T_TOUCH_RECOVER,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_GOAL_CANCELLED,
+          .transitionIndex     = T_TOUCH_RECOVER,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_GOAL_CANCELLED,
-            .transitionIndex = T_SLIDE_RECOVER,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_GOAL_CANCELLED,
+          .transitionIndex     = T_SLIDE_RECOVER,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_GOAL_CANCELLED,
-            .transitionIndex = T_COL_MOVE_RELEASE,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_GOAL_CANCELLED,
+          .transitionIndex     = T_COL_MOVE_RELEASE,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STOP,
-            .transitionIndex = T_IDLE_EXIT,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_STOP,
+          .transitionIndex     = T_IDLE_EXIT,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STEP,
-            .transitionIndex = T_START_IDLE,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_STEP,
+          .transitionIndex     = T_START_IDLE,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STEP,
-            .transitionIndex = T_IDLE_SELF,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_STEP,
+          .transitionIndex     = T_IDLE_SELF,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STEP,
-            .transitionIndex = T_TOUCH_SELF,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_STEP,
+          .transitionIndex     = T_TOUCH_SELF,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STEP,
-            .transitionIndex = T_SLIDE_SLIDE,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_STEP,
+          .transitionIndex     = T_SLIDE_SLIDE,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STEP,
-            .transitionIndex = T_GRASP_SELF,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_STEP,
+          .transitionIndex     = T_GRASP_SELF,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STEP,
-            .transitionIndex = T_COL_MOVE_SELF,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_STEP,
+          .transitionIndex     = T_COL_MOVE_SELF,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STEP,
-            .transitionIndex = T_RELEASE_SELF,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        }, 
+          .conditionEventIndex = E_STEP,
+          .transitionIndex     = T_RELEASE_SELF,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        },
         {
-            .conditionEventIndex = E_STEP,
-            .transitionIndex = T_RECOVER_SELF,
-            .numFiredEvents = 0,
-            .firedEventIndices = nullptr,
-    
-        } };
+          .conditionEventIndex = E_STEP,
+          .transitionIndex     = T_RECOVER_SELF,
+          .numFiredEvents      = 0,
+          .firedEventIndices   = nullptr,
+
+        }
+    };
 
     if (!states || !transitions || !reactions) {
         delete[] states;
@@ -402,9 +391,9 @@ inline struct fsm_nbx * create_fsm() {
     }
 
     // sm event data
-    struct events * eventData = new (std::nothrow) events{};
-    _Bool * currentEvents = new (std::nothrow) _Bool[NUM_EVENTS]{false};
-    _Bool * futureEvents = new (std::nothrow) _Bool[NUM_EVENTS]{false};
+    struct events *eventData     = new (std::nothrow) events{};
+    _Bool         *currentEvents = new (std::nothrow) _Bool[NUM_EVENTS]{ false };
+    _Bool         *futureEvents  = new (std::nothrow) _Bool[NUM_EVENTS]{ false };
     if (!eventData || !currentEvents || !futureEvents) {
         delete[] states;
         delete[] transitions;
@@ -420,26 +409,27 @@ inline struct fsm_nbx * create_fsm() {
         delete fsm;
         return nullptr;
     }
-    eventData->numEvents = NUM_EVENTS;
+    eventData->numEvents     = NUM_EVENTS;
     eventData->currentEvents = currentEvents;
-    eventData->futureEvents = futureEvents;
+    eventData->futureEvents  = futureEvents;
 
     // sm fsm struct
-    fsm->states = states;
-    fsm->eventData = eventData;
-    fsm->reactions = reactions;
+    fsm->states      = states;
+    fsm->eventData   = eventData;
+    fsm->reactions   = reactions;
     fsm->transitions = transitions;
 
     return fsm;
 }
 
-inline void destroy_fsm(struct fsm_nbx * fsm) {
+inline void destroy_fsm(struct fsm_nbx *fsm)
+{
     if (!fsm) return;
     if (fsm->reactions) {
         for (unsigned int i = 0; i < fsm->numReactions; ++i) {
             delete[] fsm->reactions[i].firedEventIndices;
             fsm->reactions[i].firedEventIndices = nullptr;
-            fsm->reactions[i].numFiredEvents = 0;
+            fsm->reactions[i].numFiredEvents    = 0;
         }
     }
     if (fsm->eventData) {

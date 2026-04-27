@@ -22,18 +22,19 @@ namespace bcb = bdd_collab_bhv;
 
 bcb::MockupCollabBehaviour::MockupCollabBehaviour(rclcpp::Time pNow, uint pHeartbeatDurMiliSec)
   : mHeartbeatPeriod(std::chrono::milliseconds(pHeartbeatDurMiliSec))
-{
-    mNextHeartbeat = pNow + mHeartbeatPeriod;
-}
+{ mNextHeartbeat = pNow + mHeartbeatPeriod; }
 
-void bcb::MockupCollabBehaviour::step(std::shared_ptr<rclcpp::Node> pNodePtr,
-  const struct fsm_nbx *pFsmPtr)
+void bcb::MockupCollabBehaviour::step(
+  std::shared_ptr<rclcpp::Node> pNodePtr,
+  const struct fsm_nbx         *pFsmPtr
+)
 {
     auto now = pNodePtr->get_clock()->now();
     if (now < mNextHeartbeat) { return; }
     mNextHeartbeat += mHeartbeatPeriod;
     RCLCPP_INFO(
-      pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name);
+      pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name
+    );
 
     if (pFsmPtr->currentStateIndex == S_TOUCH_TABLE) {
         produce_event(pFsmPtr->eventData, E_TABLE_TOUCHED);
