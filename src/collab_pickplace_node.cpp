@@ -34,8 +34,8 @@
 #include "bdd_collab_bhv_cpp/fsm_behaviours.hpp"
 #include "bdd_collab_bhv_cpp/collab_pickplace_node.hpp"
 
-#define TICK_MILI_SECS 1// 1kHz
-#define HEARTBEAT_MILI_SECS 500// 2Hz
+#define TICK_MILI_SECS 1        // 1kHz
+#define HEARTBEAT_MILI_SECS 500 // 2Hz
 
 namespace bcb = bdd_collab_bhv;
 
@@ -59,42 +59,51 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
     }
     RCLCPP_INFO(this->get_logger(), "Execution context: %s", execCtxStr.c_str());
 
-    auto goalHandler = [this](const rclcpp_action::GoalUUID &pUUID,
-                         std::shared_ptr<const Behaviour::Goal> pGoalPtr) {
+    auto goalHandler = [this](
+                         const rclcpp_action::GoalUUID         &pUUID,
+                         std::shared_ptr<const Behaviour::Goal> pGoalPtr
+                       ) {
         (void)pUUID;
 
         if (mFsmIdle.load(std::memory_order_acquire)) {
-            RCLCPP_INFO(this->get_logger(),
+            RCLCPP_INFO(
+              this->get_logger(),
               "Received request for scenario: %s",
-              uuid_to_hex(pGoalPtr->scenario_context_id).c_str());
+              uuid_to_hex(pGoalPtr->scenario_context_id).c_str()
+            );
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
         }
 
-        RCLCPP_WARN(this->get_logger(),
+        RCLCPP_WARN(
+          this->get_logger(),
           "Behaviour not idle, rejecting scenario: %s",
-          uuid_to_hex(pGoalPtr->scenario_context_id).c_str());
+          uuid_to_hex(pGoalPtr->scenario_context_id).c_str()
+        );
         return rclcpp_action::GoalResponse::REJECT;
     };
 
     auto cancelHandler = [this](const std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr) {
-        RCLCPP_INFO(this->get_logger(),
+        RCLCPP_INFO(
+          this->get_logger(),
           "Received cancel request for scenario: %s",
-          uuid_to_hex(pGoalHandlePtr->get_goal()->scenario_context_id).c_str());
+          uuid_to_hex(pGoalHandlePtr->get_goal()->scenario_context_id).c_str()
+        );
         mCancelRequested.store(true, std::memory_order_release);
         return rclcpp_action::CancelResponse::ACCEPT;
     };
 
     auto accepted_handler = [this](const std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr) {
         std::lock_guard<std::mutex> lock(mGoalMutex);
-        GoalData data;
+        GoalData                    data;
         data.mGoalHandlerPtr = pGoalHandlePtr;
-        data.mGoalCopy = *pGoalHandlePtr->get_goal();
-        mPendingGoal = std::move(data);
+        data.mGoalCopy       = *pGoalHandlePtr->get_goal();
+        mPendingGoal         = std::move(data);
     };
 
     const std::string serverName = get_parameter("bhv_server_name").as_string();
-    mBhvServerPtr = rclcpp_action::create_server<Behaviour>(
-      this, serverName, goalHandler, cancelHandler, accepted_handler);
+    mBhvServerPtr                = rclcpp_action::create_server<Behaviour>(
+      this, serverName, goalHandler, cancelHandler, accepted_handler
+    );
 }
 
 void bcb::CollabPickplaceNode::start_fsm()
@@ -118,10 +127,10 @@ void bcb::CollabPickplaceNode::fsm_loop()
     auto nodePtr = this->shared_from_this();
 
     std::optional<GoalData> activeGoal;
-    bool processingGoal = false;
+    bool                    processingGoal = false;
 
-    auto period = rclcpp::Duration(std::chrono::milliseconds(TICK_MILI_SECS));
-    auto now = this->get_clock()->now();
+    auto period  = rclcpp::Duration(std::chrono::milliseconds(TICK_MILI_SECS));
+    auto now     = this->get_clock()->now();
     auto nxtTick = now + period;
 
     std::unique_ptr<BehaviourInterface> bhvInfPtr = nullptr;
@@ -131,7 +140,8 @@ void bcb::CollabPickplaceNode::fsm_loop()
         break;
     default:
         throw std::runtime_error(
-          std::format("Unhandled execution context type: '{}'", exec_type_to_str(mExecCtx)));
+          std::format("Unhandled execution context type: '{}'", exec_type_to_str(mExecCtx))
+        );
     }
 
     while (rclcpp::ok() && mFsmLoopRunning.load(std::memory_order_acquire)) {

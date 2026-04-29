@@ -19,4 +19,4 @@
 
 std::string uuid_to_hex(const unique_identifier_msgs::msg::UUID &pUUIDMsg);
 
-#endif// BDD_COLLAB_BHV_CPP__CONVERSIONS_HPP_
+#endif // BDD_COLLAB_BHV_CPP__CONVERSIONS_HPP_
