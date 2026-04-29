@@ -1,0 +1,2648 @@
+{
+  "@context": [
+    {
+      "app": "https://secorolab.github.io/models/table-sequence/",
+      "cstr": "https://comp-rob2b.github.io/metamodels/task/constraint#",
+      "cstr-hdl": "https://comp-rob2b.github.io/metamodels/task/constraint-handler#",
+      "geom-coord": "https://comp-rob2b.github.io/metamodels/geometry/coordinates#",
+      "geom-ent": "https://comp-rob2b.github.io/metamodels/geometry/structural-entities#",
+      "geom-op": "https://comp-rob2b.github.io/metamodels/geometry/spatial-operators#",
+      "geom-rel": "https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#",
+      "kc": "https://comp-rob2b.github.io/metamodels/kinematic-chain/structural-entities#",
+      "map": "https://comp-rob2b.github.io/metamodels/task/map#",
+      "mot": "https://comp-rob2b.github.io/metamodels/task/motion-specification#",
+      "qkind": "http://qudt.org/vocab/quantitykind/",
+      "qudt": "http://qudt.org/schema/qudt/",
+      "rbdyn-coord": "https://comp-rob2b.github.io/metamodels/newtonian-rigid-body-dynamics/coordinates#",
+      "rbdyn-ent": "https://comp-rob2b.github.io/metamodels/newtonian-rigid-body-dynamics/structural-entities#",
+      "slv": "https://comp-rob2b.github.io/metamodels/task/solver-specification#",
+      "unit": "http://qudt.org/vocab/unit/"
+    }
+  ],
+  "@graph": [
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/World/world/pose-world-ee",
+      "@type": [
+        "geom-rel:Pose",
+        "geom-coord:PoseCoordinate",
+        "geom-coord:DirectionCosineXYZ",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:as-seen-by": {
+        "@id": "app:frame-world"
+      },
+      "geom-rel:of": {
+        "@id": "app:frame-ee"
+      },
+      "geom-rel:with-respect-to": {
+        "@id": "app:frame-world"
+      },
+      "qudt:quantity-kind": [
+        {
+          "@id": "qkind:PlaneAngle"
+        },
+        {
+          "@id": "qkind:Length"
+        }
+      ],
+      "qudt:unit": [
+        {
+          "@id": "unit:UNITLESS"
+        },
+        {
+          "@id": "unit:M"
+        }
+      ]
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_idle/Spec/spec/gravity-vec",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:Vector",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:x": "0.0",
+      "geom-coord:y": "0.0",
+      "geom-coord:z": "-9.81",
+      "qudt:quantity-kind": {
+        "@id": "qkind:Vector"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:driver-idle",
+      "@type": "slv:MotionDrivers",
+      "slv:acceleration-constraint": {
+        "@id": "app:spec-acc-idle"
+      }
+    },
+    {
+      "@id": "app:view-ctrl-hold-pose-err-lin-y",
+      "@type": [
+        "map:View",
+        "map:AccelerationTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:y"
+      },
+      "map:subobject": {
+        "@id": "app:ctrl-hold-pose-err-lin-y"
+      },
+      "map:subspace": {
+        "@id": "map:linear-acceleration"
+      },
+      "map:superobject": {
+        "@id": "app:pose-diff-ctrl-hold-pose"
+      }
+    },
+    {
+      "@id": "app:pose-start-ee.distance.x-err",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:Distance"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:Distance"
+      },
+      "qudt:unit": {
+        "@id": "unit:M"
+      }
+    },
+    {
+      "@id": "app:motion-touch_down",
+      "@type": "mot:GuardedMotion",
+      "mot:until": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/until/contact-table"
+      },
+      "mot:untilLogic": "any",
+      "mot:while": [
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/move-down-z"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-z-zero"
+        }
+      ]
+    },
+    {
+      "@id": "app:spec-acc-touch_down",
+      "@type": "slv:AccelerationConstraintSpecification",
+      "slv:constraints": [
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.z-touch_down"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.x"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.y"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.x"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.y"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.z"
+        }
+      ]
+    },
+    {
+      "@id": "app:acc-cstr-ctrl-hold-pose-ang-x",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-ctrl-hold-pose-ang-x"
+      },
+      "slv:axis": {
+        "@id": "slv:x"
+      },
+      "slv:subspace": {
+        "@id": "slv:angular-acceleration"
+      }
+    },
+    {
+      "@id": "app:compute-inverse-pose-world-table",
+      "@type": "geom-op:InvertPose",
+      "geom-op:out": {
+        "@id": "app:inverse-pose-world-table"
+      },
+      "geom-op:pose": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/World/world/pose-world-table"
+      }
+    },
+    {
+      "@id": "app:pose-diff-ctrl-hold-pose",
+      "@type": [
+        "geom-rel:AccelerationTwist",
+        "geom-coord:AccelerationTwistCoordinate",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:as-seen-by": {
+        "@id": "app:frame-base"
+      },
+      "geom-rel:reference-point": {
+        "@id": "app:point-pose-diff-ctrl-hold-pose-origin"
+      },
+      "qudt:quantity-kind": [
+        {
+          "@id": "qkind:AngularAcceleration"
+        },
+        {
+          "@id": "qkind:LinearAcceleration"
+        }
+      ],
+      "qudt:unit": [
+        {
+          "@id": "unit:RAD-PER-SEC2"
+        },
+        {
+          "@id": "unit:M-PER-SEC2"
+        }
+      ]
+    },
+    {
+      "@id": "app:frame-base",
+      "@type": "geom-ent:Frame"
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.linear.x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.z-err-touch_down",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-y-zero",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:AngularVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.angular.y"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-angvel"
+      }
+    },
+    {
+      "@id": "app:view-twist-ee-base.angular.x",
+      "@type": [
+        "map:View",
+        "map:VelocityTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:x"
+      },
+      "map:subobject": {
+        "@id": "app:twist-ee-base.angular.x"
+      },
+      "map:subspace": {
+        "@id": "map:angular-velocity"
+      },
+      "map:superobject": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/twist-ee-base"
+      }
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.angular.x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:eacc-ctrl-hold-pose-lin-z",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.angular.z",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-ctrl-hold-pose-ang-z",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-ctrl-hold-pose-ang-z"
+      },
+      "slv:axis": {
+        "@id": "slv:z"
+      },
+      "slv:subspace": {
+        "@id": "slv:angular-acceleration"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.angular.x-err",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/while/keep-lin-z-zero",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:LinearVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.linear.z"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-linvel"
+      }
+    },
+    {
+      "@id": "app:view-twist-ee-base.angular.z",
+      "@type": [
+        "map:View",
+        "map:VelocityTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:z"
+      },
+      "map:subobject": {
+        "@id": "app:twist-ee-base.angular.z"
+      },
+      "map:subspace": {
+        "@id": "map:angular-velocity"
+      },
+      "map:superobject": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/twist-ee-base"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-x-zero",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:LinearVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.linear.x"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-linvel"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-move-down-z",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.linear.z-touch_down"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.linear.z-err-touch_down"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "app:view-ctrl-hold-pose-err-ang-x",
+      "@type": [
+        "map:View",
+        "map:AccelerationTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:x"
+      },
+      "map:subobject": {
+        "@id": "app:ctrl-hold-pose-err-ang-x"
+      },
+      "map:subspace": {
+        "@id": "map:angular-acceleration"
+      },
+      "map:superobject": {
+        "@id": "app:pose-diff-ctrl-hold-pose"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/touch_down/Spec/spec/down-vel",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      },
+      "qudt:value": "-0.03"
+    },
+    {
+      "@id": "app:twist-ee-base.angular.z-err",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/idle/while/hold-pose",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:PoseConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:pose-ee-base.pose"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/pose-ee-start"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.z",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-lin-z",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-ctrl-hold-pose-lin-z"
+      },
+      "cstr-hdl:derivative-gain": "0.4",
+      "cstr-hdl:error-signal": {
+        "@id": "app:ctrl-hold-pose-err-lin-z"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "4.0"
+    },
+    {
+      "@id": "app:spec-acc-idle",
+      "@type": "slv:AccelerationConstraintSpecification",
+      "slv:constraints": [
+        {
+          "@id": "app:acc-cstr-ctrl-hold-pose-lin-x"
+        },
+        {
+          "@id": "app:acc-cstr-ctrl-hold-pose-lin-y"
+        },
+        {
+          "@id": "app:acc-cstr-ctrl-hold-pose-lin-z"
+        },
+        {
+          "@id": "app:acc-cstr-ctrl-hold-pose-ang-x"
+        },
+        {
+          "@id": "app:acc-cstr-ctrl-hold-pose-ang-y"
+        },
+        {
+          "@id": "app:acc-cstr-ctrl-hold-pose-ang-z"
+        }
+      ]
+    },
+    {
+      "@id": "app:point-pose-diff-ctrl-hold-pose-origin",
+      "@type": "geom-ent:Point"
+    },
+    {
+      "@id": "app:eval-move_up_30cm_from_table-while-move-up-z",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/while/move-up-z"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.linear.z-err-move_up_30cm_from_table"
+      }
+    },
+    {
+      "@id": "app:handler_touch_down",
+      "@type": "cstr-hdl:ConstraintHandler",
+      "cstr-hdl:controllers": [
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-move-down-z"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-lin-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-lin-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-z-zero"
+        }
+      ],
+      "cstr-hdl:evaluators": [
+        {
+          "@id": "app:eval-touch_down-while-move-down-z"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-lin-x-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-lin-y-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-x-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-y-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-z-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-until-contact-table"
+        }
+      ],
+      "cstr-hdl:monitors": {
+        "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/monitor-contact-table"
+      },
+      "cstr-hdl:motion": {
+        "@id": "app:motion-touch_down"
+      },
+      "https://comp-rob2b.github.io/metamodels/application/order": 1
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/Spec/spec/forward-distance",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:Distance"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:Distance"
+      },
+      "qudt:unit": {
+        "@id": "unit:M"
+      },
+      "qudt:value": "0.15"
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.linear.y",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:arm_solver",
+      "@type": "slv:SolverWithInputAndOutput",
+      "https://comp-rob2b.github.io/metamodels/application/chain-end": "link-ee",
+      "https://comp-rob2b.github.io/metamodels/application/chain-root": "link-base",
+      "https://comp-rob2b.github.io/metamodels/application/robot-model": "KinovaGen3",
+      "https://comp-rob2b.github.io/metamodels/application/robot-type": "Manipulator",
+      "https://comp-rob2b.github.io/metamodels/application/urdf": "../robots/kg3.urdf",
+      "slv:gravity": {
+        "@id": "https://secorolab.github.io/models/table-sequence/handler_idle/World/world/gravity"
+      },
+      "slv:gravity-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/handler_idle/Spec/spec/gravity-vec"
+      },
+      "slv:kinematic-chain": {
+        "@id": "app:kinova"
+      },
+      "slv:motion-drivers": [
+        {
+          "@id": "app:driver-idle"
+        },
+        {
+          "@id": "app:driver-touch_down"
+        },
+        {
+          "@id": "app:driver-move_forward_15cm"
+        },
+        {
+          "@id": "app:driver-move_up_30cm_from_table"
+        }
+      ],
+      "slv:output": [
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/twist-ee-base"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/pose-ee-base"
+        }
+      ],
+      "slv:root": {
+        "@id": "app:kinova.chain.root"
+      },
+      "slv:solver": {
+        "@id": "slv:AccelerationConstrainedHybridDynamicsAlgorithm"
+      }
+    },
+    {
+      "@id": "app:view-ctrl-hold-pose-err-ang-z",
+      "@type": [
+        "map:View",
+        "map:AccelerationTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:z"
+      },
+      "map:subobject": {
+        "@id": "app:ctrl-hold-pose-err-ang-z"
+      },
+      "map:subspace": {
+        "@id": "map:angular-acceleration"
+      },
+      "map:superobject": {
+        "@id": "app:pose-diff-ctrl-hold-pose"
+      }
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.linear.z-move_up_30cm_from_table",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:handler_move_up_30cm_from_table",
+      "@type": "cstr-hdl:ConstraintHandler",
+      "cstr-hdl:controllers": [
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_move_up_30cm_from_table/ctrl-move-up-z"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-lin-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-lin-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-z-zero"
+        }
+      ],
+      "cstr-hdl:evaluators": [
+        {
+          "@id": "app:eval-move_up_30cm_from_table-while-move-up-z"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-lin-x-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-lin-y-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-x-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-y-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-z-zero"
+        },
+        {
+          "@id": "app:eval-move_up_30cm_from_table-until-reached-table-clearance"
+        }
+      ],
+      "cstr-hdl:monitors": {
+        "@id": "https://secorolab.github.io/models/table-sequence/handler_move_up_30cm_from_table/monitor-table-clearance"
+      },
+      "cstr-hdl:motion": {
+        "@id": "app:motion-move_up_30cm_from_table"
+      },
+      "https://comp-rob2b.github.io/metamodels/application/order": 3
+    },
+    {
+      "@id": "app:motion-idle",
+      "@type": "mot:GuardedMotion",
+      "mot:untilLogic": "any",
+      "mot:while": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/while/hold-pose"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.y",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "app:eacc-ctrl-hold-pose-ang-z",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:eval-touch_down-until-contact-table",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/until/contact-table"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.linear.z-err"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-err-ang-y",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularAcceleration"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularAcceleration"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.linear.z-touch_down",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:motion-move_up_30cm_from_table",
+      "@type": "mot:GuardedMotion",
+      "mot:until": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/until/reached-table-clearance"
+      },
+      "mot:untilLogic": "any",
+      "mot:while": [
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/while/move-up-z"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-z-zero"
+        }
+      ]
+    },
+    {
+      "@id": "app:eval-touch_down-while-keep-lin-x-zero",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-x-zero"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.linear.x-err"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-ang-x",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-ctrl-hold-pose-ang-x"
+      },
+      "cstr-hdl:derivative-gain": "0.4",
+      "cstr-hdl:error-signal": {
+        "@id": "app:ctrl-hold-pose-err-ang-x"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "4.0"
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.angular.y",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.angular.y"
+      },
+      "slv:axis": {
+        "@id": "slv:y"
+      },
+      "slv:subspace": {
+        "@id": "slv:angular-acceleration"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.angular.x",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.angular.x"
+      },
+      "slv:axis": {
+        "@id": "slv:x"
+      },
+      "slv:subspace": {
+        "@id": "slv:angular-acceleration"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-ctrl-hold-pose-ang-y",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-ctrl-hold-pose-ang-y"
+      },
+      "slv:axis": {
+        "@id": "slv:y"
+      },
+      "slv:subspace": {
+        "@id": "slv:angular-acceleration"
+      }
+    },
+    {
+      "@id": "app:spec-acc-move_forward_15cm",
+      "@type": "slv:AccelerationConstraintSpecification",
+      "slv:constraints": [
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.x-move_forward_15cm"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.z-move_forward_15cm"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.y"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.x"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.y"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.z"
+        }
+      ]
+    },
+    {
+      "@id": "app:compute-pose-table-ee.distance",
+      "@type": "geom-op:PoseToLinearDistance",
+      "geom-op:distance": {
+        "@id": "app:pose-table-ee.distance"
+      },
+      "geom-op:pose": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/World/world/pose-table-ee"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/Spec/spec/up-vel",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      },
+      "qudt:value": "0.03"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-linvel",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      },
+      "qudt:value": "0.0"
+    },
+    {
+      "@id": "app:view-ctrl-hold-pose-err-lin-z",
+      "@type": [
+        "map:View",
+        "map:AccelerationTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:z"
+      },
+      "map:subobject": {
+        "@id": "app:ctrl-hold-pose-err-lin-z"
+      },
+      "map:subspace": {
+        "@id": "map:linear-acceleration"
+      },
+      "map:superobject": {
+        "@id": "app:pose-diff-ctrl-hold-pose"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.angular.z",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.angular.z"
+      },
+      "slv:axis": {
+        "@id": "slv:z"
+      },
+      "slv:subspace": {
+        "@id": "slv:angular-acceleration"
+      }
+    },
+    {
+      "@id": "app:pose-table-ee.distance-err",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:Distance"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:Distance"
+      },
+      "qudt:unit": {
+        "@id": "unit:M"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-angvel",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC"
+      },
+      "qudt:value": "0.0"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_move_forward_15cm/ctrl-move-forward-x",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.linear.x-move_forward_15cm"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.linear.x-err-move_forward_15cm"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "app:driver-move_forward_15cm",
+      "@type": "slv:MotionDrivers",
+      "slv:acceleration-constraint": {
+        "@id": "app:spec-acc-move_forward_15cm"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.angular.y-err",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC"
+      }
+    },
+    {
+      "@id": "app:frame-world",
+      "@type": "geom-ent:Frame"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/touch_down/until/contact-table",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:LinearVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.linear.z"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-linvel"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.linear.z-move_forward_15cm",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.linear.z-move_forward_15cm"
+      },
+      "slv:axis": {
+        "@id": "slv:z"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.x-err",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.linear.x-move_forward_15cm",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:pose-table-ee.distance",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:Distance"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:Distance"
+      },
+      "qudt:unit": {
+        "@id": "unit:M"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-err-lin-x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearAcceleration"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearAcceleration"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC2"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-z-zero",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.angular.z"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.angular.z-err"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/Spec/spec/forward-vel",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      },
+      "qudt:value": "0.05"
+    },
+    {
+      "@id": "app:view-ctrl-hold-pose-err-lin-x",
+      "@type": [
+        "map:View",
+        "map:AccelerationTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:x"
+      },
+      "map:subobject": {
+        "@id": "app:ctrl-hold-pose-err-lin-x"
+      },
+      "map:subspace": {
+        "@id": "map:linear-acceleration"
+      },
+      "map:superobject": {
+        "@id": "app:pose-diff-ctrl-hold-pose"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.angular.y",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC"
+      }
+    },
+    {
+      "@id": "app:eval-touch_down-while-keep-lin-y-zero",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-y-zero"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.linear.y-err"
+      }
+    },
+    {
+      "@id": "app:table-contact",
+      "@type": "cstr-hdl:Event"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_move_up_30cm_from_table/monitor-table-clearance",
+      "@type": [
+        "cstr-hdl:Monitor",
+        "cstr-hdl:EdgeTriggeredMonitor"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/until/reached-table-clearance"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:pose-table-ee.distance-err"
+      },
+      "cstr-hdl:event": {
+        "@id": "app:table-clearance-reached"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/pose-ee-start",
+      "@type": [
+        "qudt:Quantity",
+        "geom-rel:Pose",
+        "https://comp-rob2b.github.io/metamodels/application/Snapshot"
+      ],
+      "https://comp-rob2b.github.io/metamodels/application/snapshot-of": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/pose-ee-base"
+      },
+      "https://comp-rob2b.github.io/metamodels/application/snapshot-time": "motion-start",
+      "qudt:quantity-kind": {
+        "@id": "geom-rel:Pose"
+      },
+      "qudt:unit": {
+        "@id": "unit:UNITLESS"
+      }
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.angular.y",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/Spec/spec/table-clearance",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:Distance"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:Distance"
+      },
+      "qudt:unit": {
+        "@id": "unit:M"
+      },
+      "qudt:value": "0.3"
+    },
+    {
+      "@id": "app:eval-move_forward_15cm-while-move-forward-x",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/while/move-forward-x"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.linear.x-err-move_forward_15cm"
+      }
+    },
+    {
+      "@id": "app:frame-ee",
+      "@type": "geom-ent:Frame"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/World/world/pose-world-table",
+      "@type": [
+        "geom-rel:Pose",
+        "geom-coord:PoseCoordinate",
+        "geom-coord:DirectionCosineXYZ",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:as-seen-by": {
+        "@id": "app:frame-world"
+      },
+      "geom-rel:of": {
+        "@id": "app:frame-table"
+      },
+      "geom-rel:with-respect-to": {
+        "@id": "app:frame-world"
+      },
+      "qudt:quantity-kind": [
+        {
+          "@id": "qkind:PlaneAngle"
+        },
+        {
+          "@id": "qkind:Length"
+        }
+      ],
+      "qudt:unit": [
+        {
+          "@id": "unit:UNITLESS"
+        },
+        {
+          "@id": "unit:M"
+        }
+      ]
+    },
+    {
+      "@id": "app:twist-ee-base.linear.x-err-move_forward_15cm",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/move-down-z",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:LinearVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.linear.z"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/Spec/spec/down-vel"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_move_forward_15cm/monitor-forward-distance",
+      "@type": [
+        "cstr-hdl:Monitor",
+        "cstr-hdl:EdgeTriggeredMonitor"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/until/reached-forward-distance"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:pose-start-ee.distance.x-err"
+      },
+      "cstr-hdl:event": {
+        "@id": "app:forward-distance-reached"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "app:link-ee",
+      "@type": "geom-ent:SimplicialComplex"
+    },
+    {
+      "@id": "app:link-base",
+      "@type": "geom-ent:SimplicialComplex"
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.linear.z-move_up_30cm_from_table",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.linear.z-move_up_30cm_from_table"
+      },
+      "slv:axis": {
+        "@id": "slv:z"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    },
+    {
+      "@id": "app:eacc-twist-ee-base.linear.z-move_forward_15cm",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-ctrl-hold-pose-lin-z",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-ctrl-hold-pose-lin-z"
+      },
+      "slv:axis": {
+        "@id": "slv:z"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-lin-y",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-ctrl-hold-pose-lin-y"
+      },
+      "cstr-hdl:derivative-gain": "0.4",
+      "cstr-hdl:error-signal": {
+        "@id": "app:ctrl-hold-pose-err-lin-y"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "4.0"
+    },
+    {
+      "@id": "app:eval-move_forward_15cm-until-reached-forward-distance",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/until/reached-forward-distance"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:pose-start-ee.distance.x-err"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/monitor-contact-table",
+      "@type": [
+        "cstr-hdl:Monitor",
+        "cstr-hdl:EdgeTriggeredMonitor"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/until/contact-table"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.linear.z-err"
+      },
+      "cstr-hdl:event": {
+        "@id": "app:table-contact"
+      }
+    },
+    {
+      "@id": "app:view-twist-ee-base.linear.x",
+      "@type": [
+        "map:View",
+        "map:VelocityTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:x"
+      },
+      "map:subobject": {
+        "@id": "app:twist-ee-base.linear.x"
+      },
+      "map:subspace": {
+        "@id": "map:linear-velocity"
+      },
+      "map:superobject": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/twist-ee-base"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/twist-ee-base",
+      "@type": [
+        "geom-rel:VelocityTwist",
+        "geom-coord:VelocityTwistCoordinate",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:as-seen-by": {
+        "@id": "app:frame-base"
+      },
+      "geom-rel:of": {
+        "@id": "app:link-ee"
+      },
+      "geom-rel:reference-point": {
+        "@id": "app:point-ee-origin"
+      },
+      "geom-rel:with-respect-to": {
+        "@id": "app:link-base"
+      },
+      "qudt:quantity-kind": [
+        {
+          "@id": "qkind:AngularVelocity"
+        },
+        {
+          "@id": "qkind:LinearVelocity"
+        }
+      ],
+      "qudt:unit": [
+        {
+          "@id": "unit:RAD-PER-SEC"
+        },
+        {
+          "@id": "unit:M-PER-SEC"
+        }
+      ]
+    },
+    {
+      "@id": "app:eval-touch_down-while-keep-ang-x-zero",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-x-zero"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.angular.x-err"
+      }
+    },
+    {
+      "@id": "app:frame-ee-start",
+      "@type": "geom-ent:Frame"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_idle/World/world/gravity",
+      "@type": "geom-ent:UniformGravitationalField"
+    },
+    {
+      "@id": "app:acc-cstr-ctrl-hold-pose-lin-x",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-ctrl-hold-pose-lin-x"
+      },
+      "slv:axis": {
+        "@id": "slv:x"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    },
+    {
+      "@id": "app:driver-touch_down",
+      "@type": "slv:MotionDrivers",
+      "slv:acceleration-constraint": {
+        "@id": "app:spec-acc-touch_down"
+      }
+    },
+    {
+      "@id": "app:eacc-ctrl-hold-pose-ang-y",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_move_up_30cm_from_table/ctrl-move-up-z",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.linear.z-move_up_30cm_from_table"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.linear.z-err-move_up_30cm_from_table"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "app:ctrl-hold-pose-ang-z",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-ctrl-hold-pose-ang-z"
+      },
+      "cstr-hdl:derivative-gain": "0.4",
+      "cstr-hdl:error-signal": {
+        "@id": "app:ctrl-hold-pose-err-ang-z"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "4.0"
+    },
+    {
+      "@id": "app:view-twist-ee-base.angular.y",
+      "@type": [
+        "map:View",
+        "map:VelocityTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:y"
+      },
+      "map:subobject": {
+        "@id": "app:twist-ee-base.angular.y"
+      },
+      "map:subspace": {
+        "@id": "map:angular-velocity"
+      },
+      "map:superobject": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/twist-ee-base"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.z-err-move_forward_15cm",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-lin-x",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-ctrl-hold-pose-lin-x"
+      },
+      "cstr-hdl:derivative-gain": "0.4",
+      "cstr-hdl:error-signal": {
+        "@id": "app:ctrl-hold-pose-err-lin-x"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "4.0"
+    },
+    {
+      "@id": "app:inverse-pose-world-table",
+      "@type": [
+        "geom-rel:Pose",
+        "geom-coord:PoseCoordinate",
+        "geom-coord:DirectionCosineXYZ",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:as-seen-by": {
+        "@id": "app:frame-table"
+      },
+      "geom-rel:of": {
+        "@id": "app:frame-world"
+      },
+      "geom-rel:with-respect-to": {
+        "@id": "app:frame-table"
+      },
+      "qudt:quantity-kind": [
+        {
+          "@id": "qkind:PlaneAngle"
+        },
+        {
+          "@id": "qkind:Length"
+        }
+      ],
+      "qudt:unit": [
+        {
+          "@id": "unit:UNITLESS"
+        },
+        {
+          "@id": "unit:M"
+        }
+      ]
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_move_forward_15cm/ctrl-keep-lin-z-zero",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.linear.z-move_forward_15cm"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.linear.z-err-move_forward_15cm"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "app:driver-move_up_30cm_from_table",
+      "@type": "slv:MotionDrivers",
+      "slv:acceleration-constraint": {
+        "@id": "app:spec-acc-move_up_30cm_from_table"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.z-err-move_up_30cm_from_table",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-x-zero",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:AngularVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.angular.x"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-angvel"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.linear.x-move_forward_15cm",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.linear.x-move_forward_15cm"
+      },
+      "slv:axis": {
+        "@id": "slv:x"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/while/move-up-z",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:LinearVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.linear.z"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/Spec/spec/up-vel"
+      }
+    },
+    {
+      "@id": "app:frame-table",
+      "@type": "geom-ent:Frame"
+    },
+    {
+      "@id": "app:eval-move_forward_15cm-while-keep-lin-z-zero",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/while/keep-lin-z-zero"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.linear.z-err-move_forward_15cm"
+      }
+    },
+    {
+      "@id": "app:handler_move_forward_15cm",
+      "@type": "cstr-hdl:ConstraintHandler",
+      "cstr-hdl:controllers": [
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_move_forward_15cm/ctrl-move-forward-x"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_move_forward_15cm/ctrl-keep-lin-z-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-lin-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-z-zero"
+        }
+      ],
+      "cstr-hdl:evaluators": [
+        {
+          "@id": "app:eval-move_forward_15cm-while-move-forward-x"
+        },
+        {
+          "@id": "app:eval-move_forward_15cm-while-keep-lin-z-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-lin-y-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-x-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-y-zero"
+        },
+        {
+          "@id": "app:eval-touch_down-while-keep-ang-z-zero"
+        },
+        {
+          "@id": "app:eval-move_forward_15cm-until-reached-forward-distance"
+        }
+      ],
+      "cstr-hdl:monitors": {
+        "@id": "https://secorolab.github.io/models/table-sequence/handler_move_forward_15cm/monitor-forward-distance"
+      },
+      "cstr-hdl:motion": {
+        "@id": "app:motion-move_forward_15cm"
+      },
+      "https://comp-rob2b.github.io/metamodels/application/order": 2
+    },
+    {
+      "@id": "app:eval-touch_down-while-keep-ang-y-zero",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-y-zero"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.angular.y-err"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.angular.x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC"
+      }
+    },
+    {
+      "@id": "app:handler_idle",
+      "@type": "cstr-hdl:ConstraintHandler",
+      "cstr-hdl:controllers": [
+        {
+          "@id": "app:ctrl-hold-pose-lin-x"
+        },
+        {
+          "@id": "app:ctrl-hold-pose-lin-y"
+        },
+        {
+          "@id": "app:ctrl-hold-pose-lin-z"
+        },
+        {
+          "@id": "app:ctrl-hold-pose-ang-x"
+        },
+        {
+          "@id": "app:ctrl-hold-pose-ang-y"
+        },
+        {
+          "@id": "app:ctrl-hold-pose-ang-z"
+        }
+      ],
+      "cstr-hdl:evaluators": {
+        "@id": "app:eval-pose-diff-ctrl-hold-pose"
+      },
+      "cstr-hdl:motion": {
+        "@id": "app:motion-idle"
+      },
+      "https://comp-rob2b.github.io/metamodels/application/order": 0
+    },
+    {
+      "@id": "app:view-ctrl-hold-pose-err-ang-y",
+      "@type": [
+        "map:View",
+        "map:AccelerationTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:y"
+      },
+      "map:subobject": {
+        "@id": "app:ctrl-hold-pose-err-ang-y"
+      },
+      "map:subspace": {
+        "@id": "map:angular-acceleration"
+      },
+      "map:superobject": {
+        "@id": "app:pose-diff-ctrl-hold-pose"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-y-zero",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:LinearVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.linear.y"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-linvel"
+      }
+    },
+    {
+      "@id": "app:pose-start-ee.distance.x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:Distance"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:Distance"
+      },
+      "qudt:unit": {
+        "@id": "unit:M"
+      }
+    },
+    {
+      "@id": "app:pose-ee-base.pose",
+      "@type": [
+        "qudt:Quantity",
+        "geom-rel:Pose"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "geom-rel:Pose"
+      },
+      "qudt:unit": {
+        "@id": "unit:UNITLESS"
+      }
+    },
+    {
+      "@id": "app:eval-move_up_30cm_from_table-until-reached-table-clearance",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/until/reached-table-clearance"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:pose-table-ee.distance-err"
+      }
+    },
+    {
+      "@id": "app:motion-move_forward_15cm",
+      "@type": "mot:GuardedMotion",
+      "mot:until": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/until/reached-forward-distance"
+      },
+      "mot:untilLogic": "any",
+      "mot:while": [
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/while/move-forward-x"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-lin-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/while/keep-lin-z-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-x-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-y-zero"
+        },
+        {
+          "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-z-zero"
+        }
+      ]
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.linear.y",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.linear.y"
+      },
+      "slv:axis": {
+        "@id": "slv:y"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    },
+    {
+      "@id": "app:point-ee-origin",
+      "@type": "geom-ent:Point"
+    },
+    {
+      "@id": "app:eval-touch_down-while-move-down-z",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/move-down-z"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.linear.z-err-touch_down"
+      }
+    },
+    {
+      "@id": "app:table-clearance-reached",
+      "@type": "cstr-hdl:Event"
+    },
+    {
+      "@id": "app:eval-pose-diff-ctrl-hold-pose",
+      "@type": "geom-op:PoseDiffEvaluator",
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/while/hold-pose"
+      },
+      "geom-op:in1": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/pose-ee-start"
+      },
+      "geom-op:in2": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/pose-ee-base"
+      },
+      "geom-op:out": {
+        "@id": "app:pose-diff-ctrl-hold-pose"
+      }
+    },
+    {
+      "@id": "app:eacc-ctrl-hold-pose-lin-y",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.angular.z",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/while/move-forward-x",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:LinearVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.linear.x"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/Spec/spec/forward-vel"
+      }
+    },
+    {
+      "@id": "app:compute-pose-table-ee",
+      "@type": "geom-op:ComposePose",
+      "geom-op:composite": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/World/world/pose-table-ee"
+      },
+      "geom-op:in1": {
+        "@id": "app:inverse-pose-world-table"
+      },
+      "geom-op:in2": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/World/world/pose-world-ee"
+      }
+    },
+    {
+      "@id": "app:kinova.chain.root",
+      "@type": "geom-ent:Frame"
+    },
+    {
+      "@id": "app:eacc-ctrl-hold-pose-lin-x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-x-zero",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.angular.x"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.angular.x-err"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "app:eval-touch_down-while-keep-ang-z-zero",
+      "@type": [
+        "cstr-hdl:ConstraintEvaluator",
+        "cstr-hdl:ErrorEvaluator"
+      ],
+      "cstr-hdl:constraint": {
+        "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-z-zero"
+      },
+      "cstr-hdl:error": {
+        "@id": "app:twist-ee-base.angular.z-err"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-err-ang-z",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularAcceleration"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularAcceleration"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.linear.z-touch_down",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.linear.z-touch_down"
+      },
+      "slv:axis": {
+        "@id": "slv:z"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    },
+    {
+      "@id": "app:view-twist-ee-base.linear.z",
+      "@type": [
+        "map:View",
+        "map:VelocityTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:z"
+      },
+      "map:subobject": {
+        "@id": "app:twist-ee-base.linear.z"
+      },
+      "map:subspace": {
+        "@id": "map:linear-velocity"
+      },
+      "map:superobject": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/twist-ee-base"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/pose-ee-base",
+      "@type": [
+        "geom-rel:Pose",
+        "geom-coord:PoseCoordinate",
+        "geom-coord:DirectionCosineXYZ",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:as-seen-by": {
+        "@id": "app:frame-base"
+      },
+      "geom-rel:of": {
+        "@id": "app:frame-ee"
+      },
+      "geom-rel:with-respect-to": {
+        "@id": "app:frame-base"
+      },
+      "qudt:quantity-kind": [
+        {
+          "@id": "qkind:PlaneAngle"
+        },
+        {
+          "@id": "qkind:Length"
+        }
+      ],
+      "qudt:unit": [
+        {
+          "@id": "unit:UNITLESS"
+        },
+        {
+          "@id": "unit:M"
+        }
+      ]
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-lin-y-zero",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.linear.y"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.linear.y-err"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "app:view-pose-start-ee.distance.x",
+      "@type": [
+        "map:View",
+        "map:PoseCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:x"
+      },
+      "map:subobject": {
+        "@id": "app:pose-start-ee.distance.x"
+      },
+      "map:subspace": {
+        "@id": "map:position"
+      },
+      "map:superobject": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/World/world/pose-start-ee"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-err-lin-z",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearAcceleration"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearAcceleration"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-err-ang-x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AngularAcceleration"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AngularAcceleration"
+      },
+      "qudt:unit": {
+        "@id": "unit:RAD-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.z-err",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/World/world/pose-table-ee",
+      "@type": [
+        "geom-rel:Pose",
+        "geom-coord:PoseCoordinate",
+        "geom-coord:DirectionCosineXYZ",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:as-seen-by": {
+        "@id": "app:frame-table"
+      },
+      "geom-rel:of": {
+        "@id": "app:frame-ee"
+      },
+      "geom-rel:with-respect-to": {
+        "@id": "app:frame-table"
+      },
+      "qudt:quantity-kind": [
+        {
+          "@id": "qkind:PlaneAngle"
+        },
+        {
+          "@id": "qkind:Length"
+        }
+      ],
+      "qudt:unit": [
+        {
+          "@id": "unit:UNITLESS"
+        },
+        {
+          "@id": "unit:M"
+        }
+      ]
+    },
+    {
+      "@id": "app:view-twist-ee-base.linear.y",
+      "@type": [
+        "map:View",
+        "map:VelocityTwistCoordinateView"
+      ],
+      "map:axis": {
+        "@id": "map:y"
+      },
+      "map:subobject": {
+        "@id": "app:twist-ee-base.linear.y"
+      },
+      "map:subspace": {
+        "@id": "map:linear-velocity"
+      },
+      "map:superobject": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/World/world/twist-ee-base"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-lin-x-zero",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.linear.x"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.linear.x-err"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/until/reached-table-clearance",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:DistanceConstraint",
+        "cstr:UnilateralConstraint",
+        "cstr:GreaterThanConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:pose-table-ee.distance"
+      },
+      "cstr:threshold": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_up_30cm_from_table/Spec/spec/table-clearance"
+      }
+    },
+    {
+      "@id": "app:ctrl-hold-pose-ang-y",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-ctrl-hold-pose-ang-y"
+      },
+      "cstr-hdl:derivative-gain": "0.4",
+      "cstr-hdl:error-signal": {
+        "@id": "app:ctrl-hold-pose-err-ang-y"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "4.0"
+    },
+    {
+      "@id": "app:acc-cstr-ctrl-hold-pose-lin-y",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-ctrl-hold-pose-lin-y"
+      },
+      "slv:axis": {
+        "@id": "slv:y"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    },
+    {
+      "@id": "app:twist-ee-base.linear.y-err",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearVelocity"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearVelocity"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/World/world/pose-start-ee",
+      "@type": [
+        "geom-rel:Pose",
+        "geom-coord:PoseCoordinate",
+        "geom-coord:DirectionCosineXYZ",
+        "geom-coord:VectorXYZ"
+      ],
+      "geom-coord:as-seen-by": {
+        "@id": "app:frame-ee-start"
+      },
+      "geom-rel:of": {
+        "@id": "app:frame-ee"
+      },
+      "geom-rel:with-respect-to": {
+        "@id": "app:frame-ee-start"
+      },
+      "qudt:quantity-kind": [
+        {
+          "@id": "qkind:PlaneAngle"
+        },
+        {
+          "@id": "qkind:Length"
+        }
+      ],
+      "qudt:unit": [
+        {
+          "@id": "unit:UNITLESS"
+        },
+        {
+          "@id": "unit:M"
+        }
+      ]
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/touch_down/while/keep-ang-z-zero",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:AngularVelocityConstraint",
+        "cstr:EqualityConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:twist-ee-base.angular.z"
+      },
+      "cstr:reference-value": {
+        "@id": "https://secorolab.github.io/models/table-sequence/idle/Spec/spec/zero-angvel"
+      }
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/handler_touch_down/ctrl-keep-ang-y-zero",
+      "@type": [
+        "cstr-hdl:Controller",
+        "cstr-hdl:ProportionalIntegralDerivative"
+      ],
+      "cstr-hdl:control-signal": {
+        "@id": "app:eacc-twist-ee-base.angular.y"
+      },
+      "cstr-hdl:derivative-gain": "0.1",
+      "cstr-hdl:error-signal": {
+        "@id": "app:twist-ee-base.angular.y-err"
+      },
+      "cstr-hdl:integral-gain": "0.0",
+      "cstr-hdl:proportional-gain": "1.0"
+    },
+    {
+      "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/until/reached-forward-distance",
+      "@type": [
+        "cstr:Constraint",
+        "cstr:DistanceConstraint",
+        "cstr:UnilateralConstraint",
+        "cstr:GreaterThanConstraint"
+      ],
+      "cstr:quantity": {
+        "@id": "app:pose-start-ee.distance.x"
+      },
+      "cstr:threshold": {
+        "@id": "https://secorolab.github.io/models/table-sequence/move_forward_15cm/Spec/spec/forward-distance"
+      }
+    },
+    {
+      "@id": "app:spec-acc-move_up_30cm_from_table",
+      "@type": "slv:AccelerationConstraintSpecification",
+      "slv:constraints": [
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.z-move_up_30cm_from_table"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.x"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.linear.y"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.x"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.y"
+        },
+        {
+          "@id": "app:acc-cstr-twist-ee-base.angular.z"
+        }
+      ]
+    },
+    {
+      "@id": "app:ctrl-hold-pose-err-lin-y",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:LinearAcceleration"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:LinearAcceleration"
+      },
+      "qudt:unit": {
+        "@id": "unit:M-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:forward-distance-reached",
+      "@type": "cstr-hdl:Event"
+    },
+    {
+      "@id": "app:eacc-ctrl-hold-pose-ang-x",
+      "@type": [
+        "qudt:Quantity",
+        "qkind:AccelerationEnergy"
+      ],
+      "qudt:quantity-kind": {
+        "@id": "qkind:AccelerationEnergy"
+      },
+      "qudt:unit": {
+        "@id": "unit:N-M2-PER-SEC2"
+      }
+    },
+    {
+      "@id": "app:acc-cstr-twist-ee-base.linear.x",
+      "@type": [
+        "slv:AccelerationConstraint",
+        "slv:AxisAligned"
+      ],
+      "slv:acceleration-energy": {
+        "@id": "app:eacc-twist-ee-base.linear.x"
+      },
+      "slv:axis": {
+        "@id": "slv:x"
+      },
+      "slv:subspace": {
+        "@id": "slv:linear-acceleration"
+      }
+    }
+  ]
+}

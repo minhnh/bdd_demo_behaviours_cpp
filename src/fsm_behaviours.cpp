@@ -26,7 +26,7 @@ bcb::MockupCollabBehaviour::MockupCollabBehaviour(rclcpp::Time pNow, uint pHeart
 
 void bcb::MockupCollabBehaviour::step(
   std::shared_ptr<rclcpp::Node> pNodePtr,
-  const struct fsm_nbx         *pFsmPtr
+  struct fsm_nbx               *pFsmPtr
 )
 {
     auto now = pNodePtr->get_clock()->now();

@@ -14,10 +14,10 @@
 
 #include <chrono>
 #include <csignal>
-#include <format>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <sstream>
 #include <rclcpp/logging.hpp>
 #include <stdexcept>
 #include <string>
@@ -39,6 +39,24 @@
 
 namespace bcb = bdd_collab_bhv;
 
+namespace {
+
+std::string invalid_exec_context_message(const std::string &exec_ctx)
+{
+    std::ostringstream oss;
+    oss << "Invalid 'exec_context' param: '" << exec_ctx << "'";
+    return oss.str();
+}
+
+std::string unhandled_exec_context_message(bcb::ExecutionType exec_ctx)
+{
+    std::ostringstream oss;
+    oss << "Unhandled execution context type: '" << bcb::exec_type_to_str(exec_ctx) << "'";
+    return oss.str();
+}
+
+} // namespace
+
 bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOptions)
   : rclcpp::Node("human_pickplace_mockup_node", pOptions), mFsmPtr(create_fsm(), &destroy_fsm)
 {
@@ -55,7 +73,7 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
     } else if (execCtxStr.compare("real") == 0) {
         mExecCtx = ExecutionType::RealRobot;
     } else {
-        throw std::runtime_error(std::format("Invalid 'exec_context' param: '{}'", execCtxStr));
+        throw std::runtime_error(invalid_exec_context_message(execCtxStr));
     }
     RCLCPP_INFO(this->get_logger(), "Execution context: %s", execCtxStr.c_str());
 
@@ -139,13 +157,12 @@ void bcb::CollabPickplaceNode::fsm_loop()
         bhvInfPtr = std::make_unique<MockupCollabBehaviour>(now, HEARTBEAT_MILI_SECS);
         break;
     default:
-        throw std::runtime_error(
-          std::format("Unhandled execution context type: '{}'", exec_type_to_str(mExecCtx))
-        );
+        throw std::runtime_error(unhandled_exec_context_message(mExecCtx));
     }
 
     while (rclcpp::ok() && mFsmLoopRunning.load(std::memory_order_acquire)) {
         if (!processingGoal) {
+            std::lock_guard<std::mutex> lock(mGoalMutex);
             activeGoal = std::move(mPendingGoal);
             mPendingGoal.reset();
         }
@@ -164,9 +181,7 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 activeGoal.reset();
             }
 
-            if (mFsmPtr->currentStateIndex == S_IDLE) {
-                mFsmIdle.store(true, std::memory_order_release);
-            }
+            mFsmIdle.store(mFsmPtr->currentStateIndex == S_IDLE, std::memory_order_release);
 
             // Behaviour & FSM update
             bhvInfPtr->step(nodePtr, mFsmPtr.get());

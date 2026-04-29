@@ -14,6 +14,9 @@
 
 #include "bdd_collab_bhv_cpp/conversions.hpp"
 
+#include <iomanip>
+#include <sstream>
+
 std::string uuid_to_hex(const unique_identifier_msgs::msg::UUID &pUUIDMsg)
 {
     std::ostringstream oss;
