@@ -133,14 +133,19 @@ inline void control_motion_move_up_30cm_from_table(
     KDL::SetToZero(state.arm_solver.f_cstr);
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Linear, motion_spec::runtime::Axis::Z), 0) = 1.0;
     state.arm_solver.e_acc(0) = shared.eacc_twist_ee_base_linear_z_move_up_30cm_from_table;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Linear, motion_spec::runtime::Axis::X), 1) = 1.0;
     state.arm_solver.e_acc(1) = shared.eacc_twist_ee_base_linear_x;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Linear, motion_spec::runtime::Axis::Y), 2) = 1.0;
     state.arm_solver.e_acc(2) = shared.eacc_twist_ee_base_linear_y;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Angular, motion_spec::runtime::Axis::X), 3) = 1.0;
     state.arm_solver.e_acc(3) = shared.eacc_twist_ee_base_angular_x;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Angular, motion_spec::runtime::Axis::Y), 4) = 1.0;
     state.arm_solver.e_acc(4) = shared.eacc_twist_ee_base_angular_y;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Angular, motion_spec::runtime::Axis::Z), 5) = 1.0;
     state.arm_solver.e_acc(5) = shared.eacc_twist_ee_base_angular_z;
     KDL::Wrenches f_ext_zero_arm_solver(state.arm_solver.num_segments);

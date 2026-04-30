@@ -107,14 +107,19 @@ inline void control_motion_idle(
     KDL::SetToZero(state.arm_solver.f_cstr);
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Linear, motion_spec::runtime::Axis::X), 0) = 1.0;
     state.arm_solver.e_acc(0) = shared.eacc_ctrl_hold_pose_lin_x;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Linear, motion_spec::runtime::Axis::Y), 1) = 1.0;
     state.arm_solver.e_acc(1) = shared.eacc_ctrl_hold_pose_lin_y;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Linear, motion_spec::runtime::Axis::Z), 2) = 1.0;
     state.arm_solver.e_acc(2) = shared.eacc_ctrl_hold_pose_lin_z;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Angular, motion_spec::runtime::Axis::X), 3) = 1.0;
     state.arm_solver.e_acc(3) = shared.eacc_ctrl_hold_pose_ang_x;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Angular, motion_spec::runtime::Axis::Y), 4) = 1.0;
     state.arm_solver.e_acc(4) = shared.eacc_ctrl_hold_pose_ang_y;
+
     state.arm_solver.f_cstr(motion_spec::runtime::constraint_row(motion_spec::runtime::Subspace::Angular, motion_spec::runtime::Axis::Z), 5) = 1.0;
     state.arm_solver.e_acc(5) = shared.eacc_ctrl_hold_pose_ang_z;
     KDL::Wrenches f_ext_zero_arm_solver(state.arm_solver.num_segments);
