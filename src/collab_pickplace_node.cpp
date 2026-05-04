@@ -154,12 +154,53 @@ void bcb::CollabPickplaceNode::fsm_loop()
             std::lock_guard<std::mutex> lockFsm(mFsmMutex);
             produce_event(mFsmPtr->eventData, E_STEP);
 
+            auto response                        = std::make_shared<Behaviour::Result>();
+            response->result.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
+            auto feedback                        = std::make_shared<Behaviour::Feedback>();
+            feedback->scenario_context_id        = activeGoal->mGoalCopy.scenario_context_id;
+
             // Goal handling
             if (activeGoal && !processingGoal) {
                 produce_event(mFsmPtr->eventData, E_NEW_GOAL);
                 processingGoal = true;
             }
-            if (consume_event(mFsmPtr->eventData, E_GOAL_FINISHED)) {
+            if (activeGoal && consume_event(mFsmPtr->eventData, E_GOAL_FINISHED)) {
+                response->result.stamp         = this->get_clock()->now();
+                response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
+                RCLCPP_INFO(
+                  this->get_logger(),
+                  "Goal finished: %s",
+                  uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
+                );
+
+                auto goal_handle = activeGoal->mGoalHandlerPtr;
+                if (goal_handle) {
+                    goal_handle->succeed(response);
+                    RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+                }
+
+                processingGoal = false;
+                activeGoal.reset();
+            }
+
+            if (mCancelRequested.load(std::memory_order_acquire)) {
+                produce_event(mFsmPtr->eventData, E_GOAL_CANCELLED);
+                mCancelRequested.store(false, std::memory_order_release);
+                RCLCPP_INFO(
+                  this->get_logger(),
+                  "Goal cancel requested: %s",
+                  uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
+                );
+
+                response->result.stamp         = this->get_clock()->now();
+                response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::FALSE;
+
+                auto goal_handle = activeGoal->mGoalHandlerPtr;
+                if (goal_handle) {
+                    goal_handle->canceled(response);
+                    RCLCPP_INFO(this->get_logger(), "Goal cancelled");
+                }
+
                 processingGoal = false;
                 activeGoal.reset();
             }
