@@ -133,6 +133,9 @@ void bcb::CollabPickplaceNode::fsm_loop()
     auto now     = this->get_clock()->now();
     auto nxtTick = now + period;
 
+    auto heartbeatPeriod = rclcpp::Duration(std::chrono::milliseconds(HEARTBEAT_MILI_SECS));
+    auto nextHeartbeat   = now + heartbeatPeriod;
+
     std::unique_ptr<BehaviourInterface> bhvInfPtr = nullptr;
     switch (mExecCtx) {
     case ExecutionType::Mockup:
@@ -145,6 +148,8 @@ void bcb::CollabPickplaceNode::fsm_loop()
     }
 
     while (rclcpp::ok() && mFsmLoopRunning.load(std::memory_order_acquire)) {
+        now = this->get_clock()->now();
+
         if (!processingGoal) {
             activeGoal = std::move(mPendingGoal);
             mPendingGoal.reset();
@@ -167,17 +172,9 @@ void bcb::CollabPickplaceNode::fsm_loop()
             if (activeGoal && consume_event(mFsmPtr->eventData, E_GOAL_FINISHED)) {
                 response->result.stamp         = this->get_clock()->now();
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
-                RCLCPP_INFO(
-                  this->get_logger(),
-                  "Goal finished: %s",
-                  uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
-                );
 
                 auto goal_handle = activeGoal->mGoalHandlerPtr;
-                if (goal_handle) {
-                    goal_handle->succeed(response);
-                    RCLCPP_INFO(this->get_logger(), "Goal succeeded");
-                }
+                if (goal_handle) { goal_handle->succeed(response); }
 
                 processingGoal = false;
                 activeGoal.reset();
@@ -196,13 +193,20 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::FALSE;
 
                 auto goal_handle = activeGoal->mGoalHandlerPtr;
-                if (goal_handle) {
-                    goal_handle->canceled(response);
-                    RCLCPP_INFO(this->get_logger(), "Goal cancelled");
-                }
+                if (goal_handle) { goal_handle->canceled(response); }
 
                 processingGoal = false;
                 activeGoal.reset();
+            }
+
+            if (now >= nextHeartbeat && activeGoal && processingGoal) {
+                feedback->status = std::format(
+                  "current state: {}", mFsmPtr->states[mFsmPtr->currentStateIndex].name
+                );
+
+                auto goal_handle = activeGoal->mGoalHandlerPtr;
+                if (goal_handle) { goal_handle->publish_feedback(feedback); }
+                while (nextHeartbeat < now) nextHeartbeat += heartbeatPeriod;
             }
 
             if (mFsmPtr->currentStateIndex == S_IDLE) {
