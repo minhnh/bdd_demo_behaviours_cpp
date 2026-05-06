@@ -8,7 +8,9 @@
  * Usage example:
  * -----------------------------------------------------
 
-#include "collab_pickplace.fsm.hpp"
+#include "coord2b/functions/event_loop.h"
+#include "coord2b/functions/fsm.h"
+#include "collab_pickplace.hpp"
 
 struct user_data {
 
@@ -17,11 +19,11 @@ struct user_data {
 void yyyy_behavior(struct user_data *userData, struct events *eventData) {
     // ... do something
 
-    produce_event(eventData, E_ZZZZ);
+    produce_event(eventData, collab_pickplace::E_ZZZZ);
 }
 
 void fsm_behavior(struct events *eventData, struct user_data *userData) {
-    if (consume_event(eventData, E_XXXX)) {
+    if (consume_event(eventData, collab_pickplace::E_XXXX)) {
         yyyy_behavior(userData, eventData);
     }
     ...
@@ -30,11 +32,11 @@ void fsm_behavior(struct events *eventData, struct user_data *userData) {
 int main() {
 
     struct user_data userData = {};
-    struct fsm_nbx *fsm = create_fsm();
+    struct fsm_nbx *fsm = collab_pickplace::create_fsm();
     if (!fsm) return 1;
 
     while (true) {
-        produce_event(fsm->eventData, E_STEP);
+        produce_event(fsm->eventData, collab_pickplace::E_STEP);
 
         // run state machine, event loop
         fsm_behavior(fsm->eventData, &userData);
@@ -42,19 +44,22 @@ int main() {
         reconfig_event_buffers(fsm->eventData);
     }
 
-    destroy_fsm(fsm);
+    collab_pickplace::destroy_fsm(fsm);
     return 0;
 }
 
  * -----------------------------------------------------
  */
 
-#ifndef COLLAB_PICKPLACE_FSM_HPP
-#define COLLAB_PICKPLACE_FSM_HPP
+#ifndef COLLAB_PICKPLACE_HPP
+#define COLLAB_PICKPLACE_HPP
 
 #include "coord2b/types/fsm.h"
 #include "coord2b/types/event_loop.h"
 #include <new>
+
+
+namespace collab_pickplace {
 
 struct fsm_nbx *create_fsm();
 void            destroy_fsm(struct fsm_nbx *fsm);
@@ -73,6 +78,18 @@ enum e_states {
     NUM_STATES
 };
 
+static constexpr const char *STATE_URIS[NUM_STATES] = {
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_START",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_IDLE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_TOUCH_TABLE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_SLIDE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_GRASP",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_COLLAB_MOVE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_RELEASE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_RECOVER",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/S_EXIT",
+};
+
 // sm events
 enum e_events {
     E_PICK_APPROACH_START = 0,
@@ -88,6 +105,21 @@ enum e_events {
     E_STOP,
     E_STEP,
     NUM_EVENTS
+};
+
+static constexpr const char *EVENT_URIS[NUM_EVENTS] = {
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_PICK_APPROACH_START",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_NEW_GOAL",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_TABLE_TOUCHED",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_OBJ_REACHED",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_GRASP_DONE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_PLACE_REACHED",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_RELEASE_DONE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_RECOVER_DONE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_GOAL_CANCELLED",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_GOAL_FINISHED",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_STOP",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/E_STEP",
 };
 
 // sm transitions
@@ -113,6 +145,27 @@ enum e_transitions {
     NUM_TRANSITIONS
 };
 
+static constexpr const char *TRANSITION_URIS[NUM_TRANSITIONS] = {
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_START_IDLE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_IDLE_SELF",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_IDLE_TOUCH",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_IDLE_EXIT",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_TOUCH_SELF",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_TOUCH_SLIDE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_TOUCH_RECOVER",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_SLIDE_SLIDE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_SLIDE_GRASP",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_SLIDE_RECOVER",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_GRASP_SELF",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_GRASP_COL_MOVE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_COL_MOVE_SELF",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_COL_MOVE_RELEASE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_RELEASE_SELF",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_RELEASE_RECOVER",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_RECOVER_SELF",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/T_RECOVER_IDLE",
+};
+
 // sm reactions
 enum e_reactions {
     R_E_NEW_GOAL = 0,
@@ -135,6 +188,28 @@ enum e_reactions {
     R_E_STEP_RELEASE,
     R_E_STEP_RECOVER,
     NUM_REACTIONS
+};
+
+static constexpr const char *REACTION_URIS[NUM_REACTIONS] = {
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_NEW_GOAL",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_TABLE_TOUCHED",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_OBJ_REACHED",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_GRASP_DONE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_PLACE_REACHED",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_RELEASE_DONE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_RECOVER_DONE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_CANCEL_TOUCH",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_CANCEL_SLIDE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_CANCEL_COL_MOVE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STOP_IDLE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STEP_START",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STEP_IDLE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STEP_TOUCH",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STEP_SLIDE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STEP_GRASP",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STEP_COL_MOVE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STEP_RELEASE",
+    "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/R_E_STEP_RECOVER",
 };
 
 inline struct fsm_nbx *create_fsm()
@@ -247,35 +322,30 @@ inline struct fsm_nbx *create_fsm()
           .transitionIndex     = T_TOUCH_SLIDE,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_OBJ_REACHED,
           .transitionIndex     = T_SLIDE_GRASP,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_GRASP_DONE,
           .transitionIndex     = T_GRASP_COL_MOVE,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_PLACE_REACHED,
           .transitionIndex     = T_COL_MOVE_RELEASE,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_RELEASE_DONE,
           .transitionIndex     = T_RELEASE_RECOVER,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_RECOVER_DONE,
@@ -288,84 +358,72 @@ inline struct fsm_nbx *create_fsm()
           .transitionIndex     = T_TOUCH_RECOVER,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_GOAL_CANCELLED,
           .transitionIndex     = T_SLIDE_RECOVER,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_GOAL_CANCELLED,
           .transitionIndex     = T_COL_MOVE_RELEASE,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STOP,
           .transitionIndex     = T_IDLE_EXIT,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STEP,
           .transitionIndex     = T_START_IDLE,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STEP,
           .transitionIndex     = T_IDLE_SELF,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STEP,
           .transitionIndex     = T_TOUCH_SELF,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STEP,
           .transitionIndex     = T_SLIDE_SLIDE,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STEP,
           .transitionIndex     = T_GRASP_SELF,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STEP,
           .transitionIndex     = T_COL_MOVE_SELF,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STEP,
           .transitionIndex     = T_RELEASE_SELF,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         },
         {
           .conditionEventIndex = E_STEP,
           .transitionIndex     = T_RECOVER_SELF,
           .numFiredEvents      = 0,
           .firedEventIndices   = nullptr,
-
         }
     };
 
@@ -444,4 +502,6 @@ inline void destroy_fsm(struct fsm_nbx *fsm)
     delete fsm;
 }
 
-#endif // COLLAB_PICKPLACE_FSM_HPP
+} // namespace collab_pickplace
+
+#endif // COLLAB_PICKPLACE_HPP

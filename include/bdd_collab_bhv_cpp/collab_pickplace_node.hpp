@@ -24,7 +24,7 @@
 #include <string_view>
 #include <thread>
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
-#include "bdd_collab_bhv_cpp/collab_pickplace.fsm.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace.hpp"
 
 namespace bdd_collab_bhv {
 
@@ -78,7 +78,7 @@ class CollabPickplaceNode : public rclcpp::Node
 
     // Use unique_ptr to automatically handle mem cleanup in destructor.
     // Should only by modified in fsm_loop().
-    std::unique_ptr<fsm_nbx, decltype(&destroy_fsm)> mFsmPtr;
+    std::unique_ptr<fsm_nbx, decltype(&collab_pickplace::destroy_fsm)> mFsmPtr;
 
     // Functions
     void fsm_loop();
