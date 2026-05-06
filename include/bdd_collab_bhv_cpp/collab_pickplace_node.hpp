@@ -59,6 +59,10 @@ class CollabPickplaceNode : public rclcpp::Node
   private:
     rclcpp_action::Server<Behaviour>::SharedPtr mBhvServerPtr;
 
+    rclcpp::Publisher<bdd_ros2_interfaces::msg::TrinaryStamped>::SharedPtr mLocatedPickPublisher;
+    rclcpp::Publisher<bdd_ros2_interfaces::msg::TrinaryStamped>::SharedPtr mIsHeldPublisher;
+    rclcpp::Publisher<bdd_ros2_interfaces::msg::TrinaryStamped>::SharedPtr mLocatedPlacePublisher;
+
     std::thread   mFsmThread;
     std::mutex    mFsmMutex;
     std::mutex    mGoalMutex;

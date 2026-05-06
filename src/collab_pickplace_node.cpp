@@ -37,6 +37,10 @@
 #define TICK_MILI_SECS 1        // 1kHz
 #define HEARTBEAT_MILI_SECS 500 // 2Hz
 
+#define TOPIC_LOCATED_PICK "/obs_policy/located_at_pick_ws"
+#define TOPIC_IS_HELD "/obs_policy/is_held"
+#define TOPIC_LOCATED_PLACE "/obs_policy/located_at_place_ws"
+
 namespace bcb = bdd_collab_bhv;
 
 bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOptions)
@@ -105,6 +109,16 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
     mBhvServerPtr                = rclcpp_action::create_server<Behaviour>(
       this, serverName, goalHandler, cancelHandler, accepted_handler
     );
+
+    mLocatedPickPublisher = this->create_publisher<bdd_ros2_interfaces::msg::TrinaryStamped>(
+      TOPIC_LOCATED_PICK, rclcpp::QoS(10)
+    );
+    mIsHeldPublisher = this->create_publisher<bdd_ros2_interfaces::msg::TrinaryStamped>(
+      TOPIC_IS_HELD, rclcpp::QoS(10)
+    );
+    mLocatedPlacePublisher = this->create_publisher<bdd_ros2_interfaces::msg::TrinaryStamped>(
+      TOPIC_LOCATED_PLACE, rclcpp::QoS(10)
+    );
 }
 
 void bcb::CollabPickplaceNode::start_fsm()
@@ -165,6 +179,11 @@ void bcb::CollabPickplaceNode::fsm_loop()
             auto feedback                        = std::make_shared<Behaviour::Feedback>();
             feedback->scenario_context_id        = activeGoal->mGoalCopy.scenario_context_id;
 
+            bdd_ros2_interfaces::msg::TrinaryStamped trinaryMsg;
+            trinaryMsg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
+            trinaryMsg.stamp               = now;
+            trinaryMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
+
             // Goal handling
             if (activeGoal && !processingGoal) {
                 produce_event(mFsmPtr->eventData, collab_pickplace::E_NEW_GOAL);
@@ -209,6 +228,15 @@ void bcb::CollabPickplaceNode::fsm_loop()
 
                 auto goal_handle = activeGoal->mGoalHandlerPtr;
                 if (goal_handle) { goal_handle->publish_feedback(feedback); }
+
+                if (mFsmPtr->currentStateIndex == collab_pickplace::S_TOUCH_TABLE) {
+                    mLocatedPickPublisher->publish(trinaryMsg);
+                } else if (mFsmPtr->currentStateIndex == collab_pickplace::S_GRASP) {
+                    mIsHeldPublisher->publish(trinaryMsg);
+                } else if (mFsmPtr->currentStateIndex == collab_pickplace::S_RELEASE) {
+                    mLocatedPlacePublisher->publish(trinaryMsg);
+                }
+
                 while (nextHeartbeat < now) nextHeartbeat += heartbeatPeriod;
             }
 
