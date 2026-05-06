@@ -15,7 +15,7 @@
 #include <chrono>
 #include <rclcpp/rclcpp.hpp>
 #include "coord2b/functions/event_loop.h"
-#include "bdd_collab_bhv_cpp/collab_pickplace.fsm.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace.hpp"
 #include "bdd_collab_bhv_cpp/fsm_behaviours.hpp"
 
 namespace bcb = bdd_collab_bhv;
@@ -36,17 +36,17 @@ void bcb::MockupCollabBehaviour::step(
       pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name
     );
 
-    if (pFsmPtr->currentStateIndex == S_TOUCH_TABLE) {
-        produce_event(pFsmPtr->eventData, E_TABLE_TOUCHED);
-    } else if (pFsmPtr->currentStateIndex == S_SLIDE) {
-        produce_event(pFsmPtr->eventData, E_OBJ_REACHED);
-    } else if (pFsmPtr->currentStateIndex == S_GRASP) {
-        produce_event(pFsmPtr->eventData, E_GRASP_DONE);
-    } else if (pFsmPtr->currentStateIndex == S_COLLAB_MOVE) {
-        produce_event(pFsmPtr->eventData, E_PLACE_REACHED);
-    } else if (pFsmPtr->currentStateIndex == S_RELEASE) {
-        produce_event(pFsmPtr->eventData, E_RELEASE_DONE);
-    } else if (pFsmPtr->currentStateIndex == S_RECOVER) {
-        produce_event(pFsmPtr->eventData, E_RECOVER_DONE);
+    if (pFsmPtr->currentStateIndex == collab_pickplace::S_TOUCH_TABLE) {
+        produce_event(pFsmPtr->eventData, collab_pickplace::E_TABLE_TOUCHED);
+    } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_SLIDE) {
+        produce_event(pFsmPtr->eventData, collab_pickplace::E_OBJ_REACHED);
+    } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_GRASP) {
+        produce_event(pFsmPtr->eventData, collab_pickplace::E_GRASP_DONE);
+    } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_COLLAB_MOVE) {
+        produce_event(pFsmPtr->eventData, collab_pickplace::E_PLACE_REACHED);
+    } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_RELEASE) {
+        produce_event(pFsmPtr->eventData, collab_pickplace::E_RELEASE_DONE);
+    } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_RECOVER) {
+        produce_event(pFsmPtr->eventData, collab_pickplace::E_RECOVER_DONE);
     }
 }
