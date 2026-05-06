@@ -26,7 +26,7 @@
 #include <rclcpp_action/server.hpp>
 #include <rclcpp/utilities.hpp>
 #include <utility>
-#include "bdd_collab_bhv_cpp/collab_pickplace.fsm.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace.hpp"
 #include "coord2b/functions/event_loop.h"
 #include "coord2b/functions/fsm.h"
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
@@ -40,7 +40,8 @@
 namespace bcb = bdd_collab_bhv;
 
 bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOptions)
-  : rclcpp::Node("human_pickplace_mockup_node", pOptions), mFsmPtr(create_fsm(), &destroy_fsm)
+  : rclcpp::Node("human_pickplace_mockup_node", pOptions),
+    mFsmPtr(collab_pickplace::create_fsm(), &collab_pickplace::destroy_fsm)
 {
     if (!mFsmPtr) throw std::runtime_error("FSM creation failed");
 
@@ -152,19 +153,19 @@ void bcb::CollabPickplaceNode::fsm_loop()
 
         {
             std::lock_guard<std::mutex> lockFsm(mFsmMutex);
-            produce_event(mFsmPtr->eventData, E_STEP);
+            produce_event(mFsmPtr->eventData, collab_pickplace::E_STEP);
 
             // Goal handling
             if (activeGoal && !processingGoal) {
-                produce_event(mFsmPtr->eventData, E_NEW_GOAL);
+                produce_event(mFsmPtr->eventData, collab_pickplace::E_NEW_GOAL);
                 processingGoal = true;
             }
-            if (consume_event(mFsmPtr->eventData, E_GOAL_FINISHED)) {
+            if (consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED)) {
                 processingGoal = false;
                 activeGoal.reset();
             }
 
-            if (mFsmPtr->currentStateIndex == S_IDLE) {
+            if (mFsmPtr->currentStateIndex == collab_pickplace::S_IDLE) {
                 mFsmIdle.store(true, std::memory_order_release);
             }
 
