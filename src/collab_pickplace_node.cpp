@@ -51,6 +51,7 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
 
     declare_parameter<std::string>("bhv_server_name", "bhv_server");
     declare_parameter<std::string>("exec_context", "mockup");
+    declare_parameter<std::string>("event_topic", "/bdd/events");
 
     auto execCtxStr = get_parameter("exec_context").as_string();
     if (execCtxStr.compare("mockup") == 0) {
@@ -110,15 +111,14 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
       this, serverName, goalHandler, cancelHandler, accepted_handler
     );
 
-    mLocatedPickPublisher = this->create_publisher<bdd_ros2_interfaces::msg::TrinaryStamped>(
-      TOPIC_LOCATED_PICK, rclcpp::QoS(10)
-    );
-    mIsHeldPublisher = this->create_publisher<bdd_ros2_interfaces::msg::TrinaryStamped>(
-      TOPIC_IS_HELD, rclcpp::QoS(10)
-    );
-    mLocatedPlacePublisher = this->create_publisher<bdd_ros2_interfaces::msg::TrinaryStamped>(
-      TOPIC_LOCATED_PLACE, rclcpp::QoS(10)
-    );
+    const std::string eventTopic = get_parameter("event_topic").as_string();
+    mEventPublisher              = this->create_publisher<Event>(eventTopic, rclcpp::QoS(10));
+
+    mLocatedPickPublisher =
+      this->create_publisher<TrinaryStamped>(TOPIC_LOCATED_PICK, rclcpp::QoS(10));
+    mIsHeldPublisher = this->create_publisher<TrinaryStamped>(TOPIC_IS_HELD, rclcpp::QoS(10));
+    mLocatedPlacePublisher =
+      this->create_publisher<TrinaryStamped>(TOPIC_LOCATED_PLACE, rclcpp::QoS(10));
 }
 
 void bcb::CollabPickplaceNode::start_fsm()
@@ -179,7 +179,7 @@ void bcb::CollabPickplaceNode::fsm_loop()
             auto feedback                        = std::make_shared<Behaviour::Feedback>();
             feedback->scenario_context_id        = activeGoal->mGoalCopy.scenario_context_id;
 
-            bdd_ros2_interfaces::msg::TrinaryStamped trinaryMsg;
+            TrinaryStamped trinaryMsg;
             trinaryMsg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
             trinaryMsg.stamp               = now;
             trinaryMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;

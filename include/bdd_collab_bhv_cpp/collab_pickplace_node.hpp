@@ -24,6 +24,8 @@
 #include <string_view>
 #include <thread>
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
+#include "bdd_ros2_interfaces/msg/event.hpp"
+#include "bdd_ros2_interfaces/msg/trinary_stamped.hpp"
 #include "bdd_collab_bhv_cpp/collab_pickplace_fsm.hpp"
 
 namespace bdd_collab_bhv {
@@ -49,6 +51,8 @@ class CollabPickplaceNode : public rclcpp::Node
   public:
     using Behaviour           = bdd_ros2_interfaces::action::Behaviour;
     using GoalHandleBehaviour = rclcpp_action::ServerGoalHandle<Behaviour>;
+    using Event               = bdd_ros2_interfaces::msg::Event;
+    using TrinaryStamped      = bdd_ros2_interfaces::msg::TrinaryStamped;
 
     explicit CollabPickplaceNode(const rclcpp::NodeOptions &pOptions = rclcpp::NodeOptions());
 
@@ -59,9 +63,11 @@ class CollabPickplaceNode : public rclcpp::Node
   private:
     rclcpp_action::Server<Behaviour>::SharedPtr mBhvServerPtr;
 
-    rclcpp::Publisher<bdd_ros2_interfaces::msg::TrinaryStamped>::SharedPtr mLocatedPickPublisher;
-    rclcpp::Publisher<bdd_ros2_interfaces::msg::TrinaryStamped>::SharedPtr mIsHeldPublisher;
-    rclcpp::Publisher<bdd_ros2_interfaces::msg::TrinaryStamped>::SharedPtr mLocatedPlacePublisher;
+    rclcpp::Publisher<Event>::SharedPtr mEventPublisher;
+
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPickPublisher;
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mIsHeldPublisher;
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPlacePublisher;
 
     std::thread   mFsmThread;
     std::mutex    mFsmMutex;
