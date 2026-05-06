@@ -24,7 +24,7 @@
 #include <string_view>
 #include <thread>
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
-#include "bdd_collab_bhv_cpp/collab_pickplace.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace_fsm.hpp"
 
 namespace bdd_collab_bhv {
 

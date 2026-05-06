@@ -26,7 +26,7 @@
 #include <rclcpp_action/server.hpp>
 #include <rclcpp/utilities.hpp>
 #include <utility>
-#include "bdd_collab_bhv_cpp/collab_pickplace.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace_fsm.hpp"
 #include "coord2b/functions/event_loop.h"
 #include "coord2b/functions/fsm.h"
 #include "bdd_ros2_interfaces/action/behaviour.hpp"

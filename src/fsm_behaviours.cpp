@@ -15,7 +15,7 @@
 #include <chrono>
 #include <rclcpp/rclcpp.hpp>
 #include "coord2b/functions/event_loop.h"
-#include "bdd_collab_bhv_cpp/collab_pickplace.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace_fsm.hpp"
 #include "bdd_collab_bhv_cpp/fsm_behaviours.hpp"
 
 namespace bcb = bdd_collab_bhv;
