@@ -184,6 +184,17 @@ void bcb::CollabPickplaceNode::fsm_loop()
             trinaryMsg.stamp               = now;
             trinaryMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
 
+            // Event publishing
+            for (unsigned int evt : CollabPickplaceNode::EXPORTED_EVENTS) {
+                if (consume_event(mFsmPtr->eventData, evt)) {
+                    Event evt_msg;
+                    evt_msg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
+                    evt_msg.stamp               = now;
+                    evt_msg.uri                 = collab_pickplace::EVENT_URIS[evt];
+                    mEventPublisher->publish(evt_msg);
+                }
+            }
+
             // Goal handling
             if (activeGoal && !processingGoal) {
                 produce_event(mFsmPtr->eventData, collab_pickplace::E_NEW_GOAL);
@@ -192,7 +203,7 @@ void bcb::CollabPickplaceNode::fsm_loop()
             if (
               activeGoal && consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED)
             ) {
-                response->result.stamp         = this->get_clock()->now();
+                response->result.stamp         = now;
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
 
                 auto goal_handle = activeGoal->mGoalHandlerPtr;
@@ -211,7 +222,7 @@ void bcb::CollabPickplaceNode::fsm_loop()
                   uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
                 );
 
-                response->result.stamp         = this->get_clock()->now();
+                response->result.stamp         = now;
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::FALSE;
 
                 auto goal_handle = activeGoal->mGoalHandlerPtr;

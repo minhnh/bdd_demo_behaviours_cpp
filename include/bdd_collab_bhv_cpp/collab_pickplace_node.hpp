@@ -93,6 +93,15 @@ class CollabPickplaceNode : public rclcpp::Node
     // Functions
     void fsm_loop();
 
+    // Exported events
+    static constexpr const unsigned int EXPORTED_EVENTS[] = {
+        collab_pickplace::E_TABLE_TOUCHED,
+        collab_pickplace::E_GRASP_DONE,
+        collab_pickplace::E_PLACE_REACHED,
+        collab_pickplace::E_RELEASE_DONE,
+    };
+    static constexpr unsigned int NUM_EXPORTED_EVENTS = 4;
+
 }; // CollabPickplaceNode
 } // namespace bdd_collab_bhv
 #endif // BDD_COLLAB_BHV__HUMAN_PICKPLACE_MOCKUP_NODE_HPP_
