@@ -74,6 +74,10 @@ class CollabPickplaceNode : public rclcpp::Node
     std::mutex    mGoalMutex;
     ExecutionType mExecCtx;
 
+    std::string mLocatedPickTopic;
+    std::string mIsHeldTopic;
+    std::string mLocatedPlaceTopic;
+
     // Shared data between server handlers & FSM loop
     struct GoalData
     {

@@ -33,13 +33,10 @@
 #include "bdd_collab_bhv_cpp/conversions.hpp"
 #include "bdd_collab_bhv_cpp/fsm_behaviours.hpp"
 #include "bdd_collab_bhv_cpp/collab_pickplace_node.hpp"
+#include "bdd_collab_bhv_cpp/utils.hpp"
 
 #define TICK_MILI_SECS 1        // 1kHz
 #define HEARTBEAT_MILI_SECS 500 // 2Hz
-
-#define TOPIC_LOCATED_PICK "/obs_policy/located_at_pick_ws"
-#define TOPIC_IS_HELD "/obs_policy/is_held"
-#define TOPIC_LOCATED_PLACE "/obs_policy/located_at_place_ws"
 
 namespace bcb = bdd_collab_bhv;
 
@@ -51,7 +48,8 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
 
     declare_parameter<std::string>("bhv_server_name", "bhv_server");
     declare_parameter<std::string>("exec_context", "mockup");
-    declare_parameter<std::string>("event_topic", "/bdd/events");
+    declare_parameter<std::string>("event_topic", "");
+    declare_parameter<std::string>("topic_config", "");
 
     auto execCtxStr = get_parameter("exec_context").as_string();
     if (execCtxStr.compare("mockup") == 0) {
@@ -112,13 +110,32 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
     );
 
     const std::string eventTopic = get_parameter("event_topic").as_string();
-    mEventPublisher              = this->create_publisher<Event>(eventTopic, rclcpp::QoS(10));
+    if (!eventTopic.empty()) {
+        RCLCPP_INFO(this->get_logger(), "Publishing events on topic: %s", eventTopic.c_str());
+    } else {
+        throw std::runtime_error("'event_topic' parameter is empty or not provided");
+    }
+    mEventPublisher = this->create_publisher<Event>(eventTopic, rclcpp::QoS(10));
 
+    const std::string topicConfigPath = get_parameter("topic_config").as_string();
+    if (!topicConfigPath.empty()) {
+        try {
+            auto topicConfig   = bcb::load_topics(topicConfigPath);
+            mLocatedPickTopic  = topicConfig.located_at_pick;
+            mIsHeldTopic       = topicConfig.is_held;
+            mLocatedPlaceTopic = topicConfig.located_at_place;
+        } catch (const std::exception &e) {
+            RCLCPP_ERROR(this->get_logger(), "Failed to load topic config: %s", e.what());
+            throw;
+        }
+    } else {
+        throw std::runtime_error("'topic_config' parameter is empty or not provided");
+    }
     mLocatedPickPublisher =
-      this->create_publisher<TrinaryStamped>(TOPIC_LOCATED_PICK, rclcpp::QoS(10));
-    mIsHeldPublisher = this->create_publisher<TrinaryStamped>(TOPIC_IS_HELD, rclcpp::QoS(10));
+      this->create_publisher<TrinaryStamped>(mLocatedPickTopic, rclcpp::QoS(10));
+    mIsHeldPublisher = this->create_publisher<TrinaryStamped>(mIsHeldTopic, rclcpp::QoS(10));
     mLocatedPlacePublisher =
-      this->create_publisher<TrinaryStamped>(TOPIC_LOCATED_PLACE, rclcpp::QoS(10));
+      this->create_publisher<TrinaryStamped>(mLocatedPlaceTopic, rclcpp::QoS(10));
 }
 
 void bcb::CollabPickplaceNode::start_fsm()

@@ -1,0 +1,3 @@
+located_at_pick: "/obs_policy/located_at_pick_ws"
+is_held: "/obs_policy/is_held"
+located_at_place: "/obs_policy/located_at_place_ws"
