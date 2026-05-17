@@ -1,12 +1,17 @@
 ns app = "https://secorolab.github.io/models/table-sequence/"
 
-ROBOT (ns=app) kinova {
-    type: Manipulator,
-    model: KinovaGen3,
-    urdf: "../robots/kg3.urdf",
-    chain: {
-        root: link-base,
-        end: link-ee
+ENVIRONMENT (ns=app) world {
+    runtime: MuJoCo,
+    ASSETS {
+        kinova-mjcf: RobotAsset {
+            model: KinovaGen3,
+            xml: "src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml"
+        }
+    },
+    ASSEMBLY {
+        kinova: <kinova-mjcf> {
+            chain: { root: link-base, end: link-ee }
+        }
     }
 }
 
@@ -130,6 +135,7 @@ CONSTRAINT_HANDLER (ns=app) handler_idle {
     }
 
     MOTION: <idle>
+    CONTROL_MODE: JointTorque
 
     CONTROLLERS {
         ctrl-hold-pose: PID { constraint: <idle.hold-pose>, Kp = 4.0, Ki = 0.0, Kd = 0.4 }
@@ -137,10 +143,10 @@ CONSTRAINT_HANDLER (ns=app) handler_idle {
 
     SOLVERS {
         arm_solver: Solver {
-            robot: <kinova>,
+            robot: <world.kinova>,
             algorithm: ACHD,
-            root: <kinova.chain.root>,
-            end: <kinova.chain.end>,
+            root: <world.kinova.chain.root>,
+            end: <world.kinova.chain.end>,
             gravity: <world.gravity> equal to <spec.gravity-vec>
         }
     }
@@ -150,6 +156,7 @@ CONSTRAINT_HANDLER (ns=app) handler_touch_down {
     CONTEXT {}
 
     MOTION: <touch_down>
+    CONTROL_MODE: JointTorque
 
     MONITORS {
         monitor-contact-table: monitor <touch_down.contact-table> and trigger event table-contact when active
@@ -173,6 +180,7 @@ CONSTRAINT_HANDLER (ns=app) handler_move_forward_15cm {
     CONTEXT {}
 
     MOTION: <move_forward_15cm>
+    CONTROL_MODE: JointTorque
 
     MONITORS {
         monitor-forward-distance: monitor <move_forward_15cm.reached-forward-distance> and trigger event forward-distance-reached when active
@@ -196,6 +204,7 @@ CONSTRAINT_HANDLER (ns=app) handler_move_up_30cm_from_table {
     CONTEXT {}
 
     MOTION: <move_up_30cm_from_table>
+    CONTROL_MODE: JointTorque
 
     MONITORS {
         monitor-table-clearance: monitor <move_up_30cm_from_table.reached-table-clearance> and trigger event table-clearance-reached when active

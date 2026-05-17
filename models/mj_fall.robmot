@@ -1,10 +1,18 @@
 ns app = "https://secorolab.github.io/models/mj-fall/"
 
-ROBOT (ns=app) kinova {
-    type: Manipulator,
-    model: KinovaGen3,
-    urdf: "../robots/kg3.urdf",
-    chain: { root: base_link, end: bracelet_link }
+ENVIRONMENT (ns=app) world {
+    runtime: MuJoCo,
+    ASSETS {
+        kinova-mjcf: RobotAsset {
+            model: KinovaGen3,
+            xml: "src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml"
+        }
+    },
+    ASSEMBLY {
+        kinova: <kinova-mjcf> {
+            chain: { root: base_link, end: bracelet_link }
+        }
+    }
 }
 
 MOTION_SPEC (ns=app) fall-down {
@@ -67,10 +75,10 @@ CONSTRAINT_HANDLER (ns=app) handler-fall-down {
 
     SOLVERS {
         arm-solver: Solver {
-            robot: <kinova>,
+            robot: <world.kinova>,
             algorithm: ACHD,
-            root: <kinova.chain.root>,
-            end: <kinova.chain.end>,
+            root: <world.kinova.chain.root>,
+            end: <world.kinova.chain.end>,
             gravity: <world.gravity> equal to <spec.gravity-vec>
         }
     }

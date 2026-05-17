@@ -1,0 +1,536 @@
+ns app = "https://secorolab.github.io/models/pick-place/"
+
+ENVIRONMENT (ns=app) pick-place-env {
+    runtime: MuJoCo,
+    ASSETS {
+        kinova-mjcf: RobotAsset {
+            model: KinovaGen3,
+            xml: "src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml"
+        },
+        gripper-mjcf: AttachmentAsset {
+            xml: "src/mj_kdl_wrapper/third_party/menagerie/robotiq_2f85/2f85.xml"
+        },
+        table-mjcf: SceneObject {
+            xml: "src/mj_kdl_wrapper/src/examples/assets/table.xml",
+            body: table
+        },
+        cube-object: SceneObject {
+            body: cube
+        }
+    },
+    ASSEMBLY {
+        table: <table-mjcf> {
+            position: { z: 0.72 m },
+            orientation: {}
+        },
+        robot: <kinova-mjcf> {
+            attach <gripper-mjcf> to bracelet_link,
+            position: {},
+            orientation: {},
+            tool-body: g_base,
+            tcp-site: g_pinch,
+            chain: { root: base_link, end: g_pinch }
+        },
+        cube: <cube-object> {
+            position: { x: 0.50 m, z: 0.745 m },
+            orientation: {},
+            free: true
+        }
+    }
+}
+
+CONTEXT (ns=app) shared {
+    world: World {
+        cube:             SceneObject,
+        table:            SceneObject,
+        half-arm-2-link:  Link,
+        gravity:          Gravity,
+        pose-ee-base:     Pose { of: g_pinch, wrt: base_link, as-seen-by: base_link },
+        twist-ee-base:    VelocityTwist { of: g_pinch, wrt: base_link, as-seen-by: base_link },
+        pose-cube-base:   Pose { of: cube, wrt: base_link, as-seen-by: base_link },
+        pose-ee-wrt-cube: Pose { of: g_pinch, wrt: cube, as-seen-by: base_link },
+        pose-elbow-base:  Pose { of: half_arm_2_link, wrt: base_link, as-seen-by: base_link }
+    },
+    spec: Spec {
+        zero-linvel: LinearVelocity = 0.0 m/s,
+        zero-dist:   LinearDistance = 0.0 m,
+        grasp-roll:  Angle = 3.14159 rad,
+        grasp-pitch: Angle = 0.0 rad,
+        grasp-yaw:   Angle = 0.0 rad,
+        gravity-vec: Vector { x = 0.0, y = 0.0, z = -9.81 m/s2 }
+    }
+}
+
+MOTION_SPEC (ns=app) home {
+    MOVE: "Hold the TCP at the startup home pose"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            home-pose: Pose = Snapshot of <shared.world.pose-ee-base>
+        }
+    }
+
+    WHEN {}
+
+    WHILE {
+        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <spec.home-pose>,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.home-pose>
+    }
+
+    UNTIL {
+        lin-x-settled: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        lin-y-settled: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+MOTION_SPEC (ns=app) pick-above {
+    MOVE: "Move TCP to the pre-grasp position above the cube"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            above-z: LinearDistance = 0.22 m
+        }
+    }
+
+    WHEN {
+        lin-x-at-rest: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        lin-y-at-rest: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        lin-z-at-rest: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+
+    WHILE {
+        reach-x:    keeping <shared.world.pose-ee-wrt-cube>.position.x         equal to <shared.spec.zero-dist>,
+        reach-y:    keeping <shared.world.pose-ee-wrt-cube>.position.y         equal to <shared.spec.zero-dist>,
+        reach-z:    keeping <shared.world.pose-ee-wrt-cube>.position.z         equal to <spec.above-z>,
+        align-roll:  keeping <shared.world.pose-ee-wrt-cube>.orientation.roll  equal to <shared.spec.grasp-roll>,
+        align-pitch: keeping <shared.world.pose-ee-wrt-cube>.orientation.pitch equal to <shared.spec.grasp-pitch>,
+        align-yaw:   keeping <shared.world.pose-ee-wrt-cube>.orientation.yaw   equal to <shared.spec.grasp-yaw>
+    }
+
+    UNTIL {
+        lin-x-settled: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        lin-y-settled: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+MOTION_SPEC (ns=app) pick {
+    MOVE: "Lower TCP to the grasp height at the cube"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            grasp-z:     LinearDistance = 0.02 m,
+            grasp-reach: LinearDistance = 0.02 m
+        }
+    }
+
+    WHEN {
+        lin-x-at-rest: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        lin-y-at-rest: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        lin-z-at-rest: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+
+    WHILE {
+        reach-x:    keeping <shared.world.pose-ee-wrt-cube>.position.x         equal to <shared.spec.zero-dist>,
+        reach-y:    keeping <shared.world.pose-ee-wrt-cube>.position.y         equal to <shared.spec.zero-dist>,
+        reach-z:    keeping <shared.world.pose-ee-wrt-cube>.position.z         equal to <spec.grasp-z>,
+        align-roll:  keeping <shared.world.pose-ee-wrt-cube>.orientation.roll  equal to <shared.spec.grasp-roll>,
+        align-pitch: keeping <shared.world.pose-ee-wrt-cube>.orientation.pitch equal to <shared.spec.grasp-pitch>,
+        align-yaw:   keeping <shared.world.pose-ee-wrt-cube>.orientation.yaw   equal to <shared.spec.grasp-yaw>
+    }
+
+    UNTIL {
+        near-cube: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> less than <pick.spec.grasp-reach>
+    }
+}
+
+MOTION_SPEC (ns=app) grasp-hold {
+    MOVE: "Hold TCP at grasp pose while the gripper actuates"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            support-z: LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z
+        }
+    }
+
+    WHEN {
+        at-cube: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> less than <pick.spec.grasp-reach>
+    }
+
+    WHILE {
+        hold-x:      keeping <shared.world.pose-ee-wrt-cube>.position.x         equal to <shared.spec.zero-dist>,
+        hold-y:      keeping <shared.world.pose-ee-wrt-cube>.position.y         equal to <shared.spec.zero-dist>,
+        hold-z:      keeping <shared.world.pose-ee-wrt-cube>.position.z         equal to <pick.spec.grasp-z>,
+        align-roll:  keeping <shared.world.pose-ee-wrt-cube>.orientation.roll  equal to <shared.spec.grasp-roll>,
+        align-pitch: keeping <shared.world.pose-ee-wrt-cube>.orientation.pitch equal to <shared.spec.grasp-pitch>,
+        align-yaw:   keeping <shared.world.pose-ee-wrt-cube>.orientation.yaw   equal to <shared.spec.grasp-yaw>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z     equal to <spec.support-z>
+    }
+
+    UNTIL {}
+}
+
+MOTION_SPEC (ns=app) lift {
+    MOVE: "Raise TCP while maintaining grip on the cube"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            lift-z: LinearDistance = 0.32 m
+        }
+    }
+
+    WHEN {
+        at-grasp: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> less than <pick.spec.grasp-reach>
+    }
+
+    WHILE {
+        reach-x:    keeping <shared.world.pose-ee-wrt-cube>.position.x         equal to <shared.spec.zero-dist>,
+        reach-y:    keeping <shared.world.pose-ee-wrt-cube>.position.y         equal to <shared.spec.zero-dist>,
+        reach-z:    keeping <shared.world.pose-ee-wrt-cube>.position.z         equal to <spec.lift-z>,
+        align-roll:  keeping <shared.world.pose-ee-wrt-cube>.orientation.roll  equal to <shared.spec.grasp-roll>,
+        align-pitch: keeping <shared.world.pose-ee-wrt-cube>.orientation.pitch equal to <shared.spec.grasp-pitch>,
+        align-yaw:   keeping <shared.world.pose-ee-wrt-cube>.orientation.yaw   equal to <shared.spec.grasp-yaw>
+    }
+
+    UNTIL {
+        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+MOTION_SPEC (ns=app) place-above {
+    MOVE: "Move TCP laterally to the pre-place position above the place location"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            place-x:       LinearDistance = 0.40 m,
+            place-y:       LinearDistance = 0.24 m,
+            place-above-z: LinearDistance = 0.22 m,
+            support-z:     LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z
+        }
+    }
+
+    WHEN {
+        lin-z-at-lift: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+
+    WHILE {
+        reach-x:    keeping <shared.world.pose-ee-base>.position.x             equal to <spec.place-x>,
+        reach-y:    keeping <shared.world.pose-ee-base>.position.y             equal to <spec.place-y>,
+        reach-z:    keeping <shared.world.pose-ee-base>.position.z             equal to <spec.place-above-z>,
+        align-roll:  keeping <shared.world.pose-ee-wrt-cube>.orientation.roll  equal to <shared.spec.grasp-roll>,
+        align-pitch: keeping <shared.world.pose-ee-wrt-cube>.orientation.pitch equal to <shared.spec.grasp-pitch>,
+        align-yaw:   keeping <shared.world.pose-ee-wrt-cube>.orientation.yaw   equal to <shared.spec.grasp-yaw>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z     equal to <spec.support-z>
+    }
+
+    UNTIL {
+        lin-x-settled: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        lin-y-settled: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+MOTION_SPEC (ns=app) place {
+    MOVE: "Lower TCP to the place height at the place location"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            place-z:   LinearDistance = 0.02 m,
+            support-z: LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z
+        }
+    }
+
+    WHEN {
+        lin-x-at-rest: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        lin-y-at-rest: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        lin-z-at-rest: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+
+    WHILE {
+        reach-x:    keeping <shared.world.pose-ee-base>.position.x             equal to <place-above.spec.place-x>,
+        reach-y:    keeping <shared.world.pose-ee-base>.position.y             equal to <place-above.spec.place-y>,
+        reach-z:    keeping <shared.world.pose-ee-base>.position.z             equal to <spec.place-z>,
+        align-roll:  keeping <shared.world.pose-ee-wrt-cube>.orientation.roll  equal to <shared.spec.grasp-roll>,
+        align-pitch: keeping <shared.world.pose-ee-wrt-cube>.orientation.pitch equal to <shared.spec.grasp-pitch>,
+        align-yaw:   keeping <shared.world.pose-ee-wrt-cube>.orientation.yaw   equal to <shared.spec.grasp-yaw>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z     equal to <spec.support-z>
+    }
+
+    UNTIL {
+        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+MOTION_SPEC (ns=app) retreat {
+    MOVE: "Raise TCP away from the place location after releasing the object"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            support-z: LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z
+        }
+    }
+
+    WHEN {
+        lin-z-at-place: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+
+    WHILE {
+        reach-x:    keeping <shared.world.pose-ee-base>.position.x             equal to <place-above.spec.place-x>,
+        reach-y:    keeping <shared.world.pose-ee-base>.position.y             equal to <place-above.spec.place-y>,
+        reach-z:    keeping <shared.world.pose-ee-base>.position.z             equal to <place-above.spec.place-above-z>,
+        align-roll:  keeping <shared.world.pose-ee-wrt-cube>.orientation.roll  equal to <shared.spec.grasp-roll>,
+        align-pitch: keeping <shared.world.pose-ee-wrt-cube>.orientation.pitch equal to <shared.spec.grasp-pitch>,
+        align-yaw:   keeping <shared.world.pose-ee-wrt-cube>.orientation.yaw   equal to <shared.spec.grasp-yaw>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z     equal to <spec.support-z>
+    }
+
+    UNTIL {
+        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-home {
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>
+    }
+
+    MOTION: <home>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-home-settled: monitor <home.lin-z-settled> and trigger event home-settled when active
+    }
+
+    CONTROLLERS {
+        ctrl-hold-position:    PID { constraint: <home.hold-position>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-hold-orientation: PID { constraint: <home.hold-orientation>, Kp = 120, Ki = 50,  Kd = 80 }
+    }
+
+    SOLVERS {
+        arm-solver: Solver {
+            robot:     <pick-place-env.robot>,
+            algorithm: ACHD,
+            root:      <pick-place-env.robot.chain.root>,
+            end:       <pick-place-env.robot.chain.end>,
+            gravity:   <shared.world.gravity> equal to <shared.spec.gravity-vec>
+        }
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-pick-above {
+    CONTEXT {}
+
+    MOTION: <pick-above>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-pick-above-settled: monitor <pick-above.lin-z-settled> and trigger event pick-above-settled when active
+    }
+
+    CONTROLLERS {
+        ctrl-pa-reach-x:    PID { constraint: <pick-above.reach-x>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pa-reach-y:    PID { constraint: <pick-above.reach-y>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pa-reach-z:    PID { constraint: <pick-above.reach-z>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pa-align-roll:  PID { constraint: <pick-above.align-roll>,  Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pa-align-pitch: PID { constraint: <pick-above.align-pitch>, Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pa-align-yaw:   PID { constraint: <pick-above.align-yaw>,   Kp = 120, Ki = 50,  Kd = 80 }
+    }
+
+    SOLVERS {
+        <handler-home.arm-solver>
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-pick {
+    CONTEXT {}
+
+    MOTION: <pick>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-near-cube: monitor <pick.near-cube> and trigger event cube-reached when active
+    }
+
+    CONTROLLERS {
+        ctrl-pk-reach-x:    PID { constraint: <pick.reach-x>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pk-reach-y:    PID { constraint: <pick.reach-y>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pk-reach-z:    PID { constraint: <pick.reach-z>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pk-align-roll:  PID { constraint: <pick.align-roll>,  Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pk-align-pitch: PID { constraint: <pick.align-pitch>, Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pk-align-yaw:   PID { constraint: <pick.align-yaw>,   Kp = 120, Ki = 50,  Kd = 80 }
+    }
+
+    SOLVERS {
+        <handler-home.arm-solver>
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-close-grip {
+    CONTEXT {}
+
+    MOTION: <grasp-hold>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-at-cube: monitor <grasp-hold.at-cube> and trigger event at-grasp when active
+    }
+
+    CONTROLLERS {
+        ctrl-cg-hold-x:      PID { constraint: <grasp-hold.hold-x>,      Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-cg-hold-y:      PID { constraint: <grasp-hold.hold-y>,      Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-cg-hold-z:      PID { constraint: <grasp-hold.hold-z>,      Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-cg-align-roll:  PID { constraint: <grasp-hold.align-roll>,  Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-cg-align-pitch: PID { constraint: <grasp-hold.align-pitch>, Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-cg-align-yaw:   PID { constraint: <grasp-hold.align-yaw>,   Kp = 120, Ki = 50,  Kd = 80 }
+    }
+
+    SOLVERS {
+        <handler-home.arm-solver>
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-lift {
+    CONTEXT {}
+
+    MOTION: <lift>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-lift-settled: monitor <lift.lin-z-settled> and trigger event lift-settled when active
+    }
+
+    CONTROLLERS {
+        ctrl-lt-reach-x:    PID { constraint: <lift.reach-x>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-lt-reach-y:    PID { constraint: <lift.reach-y>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-lt-reach-z:    PID { constraint: <lift.reach-z>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-lt-align-roll:  PID { constraint: <lift.align-roll>,  Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-lt-align-pitch: PID { constraint: <lift.align-pitch>, Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-lt-align-yaw:   PID { constraint: <lift.align-yaw>,   Kp = 120, Ki = 50,  Kd = 80 }
+    }
+
+    SOLVERS {
+        <handler-home.arm-solver>
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-place-above {
+    CONTEXT {}
+
+    MOTION: <place-above>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-place-above-settled: monitor <place-above.lin-z-settled> and trigger event place-above-settled when active
+    }
+
+    CONTROLLERS {
+        ctrl-pla-reach-x:    PID { constraint: <place-above.reach-x>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pla-reach-y:    PID { constraint: <place-above.reach-y>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pla-reach-z:    PID { constraint: <place-above.reach-z>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pla-align-roll:  PID { constraint: <place-above.align-roll>,  Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pla-align-pitch: PID { constraint: <place-above.align-pitch>, Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pla-align-yaw:   PID { constraint: <place-above.align-yaw>,   Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pla-support-z:   Impedance { constraint: <place-above.support-elbow-z>, Stiffness = 800, Damping = 80 }
+            apply at <shared.world.half-arm-2-link>
+    }
+
+    SOLVERS {
+        <handler-home.arm-solver>
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-place {
+    CONTEXT {}
+
+    MOTION: <place>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-place-settled: monitor <place.lin-z-settled> and trigger event place-settled when active
+    }
+
+    CONTROLLERS {
+        ctrl-pl-reach-x:    PID { constraint: <place.reach-x>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pl-reach-y:    PID { constraint: <place.reach-y>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pl-reach-z:    PID { constraint: <place.reach-z>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-pl-align-roll:  PID { constraint: <place.align-roll>,  Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pl-align-pitch: PID { constraint: <place.align-pitch>, Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pl-align-yaw:   PID { constraint: <place.align-yaw>,   Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-pl-support-z:   Impedance { constraint: <place.support-elbow-z>, Stiffness = 800, Damping = 80 }
+            apply at <shared.world.half-arm-2-link>
+    }
+
+    SOLVERS {
+        <handler-home.arm-solver>
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-open-grip {
+    CONTEXT {}
+
+    MOTION: <grasp-hold>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-at-place: monitor <grasp-hold.at-cube> and trigger event at-place when active
+    }
+
+    CONTROLLERS {
+        ctrl-og-hold-x:      PID { constraint: <grasp-hold.hold-x>,      Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-og-hold-y:      PID { constraint: <grasp-hold.hold-y>,      Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-og-hold-z:      PID { constraint: <grasp-hold.hold-z>,      Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-og-align-roll:  PID { constraint: <grasp-hold.align-roll>,  Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-og-align-pitch: PID { constraint: <grasp-hold.align-pitch>, Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-og-align-yaw:   PID { constraint: <grasp-hold.align-yaw>,   Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-og-support-z:   Impedance { constraint: <grasp-hold.support-elbow-z>, Stiffness = 800, Damping = 80 }
+            apply at <shared.world.half-arm-2-link>
+    }
+
+    SOLVERS {
+        <handler-home.arm-solver>
+    }
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-retreat {
+    CONTEXT {}
+
+    MOTION: <retreat>
+    CONTROL_MODE: JointTorque
+
+    MONITORS {
+        mon-retreat-settled: monitor <retreat.lin-z-settled> and trigger event retreat-settled when active
+    }
+
+    CONTROLLERS {
+        ctrl-rt-reach-x:    PID { constraint: <retreat.reach-x>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-rt-reach-y:    PID { constraint: <retreat.reach-y>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-rt-reach-z:    PID { constraint: <retreat.reach-z>,    Kp = 200, Ki = 100, Kd = 40 },
+        ctrl-rt-align-roll:  PID { constraint: <retreat.align-roll>,  Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-rt-align-pitch: PID { constraint: <retreat.align-pitch>, Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-rt-align-yaw:   PID { constraint: <retreat.align-yaw>,   Kp = 120, Ki = 50,  Kd = 80 },
+        ctrl-rt-support-z:   Impedance { constraint: <retreat.support-elbow-z>, Stiffness = 800, Damping = 80 }
+            apply at <shared.world.half-arm-2-link>
+    }
+
+    SOLVERS {
+        <handler-home.arm-solver>
+    }
+}
