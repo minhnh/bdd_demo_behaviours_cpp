@@ -105,15 +105,19 @@ MOTION_SPEC (ns=app) pick-above {
         <shared.spec>,
         spec: Spec {
             above-z:    LinearDistance = 0.22 m,
-            alpha:      Scalar,
+            alpha:      TrajectoryProgress,
             start-pose: Pose = Snapshot of <shared.world.pose-ee-wrt-cube>,
             goal-pose:  Pose {
-                x:     <shared.spec.zero-dist>,
-                y:     <shared.spec.zero-dist>,
-                z:     <spec.above-z>,
-                roll:  <shared.spec.grasp-roll>,
-                pitch: <shared.spec.grasp-pitch>,
-                yaw:   <shared.spec.grasp-yaw>
+                position: {
+                    x: <shared.spec.zero-dist>,
+                    y: <shared.spec.zero-dist>,
+                    z: <spec.above-z>
+                },
+                orientation: {
+                    roll:  <shared.spec.grasp-roll>,
+                    pitch: <shared.spec.grasp-pitch>,
+                    yaw:   <shared.spec.grasp-yaw>
+                }
             },
             traj: Trajectory = Lerp {
                 start: <spec.start-pose>,
