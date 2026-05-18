@@ -104,7 +104,22 @@ MOTION_SPEC (ns=app) pick-above {
         <shared.world>,
         <shared.spec>,
         spec: Spec {
-            above-z: LinearDistance = 0.22 m
+            above-z:    LinearDistance = 0.22 m,
+            alpha:      Scalar,
+            start-pose: Pose = Snapshot of <shared.world.pose-ee-wrt-cube>,
+            goal-pose:  Pose {
+                x:     <shared.spec.zero-dist>,
+                y:     <shared.spec.zero-dist>,
+                z:     <spec.above-z>,
+                roll:  <shared.spec.grasp-roll>,
+                pitch: <shared.spec.grasp-pitch>,
+                yaw:   <shared.spec.grasp-yaw>
+            },
+            traj: Trajectory = Lerp {
+                start: <spec.start-pose>,
+                goal:  <spec.goal-pose>,
+                alpha: <spec.alpha>
+            }
         }
     }
 
@@ -115,12 +130,7 @@ MOTION_SPEC (ns=app) pick-above {
     }
 
     WHILE {
-        reach-x:    keeping <shared.world.pose-ee-wrt-cube>.position.x         equal to <shared.spec.zero-dist>,
-        reach-y:    keeping <shared.world.pose-ee-wrt-cube>.position.y         equal to <shared.spec.zero-dist>,
-        reach-z:    keeping <shared.world.pose-ee-wrt-cube>.position.z         equal to <spec.above-z>,
-        align-roll:  keeping <shared.world.pose-ee-wrt-cube>.orientation.roll  equal to <shared.spec.grasp-roll>,
-        align-pitch: keeping <shared.world.pose-ee-wrt-cube>.orientation.pitch equal to <shared.spec.grasp-pitch>,
-        align-yaw:   keeping <shared.world.pose-ee-wrt-cube>.orientation.yaw   equal to <shared.spec.grasp-yaw>
+        follow-pose: keeping <shared.world.pose-ee-wrt-cube> equal to <spec.traj>
     }
 
     UNTIL {
@@ -331,7 +341,7 @@ CONSTRAINT_HANDLER (ns=app) handler-home {
     }
 
     CONTROLLERS {
-        ctrl-hold-position:    PID { constraint: <home.hold-position>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
+        ctrl-hold-position:    PID { constraint: <home.hold-position>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
         ctrl-hold-orientation: PID { constraint: <home.hold-orientation>, Kp = 80,  Ki = 5,  Kd = 40, decay = 0.9 }
     }
 
@@ -357,12 +367,7 @@ CONSTRAINT_HANDLER (ns=app) handler-pick-above {
     }
 
     CONTROLLERS {
-        ctrl-pa-reach-x:    PID { constraint: <pick-above.reach-x>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pa-reach-y:    PID { constraint: <pick-above.reach-y>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pa-reach-z:    PID { constraint: <pick-above.reach-z>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pa-align-roll:  PID { constraint: <pick-above.align-roll>,  Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-pa-align-pitch: PID { constraint: <pick-above.align-pitch>, Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-pa-align-yaw:   PID { constraint: <pick-above.align-yaw>,   Kp = 80, Ki = 5, Kd = 40, decay = 0.9 }
+        ctrl-pa-follow-pose: PID { constraint: <pick-above.follow-pose>, Kp = 100, Ki = 50, Kd = 0, decay = 0.9 }
     }
 
     SOLVERS {
@@ -381,12 +386,12 @@ CONSTRAINT_HANDLER (ns=app) handler-pick {
     }
 
     CONTROLLERS {
-        ctrl-pk-reach-x:    PID { constraint: <pick.reach-x>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pk-reach-y:    PID { constraint: <pick.reach-y>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pk-reach-z:    PID { constraint: <pick.reach-z>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pk-align-roll:  PID { constraint: <pick.align-roll>,  Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-pk-align-pitch: PID { constraint: <pick.align-pitch>, Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-pk-align-yaw:   PID { constraint: <pick.align-yaw>,   Kp = 80, Ki = 5, Kd = 40, decay = 0.9 }
+        ctrl-pk-reach-x:    PID { constraint: <pick.reach-x>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pk-reach-y:    PID { constraint: <pick.reach-y>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pk-reach-z:    PID { constraint: <pick.reach-z>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pk-align-roll:  PID { constraint: <pick.align-roll>,  Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-pk-align-pitch: PID { constraint: <pick.align-pitch>, Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-pk-align-yaw:   PID { constraint: <pick.align-yaw>,   Kp = 20, Ki = 10, Kd = 0, decay = 0.5 }
     }
 
     SOLVERS {
@@ -409,12 +414,12 @@ CONSTRAINT_HANDLER (ns=app) handler-close-grip {
     }
 
     CONTROLLERS {
-        ctrl-cg-hold-x:      PID { constraint: <grasp-hold.hold-x>,      Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-cg-hold-y:      PID { constraint: <grasp-hold.hold-y>,      Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-cg-hold-z:      PID { constraint: <grasp-hold.hold-z>,      Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-cg-align-roll:  PID { constraint: <grasp-hold.align-roll>,  Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-cg-align-pitch: PID { constraint: <grasp-hold.align-pitch>, Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-cg-align-yaw:   PID { constraint: <grasp-hold.align-yaw>,   Kp = 80, Ki = 5, Kd = 40, decay = 0.9 }
+        ctrl-cg-hold-x:      PID { constraint: <grasp-hold.hold-x>,      Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-cg-hold-y:      PID { constraint: <grasp-hold.hold-y>,      Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-cg-hold-z:      PID { constraint: <grasp-hold.hold-z>,      Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-cg-align-roll:  PID { constraint: <grasp-hold.align-roll>,  Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-cg-align-pitch: PID { constraint: <grasp-hold.align-pitch>, Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-cg-align-yaw:   PID { constraint: <grasp-hold.align-yaw>,   Kp = 20, Ki = 10, Kd = 0, decay = 0.5 }
     }
 
     SOLVERS {
@@ -433,12 +438,12 @@ CONSTRAINT_HANDLER (ns=app) handler-lift {
     }
 
     CONTROLLERS {
-        ctrl-lt-reach-x:    PID { constraint: <lift.reach-x>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-lt-reach-y:    PID { constraint: <lift.reach-y>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-lt-reach-z:    PID { constraint: <lift.reach-z>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-lt-align-roll:  PID { constraint: <lift.align-roll>,  Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-lt-align-pitch: PID { constraint: <lift.align-pitch>, Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-lt-align-yaw:   PID { constraint: <lift.align-yaw>,   Kp = 80, Ki = 5, Kd = 40, decay = 0.9 }
+        ctrl-lt-reach-x:    PID { constraint: <lift.reach-x>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-lt-reach-y:    PID { constraint: <lift.reach-y>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-lt-reach-z:    PID { constraint: <lift.reach-z>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-lt-align-roll:  PID { constraint: <lift.align-roll>,  Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-lt-align-pitch: PID { constraint: <lift.align-pitch>, Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-lt-align-yaw:   PID { constraint: <lift.align-yaw>,   Kp = 20, Ki = 10, Kd = 0, decay = 0.5 }
     }
 
     SOLVERS {
@@ -457,12 +462,12 @@ CONSTRAINT_HANDLER (ns=app) handler-place-above {
     }
 
     CONTROLLERS {
-        ctrl-pla-reach-x:    PID { constraint: <place-above.reach-x>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pla-reach-y:    PID { constraint: <place-above.reach-y>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pla-reach-z:    PID { constraint: <place-above.reach-z>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pla-align-roll:  PID { constraint: <place-above.align-roll>,  Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-pla-align-pitch: PID { constraint: <place-above.align-pitch>, Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-pla-align-yaw:   PID { constraint: <place-above.align-yaw>,   Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
+        ctrl-pla-reach-x:    PID { constraint: <place-above.reach-x>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pla-reach-y:    PID { constraint: <place-above.reach-y>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pla-reach-z:    PID { constraint: <place-above.reach-z>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pla-align-roll:  PID { constraint: <place-above.align-roll>,  Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-pla-align-pitch: PID { constraint: <place-above.align-pitch>, Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-pla-align-yaw:   PID { constraint: <place-above.align-yaw>,   Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
         ctrl-pla-support-z:   Impedance { constraint: <place-above.support-elbow-z>, Stiffness = 800, Damping = 80 }
             apply at <shared.world.half-arm-2-link>
     }
@@ -483,12 +488,12 @@ CONSTRAINT_HANDLER (ns=app) handler-place {
     }
 
     CONTROLLERS {
-        ctrl-pl-reach-x:    PID { constraint: <place.reach-x>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pl-reach-y:    PID { constraint: <place.reach-y>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pl-reach-z:    PID { constraint: <place.reach-z>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-pl-align-roll:  PID { constraint: <place.align-roll>,  Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-pl-align-pitch: PID { constraint: <place.align-pitch>, Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-pl-align-yaw:   PID { constraint: <place.align-yaw>,   Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
+        ctrl-pl-reach-x:    PID { constraint: <place.reach-x>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pl-reach-y:    PID { constraint: <place.reach-y>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pl-reach-z:    PID { constraint: <place.reach-z>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-pl-align-roll:  PID { constraint: <place.align-roll>,  Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-pl-align-pitch: PID { constraint: <place.align-pitch>, Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-pl-align-yaw:   PID { constraint: <place.align-yaw>,   Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
         ctrl-pl-support-z:   Impedance { constraint: <place.support-elbow-z>, Stiffness = 800, Damping = 80 }
             apply at <shared.world.half-arm-2-link>
     }
@@ -513,12 +518,12 @@ CONSTRAINT_HANDLER (ns=app) handler-open-grip {
     }
 
     CONTROLLERS {
-        ctrl-og-hold-x:      PID { constraint: <grasp-hold.hold-x>,      Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-og-hold-y:      PID { constraint: <grasp-hold.hold-y>,      Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-og-hold-z:      PID { constraint: <grasp-hold.hold-z>,      Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-og-align-roll:  PID { constraint: <grasp-hold.align-roll>,  Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-og-align-pitch: PID { constraint: <grasp-hold.align-pitch>, Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-og-align-yaw:   PID { constraint: <grasp-hold.align-yaw>,   Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
+        ctrl-og-hold-x:      PID { constraint: <grasp-hold.hold-x>,      Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-og-hold-y:      PID { constraint: <grasp-hold.hold-y>,      Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-og-hold-z:      PID { constraint: <grasp-hold.hold-z>,      Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-og-align-roll:  PID { constraint: <grasp-hold.align-roll>,  Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-og-align-pitch: PID { constraint: <grasp-hold.align-pitch>, Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-og-align-yaw:   PID { constraint: <grasp-hold.align-yaw>,   Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
         ctrl-og-support-z:   Impedance { constraint: <grasp-hold.support-elbow-z>, Stiffness = 800, Damping = 80 }
             apply at <shared.world.half-arm-2-link>
     }
@@ -539,12 +544,12 @@ CONSTRAINT_HANDLER (ns=app) handler-retreat {
     }
 
     CONTROLLERS {
-        ctrl-rt-reach-x:    PID { constraint: <retreat.reach-x>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-rt-reach-y:    PID { constraint: <retreat.reach-y>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-rt-reach-z:    PID { constraint: <retreat.reach-z>,    Kp = 100, Ki = 10, Kd = 20, decay = 0.9 },
-        ctrl-rt-align-roll:  PID { constraint: <retreat.align-roll>,  Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-rt-align-pitch: PID { constraint: <retreat.align-pitch>, Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
-        ctrl-rt-align-yaw:   PID { constraint: <retreat.align-yaw>,   Kp = 80, Ki = 5, Kd = 40, decay = 0.9 },
+        ctrl-rt-reach-x:    PID { constraint: <retreat.reach-x>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-rt-reach-y:    PID { constraint: <retreat.reach-y>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-rt-reach-z:    PID { constraint: <retreat.reach-z>,    Kp = 100, Ki = 50, Kd = 20, decay = 0.9 },
+        ctrl-rt-align-roll:  PID { constraint: <retreat.align-roll>,  Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-rt-align-pitch: PID { constraint: <retreat.align-pitch>, Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
+        ctrl-rt-align-yaw:   PID { constraint: <retreat.align-yaw>,   Kp = 20, Ki = 10, Kd = 0, decay = 0.5 },
         ctrl-rt-support-z:   Impedance { constraint: <retreat.support-elbow-z>, Stiffness = 800, Damping = 80 }
             apply at <shared.world.half-arm-2-link>
     }
