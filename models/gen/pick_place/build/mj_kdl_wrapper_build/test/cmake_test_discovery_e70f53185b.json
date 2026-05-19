@@ -1,0 +1,27 @@
+{
+  "tests": 3,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "MjcfPosCtrlTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "TrajectoryTracking",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_mjcf_pos_ctrl.cpp",
+          "line": 73
+        },
+        {
+          "name": "ClampCtrlrange",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_mjcf_pos_ctrl.cpp",
+          "line": 93
+        },
+        {
+          "name": "QfrcAppliedUnchangedInPositionMode",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_mjcf_pos_ctrl.cpp",
+          "line": 113
+        }
+      ]
+    }
+  ]
+}

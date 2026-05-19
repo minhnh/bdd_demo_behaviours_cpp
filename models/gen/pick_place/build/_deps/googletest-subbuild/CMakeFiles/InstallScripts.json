@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/batsy/work/ms/src/bdd_collab_bhv_cpp/models/gen/pick_place/build/_deps/googletest-subbuild/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

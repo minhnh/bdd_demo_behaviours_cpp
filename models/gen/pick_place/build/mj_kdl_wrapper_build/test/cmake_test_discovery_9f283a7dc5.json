@@ -1,0 +1,27 @@
+{
+  "tests": 3,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "MjcfTrqCtrlTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "GravityAccuracy",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_mjcf_trq_ctrl.cpp",
+          "line": 96
+        },
+        {
+          "name": "ImpedanceDrift",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_mjcf_trq_ctrl.cpp",
+          "line": 112
+        },
+        {
+          "name": "TrqMsrReadsQfrcActuator",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_mjcf_trq_ctrl.cpp",
+          "line": 139
+        }
+      ]
+    }
+  ]
+}

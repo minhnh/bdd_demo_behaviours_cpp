@@ -1,0 +1,79 @@
+
+---
+events:
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake-4.3/Modules/CMakeDetermineSystem.cmake:12 (find_program)"
+      - "CMakeLists.txt:16 (project)"
+    mode: "program"
+    variable: "CMAKE_UNAME"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "uname"
+    candidate_directories:
+      - "/home/batsy/.codex/tmp/arg0/codex-arg0q8mi91/"
+      - "/home/batsy/.nvm/versions/node/v22.17.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path/"
+      - "/home/batsy/work/ms/.venv/bin/"
+      - "/home/batsy/.opencode/bin/"
+      - "/home/batsy/.nvm/versions/node/v22.17.0/bin/"
+      - "/home/batsy/util/STSTv4/"
+      - "/home/batsy/.cargo/bin/"
+      - "/home/batsy/.local/bin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/bin/"
+      - "/usr/sbin/"
+      - "/usr/bin/"
+      - "/sbin/"
+      - "/bin/"
+      - "/usr/games/"
+      - "/snap/bin/"
+      - "/home/batsy/.fzf/bin/"
+    searched_directories:
+      - "/home/batsy/.codex/tmp/arg0/codex-arg0q8mi91/uname"
+      - "/home/batsy/.nvm/versions/node/v22.17.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path/uname"
+      - "/home/batsy/work/ms/.venv/bin/uname"
+      - "/home/batsy/.opencode/bin/uname"
+      - "/home/batsy/.nvm/versions/node/v22.17.0/bin/uname"
+      - "/home/batsy/util/STSTv4/uname"
+      - "/home/batsy/.cargo/bin/uname"
+      - "/home/batsy/.local/bin/uname"
+      - "/usr/local/sbin/uname"
+      - "/usr/local/bin/uname"
+      - "/usr/sbin/uname"
+    found: "/usr/bin/uname"
+    search_context:
+      ENV{PATH}:
+        - "/home/batsy/.codex/tmp/arg0/codex-arg0q8mi91"
+        - "/home/batsy/.nvm/versions/node/v22.17.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/path"
+        - "/home/batsy/work/ms/.venv/bin"
+        - "/home/batsy/.opencode/bin"
+        - "/home/batsy/.nvm/versions/node/v22.17.0/bin"
+        - "/home/batsy/util/STSTv4"
+        - "/home/batsy/.cargo/bin"
+        - "/home/batsy/.local/bin"
+        - "/usr/local/sbin"
+        - "/usr/local/bin"
+        - "/usr/sbin"
+        - "/usr/bin"
+        - "/sbin"
+        - "/bin"
+        - "/usr/games"
+        - "/snap/bin"
+        - "/home/batsy/.fzf/bin"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-4.3/Modules/CMakeDetermineSystem.cmake:212 (message)"
+      - "CMakeLists.txt:16 (project)"
+    message: |
+      The system is: Linux - 6.17.0-23-generic - x86_64
+...

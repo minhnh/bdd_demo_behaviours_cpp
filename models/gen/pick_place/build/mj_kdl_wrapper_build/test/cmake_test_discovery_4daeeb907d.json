@@ -1,0 +1,17 @@
+{
+  "tests": 1,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "MjcfVelCtrlTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "Convergence",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_mjcf_vel_ctrl.cpp",
+          "line": 78
+        }
+      ]
+    }
+  ]
+}

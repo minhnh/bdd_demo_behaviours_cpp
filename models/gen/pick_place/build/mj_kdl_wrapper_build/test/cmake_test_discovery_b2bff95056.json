@@ -1,0 +1,27 @@
+{
+  "tests": 3,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "TableSceneTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "GravityCompDrift",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_table_scene.cpp",
+          "line": 139
+        },
+        {
+          "name": "AddRemoveObject",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_table_scene.cpp",
+          "line": 166
+        },
+        {
+          "name": "EnvAddRemoveReinitsRobot",
+          "file": "\/home\/batsy\/work\/ms\/src\/mj_kdl_wrapper\/test\/test_table_scene.cpp",
+          "line": 182
+        }
+      ]
+    }
+  ]
+}

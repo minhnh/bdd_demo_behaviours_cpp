@@ -1,0 +1,204 @@
+#pragma once
+
+#include <cassert>
+#include <cmath>
+#include <cstdlib>
+#include <iostream>
+#include <kdl/chain.hpp>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+namespace motion_spec::runtime {
+
+inline constexpr double kConstraintTolerance = 1e-2;
+inline constexpr double kTauMax     = 59.0;
+inline constexpr double kBetaMaxLin = 120.0;
+inline constexpr double kBetaMaxRot = 80.0;
+inline double clamp_abs(double v, double limit) {
+    if (v > limit) return limit;
+    if (v < -limit) return -limit;
+    return v;
+}
+
+inline double clamp01(double v) {
+    if (v < 0.0) return 0.0;
+    if (v > 1.0) return 1.0;
+    return v;
+}
+
+inline double smoothstep(double alpha) {
+    alpha = clamp01(alpha);
+    return alpha * alpha * (3.0 - 2.0 * alpha);
+}
+
+inline KDL::Frame interpolate_pose_lerp(
+        const KDL::Frame &start,
+        const KDL::Frame &goal,
+        double alpha) {
+    const double s = smoothstep(alpha);
+    const KDL::Vector dp = goal.p - start.p;
+    const KDL::Vector p(
+        start.p.x() + dp.x() * s,
+        start.p.y() + dp.y() * s,
+        start.p.z() + dp.z() * s);
+    const KDL::Vector rot = KDL::diff(start.M, goal.M);
+    const double angle = rot.Norm();
+    KDL::Rotation r = start.M;
+    if (angle > 1e-9) {
+        const KDL::Vector axis(rot.x() / angle, rot.y() / angle, rot.z() / angle);
+        r = start.M * KDL::Rotation::Rot(axis, angle * s);
+    }
+    return KDL::Frame(r, p);
+}
+inline constexpr double kDefaultTrajectoryDuration = 8.0;
+class PIDControl {
+  public:
+    PIDControl() = default;
+
+    PIDControl(double p_gain, double i_gain, double d_gain, double decay_rate = 0.0, double dt = 0.002)
+        : kp(p_gain), ki(i_gain), kd(d_gain), decay_rate(decay_rate), dt_(dt) {}
+
+    double control(double error, double ext_deriv = 0.0) {
+        const double err_diff = (decay_rate > 0.0)
+            ? 0.0
+            : ((error - err_last) / dt_);
+        if (decay_rate > 0.0) {
+            err_integ = decay_rate * err_integ + error * dt_;
+        } else {
+            err_integ = clamp_abs(err_integ + error * dt_, 0.5);
+        }
+        err_last = error;
+        const double deriv = (kd > 0.0 && ext_deriv != 0.0) ? ext_deriv : err_diff;
+        return kp * error + ki * err_integ + kd * deriv;
+    }
+
+  private:
+    double err_integ = 0.0;
+    double err_last = 0.0;
+    double kp = 0.0;
+    double ki = 0.0;
+    double kd = 0.0;
+    double decay_rate = 0.0;
+    double dt_ = 0.002;
+};
+
+// Spring-damper controller: maps a single scalar constraint error to a
+// force/torque output as F = ks*e + kd*(de/dt). The derivative is
+// approximated by finite difference on successive error samples, so
+// "error" is assumed to be a position or angle error; the damping term
+// then approximates velocity feedback rather than reading it directly.
+class ImpedanceControl {
+  public:
+    ImpedanceControl() = default;
+
+    ImpedanceControl(double stiffness, double damping)
+        : ks(stiffness), kd(damping) {}
+
+    double control(double error) {
+        double err_diff = error - err_last;
+        err_last = error;
+        return ks * error + kd * err_diff;
+    }
+
+  private:
+    double err_last = 0.0;
+    double ks = 0.0;
+    double kd = 0.0;
+};
+
+inline double evaluate_equality_constraint(double quantity, double reference) {
+    return quantity - reference;
+}
+
+inline KDL::Frame evaluate_equality_constraint(const KDL::Frame &target, const KDL::Frame &current) {
+    return current.Inverse() * target;
+}
+
+inline double evaluate_less_than_constraint(double quantity, double threshold) {
+    return (quantity < threshold) ? 0.0 : threshold - quantity;
+}
+
+inline double evaluate_greater_than_constraint(double quantity, double threshold) {
+    return (quantity > threshold) ? 0.0 : quantity - threshold;
+}
+
+inline double evaluate_bilateral_constraint(double quantity, double lower, double upper) {
+    if (quantity < lower) return lower - quantity;
+    if (quantity > upper) return quantity - upper;
+    return 0.0;
+}
+
+inline bool constraint_satisfied(double error) {
+    return std::fabs(error) <= kConstraintTolerance;
+}
+
+inline bool constraint_satisfied(const KDL::Twist &error) {
+    return error.vel.Norm() <= kConstraintTolerance &&
+           error.rot.Norm() <= kConstraintTolerance;
+}
+
+inline bool constraint_satisfied(const KDL::Frame &error) {
+    KDL::Vector axis;
+    const double angle = error.M.GetRotAngle(axis);
+    return error.p.Norm() <= kConstraintTolerance &&
+           std::fabs(angle) <= kConstraintTolerance;
+}
+
+enum class Axis {
+    X = 0,
+    Y = 1,
+    Z = 2,
+};
+
+enum class Subspace {
+    Linear = 0,
+    Angular = 1,
+};
+
+inline int constraint_row(Subspace subspace, Axis axis) {
+    return static_cast<int>(subspace) * 3 + static_cast<int>(axis);
+}
+
+inline bool rising_edge(bool &previous, bool active) {
+    const bool detected = active && !previous;
+    previous = active;
+    return detected;
+}
+
+inline void set_flag(bool &flag, bool active) {
+    flag = active;
+}
+
+inline void warn_produce_event_not_implemented(std::string_view event_id) {
+    std::cerr << "produce_event(" << event_id << ") not implemented yet\n";
+}
+
+inline unsigned int find_joint_index(const KDL::Chain &chain, std::string_view joint_name) {
+    unsigned int idx = 0;
+    for (unsigned int i = 0; i < chain.getNrOfSegments(); ++i) {
+        const auto &joint = chain.getSegment(i).getJoint();
+        if (joint.getType() == KDL::Joint::None) {
+            continue;
+        }
+        if (joint.getName() == joint_name) {
+            return idx;
+        }
+        ++idx;
+    }
+    throw std::runtime_error("KDL joint not found: " + std::string(joint_name));
+}
+
+inline unsigned int find_segment_index(const KDL::Chain &chain, std::string_view model_name) {
+    std::string target(model_name);
+    if (target.rfind("frame_", 0) == 0) {
+        target.replace(0, 6, "link_");
+    }
+    for (unsigned int i = 0; i < chain.getNrOfSegments(); ++i) {
+        if (chain.getSegment(i).getName() == target) {
+            return i + 1;
+        }
+    }
+    throw std::runtime_error("KDL segment not found for model name: " + target);
+}
+
+}  // namespace motion_spec::runtime

@@ -1,0 +1,13 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/test_init.dir/link.d"
+  "CMakeFiles/test_init.dir/test_init.cpp.o"
+  "CMakeFiles/test_init.dir/test_init.cpp.o.d"
+  "test_init"
+  "test_init.pdb"
+  "test_init[1]_tests.cmake"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/test_init.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()
