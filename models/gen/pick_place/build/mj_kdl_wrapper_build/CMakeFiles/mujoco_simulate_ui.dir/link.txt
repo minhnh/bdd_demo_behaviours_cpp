@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmujoco_simulate_ui.a CMakeFiles/mujoco_simulate_ui.dir/src/simulate_ui/simulate.cc.o "CMakeFiles/mujoco_simulate_ui.dir/opt/mujoco-3.8.0/simulate/glfw_adapter.cc.o" "CMakeFiles/mujoco_simulate_ui.dir/opt/mujoco-3.8.0/simulate/glfw_dispatch.cc.o" "CMakeFiles/mujoco_simulate_ui.dir/opt/mujoco-3.8.0/simulate/platform_ui_adapter.cc.o" CMakeFiles/mujoco_simulate_ui.dir/src/lodepng_ffmpeg.cpp.o
-/usr/bin/ranlib libmujoco_simulate_ui.a

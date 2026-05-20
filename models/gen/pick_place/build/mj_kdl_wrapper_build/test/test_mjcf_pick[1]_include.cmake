@@ -1,5 +1,0 @@
-if(EXISTS "/home/batsy/work/ms/src/bdd_collab_bhv_cpp/models/gen/pick_place/build/mj_kdl_wrapper_build/test/test_mjcf_pick[1]_tests.cmake")
-  include("/home/batsy/work/ms/src/bdd_collab_bhv_cpp/models/gen/pick_place/build/mj_kdl_wrapper_build/test/test_mjcf_pick[1]_tests.cmake")
-else()
-  add_test(test_mjcf_pick_NOT_BUILT test_mjcf_pick_NOT_BUILT)
-endif()

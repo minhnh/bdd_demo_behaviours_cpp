@@ -32,5 +32,9 @@ just-run:
 	cmake --build $(GEN)/build --target main --parallel $(JOBS)
 	$(GEN)/build/main
 
+jrh:
+	cmake --build $(GEN)/build --target main --parallel $(JOBS)
+	$(GEN)/build/main --headless --steps $(STEPS)
+
 clean:
 	$(RM) -r $(GEN)/build

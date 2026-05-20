@@ -1,3 +1,0 @@
-add_test([=[MjcfVelCtrlTest.Convergence]=]  /home/batsy/work/ms/src/bdd_collab_bhv_cpp/models/gen/pick_place/build/mj_kdl_wrapper_build/test/test_mjcf_vel_ctrl [==[--gtest_filter=MjcfVelCtrlTest.Convergence]==] --gtest_also_run_disabled_tests)
-set_tests_properties([=[MjcfVelCtrlTest.Convergence]=]  PROPERTIES DEF_SOURCE_LINE /home/batsy/work/ms/src/mj_kdl_wrapper/test/test_mjcf_vel_ctrl.cpp:78 WORKING_DIRECTORY /home/batsy/work/ms/src/bdd_collab_bhv_cpp/models/gen/pick_place/build/mj_kdl_wrapper_build/test SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==] RUN_SERIAL TRUE)
-set(  test_mjcf_vel_ctrl_TESTS MjcfVelCtrlTest.Convergence)
