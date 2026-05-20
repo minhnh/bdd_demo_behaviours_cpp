@@ -110,26 +110,24 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
     );
 
     const std::string eventTopic = get_parameter("event_topic").as_string();
-    if (!eventTopic.empty()) {
-        RCLCPP_INFO(this->get_logger(), "Publishing events on topic: %s", eventTopic.c_str());
-    } else {
+    if (eventTopic.empty()) {
         throw std::runtime_error("'event_topic' parameter is empty or not provided");
     }
+    RCLCPP_INFO(this->get_logger(), "Publishing events on topic: %s", eventTopic.c_str());
     mEventPublisher = this->create_publisher<Event>(eventTopic, rclcpp::QoS(10));
 
     const std::string topicConfigPath = get_parameter("topic_config").as_string();
-    if (!topicConfigPath.empty()) {
-        try {
-            auto topicConfig   = bcb::load_topics(topicConfigPath);
-            mLocatedPickTopic  = topicConfig.located_at_pick;
-            mIsHeldTopic       = topicConfig.is_held;
-            mLocatedPlaceTopic = topicConfig.located_at_place;
-        } catch (const std::exception &e) {
-            RCLCPP_ERROR(this->get_logger(), "Failed to load topic config: %s", e.what());
-            throw;
-        }
-    } else {
+    if (topicConfigPath.empty()) {
         throw std::runtime_error("'topic_config' parameter is empty or not provided");
+    }
+    try {
+        auto topicConfig   = bcb::load_topics(topicConfigPath);
+        mLocatedPickTopic  = topicConfig["located_at_pick"];
+        mIsHeldTopic       = topicConfig["is_held"];
+        mLocatedPlaceTopic = topicConfig["located_at_place"];
+    } catch (const std::exception &e) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to load topic config: %s", e.what());
+        throw;
     }
     mLocatedPickPublisher =
       this->create_publisher<TrinaryStamped>(mLocatedPickTopic, rclcpp::QoS(10));
@@ -179,6 +177,11 @@ void bcb::CollabPickplaceNode::fsm_loop()
         );
     }
 
+    auto           response = std::make_shared<Behaviour::Result>();
+    auto           feedback = std::make_shared<Behaviour::Feedback>();
+    TrinaryStamped trinaryMsg;
+    Event          evt_msg;
+
     while (rclcpp::ok() && mFsmLoopRunning.load(std::memory_order_acquire)) {
         now = this->get_clock()->now();
 
@@ -191,25 +194,20 @@ void bcb::CollabPickplaceNode::fsm_loop()
             std::lock_guard<std::mutex> lockFsm(mFsmMutex);
             produce_event(mFsmPtr->eventData, collab_pickplace::E_STEP);
 
-            auto response                        = std::make_shared<Behaviour::Result>();
             response->result.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
-            auto feedback                        = std::make_shared<Behaviour::Feedback>();
             feedback->scenario_context_id        = activeGoal->mGoalCopy.scenario_context_id;
 
-            TrinaryStamped trinaryMsg;
             trinaryMsg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
             trinaryMsg.stamp               = now;
-            trinaryMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
+            trinaryMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::UNKNOWN;
 
             // Event publishing
             for (unsigned int evt : CollabPickplaceNode::EXPORTED_EVENTS) {
-                if (consume_event(mFsmPtr->eventData, evt)) {
-                    Event evt_msg;
-                    evt_msg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
-                    evt_msg.stamp               = now;
-                    evt_msg.uri                 = collab_pickplace::EVENT_URIS[evt];
-                    mEventPublisher->publish(evt_msg);
-                }
+                if (!consume_event(mFsmPtr->eventData, evt)) continue;
+                evt_msg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
+                evt_msg.stamp               = now;
+                evt_msg.uri                 = collab_pickplace::EVENT_URIS[evt];
+                mEventPublisher->publish(evt_msg);
             }
 
             // Goal handling
@@ -258,10 +256,13 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 if (goal_handle) { goal_handle->publish_feedback(feedback); }
 
                 if (mFsmPtr->currentStateIndex == collab_pickplace::S_TOUCH_TABLE) {
+                    trinaryMsg.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
                     mLocatedPickPublisher->publish(trinaryMsg);
                 } else if (mFsmPtr->currentStateIndex == collab_pickplace::S_GRASP) {
+                    trinaryMsg.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
                     mIsHeldPublisher->publish(trinaryMsg);
                 } else if (mFsmPtr->currentStateIndex == collab_pickplace::S_RELEASE) {
+                    trinaryMsg.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
                     mLocatedPlacePublisher->publish(trinaryMsg);
                 }
 
