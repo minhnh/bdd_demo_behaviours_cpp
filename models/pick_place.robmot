@@ -127,11 +127,7 @@ MOTION_SPEC (ns=app) pick-above {
         }
     }
 
-    WHEN {
-        lin-x-at-rest: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        lin-y-at-rest: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        lin-z-at-rest: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
-    }
+    WHEN {}
 
     WHILE {
         follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.traj>,
@@ -139,10 +135,7 @@ MOTION_SPEC (ns=app) pick-above {
     }
 
     UNTIL all {
-        at-pick-above-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose>,
-        lin-x-settled: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        lin-y-settled: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+        at-pick-above-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose>
     }
 }
 
@@ -179,11 +172,7 @@ MOTION_SPEC (ns=app) pick {
         }
     }
 
-    WHEN {
-        lin-x-at-rest: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        lin-y-at-rest: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        lin-z-at-rest: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
-    }
+    WHEN {}
 
     WHILE {
         follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.pick-traj>,
@@ -302,9 +291,7 @@ MOTION_SPEC (ns=app) place-above {
         }
     }
 
-    WHEN {
-        lin-z-at-lift: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
-    }
+    WHEN {}
 
     WHILE {
         reach-x:    keeping <shared.world.pose-ee-base>.position.x             equal to <spec.place-x>,
@@ -315,10 +302,7 @@ MOTION_SPEC (ns=app) place-above {
     }
 
     UNTIL all {
-        at-place-above-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose-above>,
-        lin-x-settled: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        lin-y-settled: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+        at-place-above-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose-above>
     }
 }
 
@@ -355,11 +339,7 @@ MOTION_SPEC (ns=app) place {
         }
     }
 
-    WHEN {
-        lin-x-at-rest: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        lin-y-at-rest: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        lin-z-at-rest: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
-    }
+    WHEN {}
 
     WHILE {
         reach-x:    keeping <shared.world.pose-ee-base>.position.x             equal to <spec.place-x>,
@@ -370,10 +350,7 @@ MOTION_SPEC (ns=app) place {
     }
 
     UNTIL all {
-        at-place-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose-place>,
-        lin-x-settled: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        lin-y-settled: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+        at-place-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose-place>
     }
 }
 
@@ -449,10 +426,7 @@ MOTION_SPEC (ns=app) retreat {
     }
 
     UNTIL all {
-        at-retreat-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose-retreat>,
-        lin-x-settled: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        lin-y-settled: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+        at-retreat-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose-retreat>
     }
 }
 
