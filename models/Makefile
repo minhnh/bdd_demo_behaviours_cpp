@@ -5,8 +5,9 @@ VENV ?= $(ROOT)/.venv
 STST ?= stst
 STEPS ?= 45000
 JOBS ?= 4
+INSTALL ?= $(ROOT)/install
 
-.PHONY: all jsonld ir codegen build run clean
+.PHONY: all jsonld ir codegen configure build run clean
 
 all: build
 
@@ -19,7 +20,12 @@ ir: jsonld
 codegen: ir
 	$(VENV)/bin/python -m motion_spec.codegen $(GEN)/ir.json -o $(GEN) --stst-bin $(STST)
 
-build: codegen
+configure: codegen
+	cmake -B $(GEN)/build $(GEN) \
+	    -DCMAKE_PREFIX_PATH="$(INSTALL)" \
+	    -Dorocos_kdl_DIR="$(INSTALL)/orocos_kdl/share/orocos_kdl/cmake"
+
+build: configure
 	cmake --build $(GEN)/build --parallel $(JOBS)
 
 run: build

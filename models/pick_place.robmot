@@ -202,10 +202,11 @@ MOTION_SPEC (ns=app) grasp-hold {
         <shared.world>,
         <shared.spec>,
         spec: Spec {
-            hold-x:    LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.x,
-            hold-y:    LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.y,
-            hold-z:    LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.z,
-            support-z: LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z,
+            hold-x:       LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.x,
+            hold-y:       LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.y,
+            hold-z:       LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.z,
+            support-lift: LinearDistance = 0.06 m,
+            support-z:    LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z + <spec.support-lift>,
             hold-orientation-pose: Pose = Snapshot of <shared.world.pose-ee-base>
         }
     }
@@ -277,7 +278,8 @@ MOTION_SPEC (ns=app) place-above {
             place-x:           LinearDistance = 0.40 m,
             place-y:           LinearDistance = 0.24 m,
             place-above-z:     LinearDistance = 0.22 m,
-            support-z:         LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z,
+            support-lift:      LinearDistance = 0.06 m,
+            support-z:         LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z + <spec.support-lift>,
             place-above-alpha: TrajectoryProgress,
             place-above-start-pose: Pose = Snapshot of <shared.world.pose-ee-base>,
             goal-pose-above: Pose {
