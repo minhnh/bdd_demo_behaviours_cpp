@@ -45,7 +45,7 @@ MOTION_SPEC (ns=app) fall-down {
         cstr-linvel-x: keeping <world.twist-ee>.linvel.x equal to <spec.vel-x-zero>,
         cstr-linvel-y: keeping <world.twist-ee>.linvel.y equal to <spec.vel-y-zero>,
         cstr-linvel-z: keeping <world.twist-ee>.linvel.z equal to <spec.vel-z-down>,
-        cstr-orientation: keeping <world.pose-ee>.orientation equal to <spec.pose-ee-start>
+        cstr-orientation: keeping <world.pose-ee>.orientation equal to <spec.pose-ee-start>.orientation
     }
 
     UNTIL {}

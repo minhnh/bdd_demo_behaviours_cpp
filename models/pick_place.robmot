@@ -88,8 +88,8 @@ MOTION_SPEC (ns=app) home {
     WHEN {}
 
     WHILE {
-        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <spec.home-pose>,
-        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.home-pose>
+        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <spec.home-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.home-pose>.orientation
     }
 
     UNTIL all {
@@ -133,8 +133,8 @@ MOTION_SPEC (ns=app) pick-above {
     WHEN {}
 
     WHILE {
-        follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.traj>,
-        follow-ori: keeping <shared.world.pose-ee-base>.orientation equal to <spec.traj>
+        follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.traj>.position,
+        follow-ori: keeping <shared.world.pose-ee-base>.orientation equal to <spec.traj>.orientation
     }
 
     UNTIL all {
@@ -178,8 +178,8 @@ MOTION_SPEC (ns=app) pick {
     WHEN {}
 
     WHILE {
-        follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.pick-traj>,
-        follow-ori: keeping <shared.world.pose-ee-base>.orientation equal to <spec.pick-traj>
+        follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.pick-traj>.position,
+        follow-ori: keeping <shared.world.pose-ee-base>.orientation equal to <spec.pick-traj>.orientation
     }
 
     UNTIL all {
@@ -209,7 +209,7 @@ MOTION_SPEC (ns=app) grasp-hold {
         hold-x:          keeping <shared.world.pose-ee-base>.position.x equal to <spec.hold-x>,
         hold-y:          keeping <shared.world.pose-ee-base>.position.y equal to <spec.hold-y>,
         hold-z:          keeping <shared.world.pose-ee-base>.position.z equal to <spec.hold-z>,
-        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation-pose>,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation-pose>.orientation,
         support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.support-z>,
         close-gripper:   keeping <shared.world.gripper-pos-cmd> equal to <shared.spec.gripper-closed>
     }
@@ -252,8 +252,8 @@ MOTION_SPEC (ns=app) lift {
     WHEN {}
 
     WHILE {
-        follow-pos:    keeping <shared.world.pose-ee-base>.position    equal to <spec.lift-traj>,
-        follow-ori:    keeping <shared.world.pose-ee-base>.orientation equal to <spec.lift-traj>,
+        follow-pos:    keeping <shared.world.pose-ee-base>.position    equal to <spec.lift-traj>.position,
+        follow-ori:    keeping <shared.world.pose-ee-base>.orientation equal to <spec.lift-traj>.orientation,
         close-gripper: keeping <shared.world.gripper-pos-cmd>         equal to <shared.spec.gripper-closed>
     }
 
@@ -302,7 +302,7 @@ MOTION_SPEC (ns=app) place-above {
         reach-x:       keeping <shared.world.pose-ee-base>.position.x         equal to <spec.place-x>,
         reach-y:       keeping <shared.world.pose-ee-base>.position.y         equal to <spec.place-y>,
         reach-z:       keeping <shared.world.pose-ee-base>.position.z         equal to <spec.place-above-z>,
-        align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.place-above-traj>,
+        align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.place-above-traj>.orientation,
         support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
         close-gripper: keeping <shared.world.gripper-pos-cmd>                 equal to <shared.spec.gripper-closed>
     }
@@ -351,7 +351,7 @@ MOTION_SPEC (ns=app) place {
         reach-x:       keeping <shared.world.pose-ee-base>.position.x         equal to <spec.place-x>,
         reach-y:       keeping <shared.world.pose-ee-base>.position.y         equal to <spec.place-y>,
         reach-z:       keeping <shared.world.pose-ee-base>.position.z         equal to <spec.place-z>,
-        align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.place-traj>,
+        align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.place-traj>.orientation,
         support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
         close-gripper: keeping <shared.world.gripper-pos-cmd>                 equal to <shared.spec.gripper-closed>
     }
@@ -382,7 +382,7 @@ MOTION_SPEC (ns=app) open-grasp-hold {
         hold-x:          keeping <shared.world.pose-ee-base>.position.x equal to <spec.hold-x>,
         hold-y:          keeping <shared.world.pose-ee-base>.position.y equal to <spec.hold-y>,
         hold-z:          keeping <shared.world.pose-ee-base>.position.z equal to <spec.hold-z>,
-        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation-pose>,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation-pose>.orientation,
         support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.support-z>,
         open-gripper:    keeping <shared.world.gripper-pos-cmd> equal to <shared.spec.gripper-open>
     }
@@ -429,7 +429,7 @@ MOTION_SPEC (ns=app) retreat {
         reach-x:       keeping <shared.world.pose-ee-base>.position.x         equal to <spec.place-x>,
         reach-y:       keeping <shared.world.pose-ee-base>.position.y         equal to <spec.place-y>,
         reach-z:       keeping <shared.world.pose-ee-base>.position.z         equal to <spec.place-above-z>,
-        align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.retreat-traj>,
+        align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.retreat-traj>.orientation,
         support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
         open-gripper:  keeping <shared.world.gripper-pos-cmd>                 equal to <shared.spec.gripper-open>
     }
