@@ -169,7 +169,9 @@ void bcb::CollabPickplaceNode::fsm_loop()
     std::unique_ptr<BehaviourInterface> bhvInfPtr = nullptr;
     switch (mExecCtx) {
     case ExecutionType::Mockup:
-        bhvInfPtr = std::make_unique<MockupCollabBehaviour>(now, HEARTBEAT_MILI_SECS);
+        bhvInfPtr = std::make_unique<MockupCollabBehaviour>(
+          now, HEARTBEAT_MILI_SECS, mLocatedPickPublisher, mIsHeldPublisher, mLocatedPlacePublisher
+        );
         break;
     default:
         throw std::runtime_error(
@@ -177,10 +179,9 @@ void bcb::CollabPickplaceNode::fsm_loop()
         );
     }
 
-    auto           response = std::make_shared<Behaviour::Result>();
-    auto           feedback = std::make_shared<Behaviour::Feedback>();
-    TrinaryStamped trinaryMsg;
-    Event          evt_msg;
+    auto  response = std::make_shared<Behaviour::Result>();
+    auto  feedback = std::make_shared<Behaviour::Feedback>();
+    Event evt_msg;
 
     while (rclcpp::ok() && mFsmLoopRunning.load(std::memory_order_acquire)) {
         now = this->get_clock()->now();
@@ -197,10 +198,6 @@ void bcb::CollabPickplaceNode::fsm_loop()
             response->result.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
             feedback->scenario_context_id        = activeGoal->mGoalCopy.scenario_context_id;
 
-            trinaryMsg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
-            trinaryMsg.stamp               = now;
-            trinaryMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::UNKNOWN;
-
             // Event publishing
             for (unsigned int evt : CollabPickplaceNode::EXPORTED_EVENTS) {
                 if (!consume_event(mFsmPtr->eventData, evt)) continue;
@@ -215,14 +212,19 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 produce_event(mFsmPtr->eventData, collab_pickplace::E_NEW_GOAL);
                 processingGoal = true;
             }
-            if (
-              activeGoal && consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED)
-            ) {
+            if (consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED)) {
                 response->result.stamp         = now;
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
 
-                auto goal_handle = activeGoal->mGoalHandlerPtr;
-                if (goal_handle) { goal_handle->succeed(response); }
+                if (auto goal_handle = activeGoal->mGoalHandlerPtr.lock()) {
+                    goal_handle->succeed(response);
+                } else {
+                    RCLCPP_ERROR(
+                      this->get_logger(),
+                      "Goal handler expired, no success response for scenario: %s",
+                      uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
+                    );
+                }
 
                 processingGoal = false;
                 activeGoal.reset();
@@ -240,33 +242,18 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 response->result.stamp         = now;
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::FALSE;
 
-                auto goal_handle = activeGoal->mGoalHandlerPtr;
-                if (goal_handle) { goal_handle->canceled(response); }
+                if (auto goal_handle = activeGoal->mGoalHandlerPtr.lock()) {
+                    goal_handle->canceled(response);
+                } else {
+                    RCLCPP_ERROR(
+                      this->get_logger(),
+                      "Goal handler expired, no cancel response for scenario: %s",
+                      uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
+                    );
+                }
 
                 processingGoal = false;
                 activeGoal.reset();
-            }
-
-            if (now >= nextHeartbeat && activeGoal && processingGoal) {
-                feedback->status = std::format(
-                  "current state: {}", mFsmPtr->states[mFsmPtr->currentStateIndex].name
-                );
-
-                auto goal_handle = activeGoal->mGoalHandlerPtr;
-                if (goal_handle) { goal_handle->publish_feedback(feedback); }
-
-                if (mFsmPtr->currentStateIndex == collab_pickplace::S_TOUCH_TABLE) {
-                    trinaryMsg.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
-                    mLocatedPickPublisher->publish(trinaryMsg);
-                } else if (mFsmPtr->currentStateIndex == collab_pickplace::S_GRASP) {
-                    trinaryMsg.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
-                    mIsHeldPublisher->publish(trinaryMsg);
-                } else if (mFsmPtr->currentStateIndex == collab_pickplace::S_RELEASE) {
-                    trinaryMsg.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
-                    mLocatedPlacePublisher->publish(trinaryMsg);
-                }
-
-                while (nextHeartbeat < now) nextHeartbeat += heartbeatPeriod;
             }
 
             if (mFsmPtr->currentStateIndex == collab_pickplace::S_IDLE) {

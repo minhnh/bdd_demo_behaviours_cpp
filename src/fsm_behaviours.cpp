@@ -20,8 +20,16 @@
 
 namespace bcb = bdd_collab_bhv;
 
-bcb::MockupCollabBehaviour::MockupCollabBehaviour(rclcpp::Time pNow, uint pHeartbeatDurMiliSec)
-  : mHeartbeatPeriod(std::chrono::milliseconds(pHeartbeatDurMiliSec))
+bcb::MockupCollabBehaviour::MockupCollabBehaviour(
+  rclcpp::Time                                 pNow,
+  uint                                         pHeartbeatDurMiliSec,
+  rclcpp::Publisher<TrinaryStamped>::SharedPtr pLocatedPickPublisher,
+  rclcpp::Publisher<TrinaryStamped>::SharedPtr pIsHeldPublisher,
+  rclcpp::Publisher<TrinaryStamped>::SharedPtr pLocatedPlacePublisher
+)
+  : mHeartbeatPeriod(std::chrono::milliseconds(pHeartbeatDurMiliSec)),
+    mLocatedPickPublisher(pLocatedPickPublisher), mIsHeldPublisher(pIsHeldPublisher),
+    mLocatedPlacePublisher(pLocatedPlacePublisher)
 { mNextHeartbeat = pNow + mHeartbeatPeriod; }
 
 void bcb::MockupCollabBehaviour::step(
@@ -36,15 +44,22 @@ void bcb::MockupCollabBehaviour::step(
       pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name
     );
 
+    TrinaryStamped trinaryMsg;
+    trinaryMsg.stamp         = now;
+    trinaryMsg.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
+
     if (pFsmPtr->currentStateIndex == collab_pickplace::S_TOUCH_TABLE) {
+        mLocatedPickPublisher->publish(trinaryMsg);
         produce_event(pFsmPtr->eventData, collab_pickplace::E_TABLE_TOUCHED);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_SLIDE) {
         produce_event(pFsmPtr->eventData, collab_pickplace::E_OBJ_REACHED);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_GRASP) {
+        mIsHeldPublisher->publish(trinaryMsg);
         produce_event(pFsmPtr->eventData, collab_pickplace::E_GRASP_DONE);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_COLLAB_MOVE) {
         produce_event(pFsmPtr->eventData, collab_pickplace::E_PLACE_REACHED);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_RELEASE) {
+        mLocatedPlacePublisher->publish(trinaryMsg);
         produce_event(pFsmPtr->eventData, collab_pickplace::E_RELEASE_DONE);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_RECOVER) {
         produce_event(pFsmPtr->eventData, collab_pickplace::E_RECOVER_DONE);

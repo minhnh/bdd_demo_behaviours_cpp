@@ -18,7 +18,9 @@
 #include <memory>
 #include <rclcpp/time.hpp>
 #include <rclcpp/node.hpp>
+#include "rclcpp/publisher.hpp"
 #include "coord2b/types/fsm.h"
+#include "bdd_ros2_interfaces/msg/trinary_stamped.hpp"
 
 namespace bdd_collab_bhv {
 
@@ -32,13 +34,25 @@ class BehaviourInterface
 class MockupCollabBehaviour : public BehaviourInterface
 {
   public:
-    MockupCollabBehaviour(rclcpp::Time pNow, uint pHeartbeatDurMiliSec);
+    using TrinaryStamped = bdd_ros2_interfaces::msg::TrinaryStamped;
+
+    MockupCollabBehaviour(
+      rclcpp::Time                                 pNow,
+      uint                                         pHeartbeatDurMiliSec,
+      rclcpp::Publisher<TrinaryStamped>::SharedPtr pLocatedPickPublisher,
+      rclcpp::Publisher<TrinaryStamped>::SharedPtr pIsHeldPublisher,
+      rclcpp::Publisher<TrinaryStamped>::SharedPtr pLocatedPlacePublisher
+    );
 
     void step(std::shared_ptr<rclcpp::Node> pNodePtr, const struct fsm_nbx *pFsmPtr) override;
 
   private:
     rclcpp::Duration mHeartbeatPeriod;
     rclcpp::Time     mNextHeartbeat;
+
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPickPublisher;
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mIsHeldPublisher;
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPlacePublisher;
 };
 
 } // namespace bdd_collab_bhv
