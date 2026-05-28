@@ -24,19 +24,18 @@ ENVIRONMENT (ns=app) pick-place-env {
             orientation: {}
         },
         robot: <kinova-mjcf> {
-            attach <gripper-mjcf> to bracelet_link {
-                prefix: g_,
-                position: { z: -0.061525 m },
-                orientation: { roll: 180 deg },
-                actuator: g_fingers_actuator,
-                open: 0.0,
-                closed: 255.0
-            },
-            position: { z: 0.72 m },
+            attach-to: site table_table_top,
+            position: {},
             orientation: {},
-            tool-body: g_base,
-            tcp-site: g_pinch,
             chain: { root: base_link, end: g_pinch }
+        },
+        gripper: <gripper-mjcf> {
+            attach-to: site pinch_site,
+            prefix: g_,
+            tcp-site: g_pinch,
+            actuator: g_fingers_actuator,
+            open: 0.0,
+            closed: 255.0
         },
         cube: <cube-object> {
             position: { x: 0.50 m, z: 0.75 m },
@@ -44,6 +43,7 @@ ENVIRONMENT (ns=app) pick-place-env {
             free: true,
             shape: box,
             size: { x: 0.03 m, y: 0.03 m, z: 0.03 m },
+            color: { r: 0.1, g: 0.35, b: 1.0, a: 1.0 },
             mass: 0.01,
             friction: { slide: 0.8, torsion: 0.01, roll: 0.0001 }
         }
@@ -682,4 +682,3 @@ CONSTRAINT_HANDLER (ns=app) handler-retreat {
         }
     }
 }
-
