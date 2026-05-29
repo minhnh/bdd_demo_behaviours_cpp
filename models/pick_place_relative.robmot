@@ -11,37 +11,32 @@ ENVIRONMENT (ns=app) pick-place-relative-env {
             xml: "src/mj_kdl_wrapper/third_party/menagerie/robotiq_2f85/2f85.xml"
         },
         table-mjcf: SceneObject {
-            xml: "src/mj_kdl_wrapper/src/examples/assets/table.xml",
-            body: table
+            xml: "src/mj_kdl_wrapper/src/examples/assets/table.xml"
         },
-        cube-object: SceneObject {
-            body: cube
-        }
+        cube-object: SceneObject
     },
     ASSEMBLY {
-        table: <table-mjcf> {
+        Object table using <table-mjcf> {
             position: { z: 0.72 m },
             orientation: {}
         },
-        robot: <kinova-mjcf> {
-            attach-to: site table_table_top,
+        Robot robot using <kinova-mjcf> {
+            attach-to: <table>.site(table_top),
             position: {},
             orientation: {},
             chain: { root: base_link, end: g_pinch }
         },
-        gripper: <gripper-mjcf> {
-            attach-to: site pinch_site,
+        Attachment gripper using <gripper-mjcf> {
+            attach-to: <robot>.site(pinch_site),
             prefix: g_,
             tcp-site: g_pinch,
-            actuator: g_fingers_actuator,
-            open: 0.0,
-            closed: 255.0
+            actuator: g_fingers_actuator
         },
-        cube: <cube-object> {
+        Object cube using <cube-object> {
             position: { x: 0.50 m, z: 0.75 m },
             orientation: {},
             free: true,
-            shape: box,
+            shape: Box,
             size: { x: 0.03 m, y: 0.03 m, z: 0.03 m },
             color: { r: 0.1, g: 0.35, b: 1.0, a: 1.0 },
             mass: 0.01,
