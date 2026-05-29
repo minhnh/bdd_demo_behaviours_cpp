@@ -1,0 +1,108 @@
+// Demo: end-effector follows a Helix trajectory around a snapshot axis.
+
+ns app = "https://secorolab.github.io/models/helix-demo/"
+
+ENVIRONMENT (ns=app) helix-env {
+    runtime: MuJoCo,
+    ASSETS {
+        kinova-mjcf: RobotAsset {
+            model: KinovaGen3,
+            xml: "src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml"
+        },
+        gripper-mjcf: AttachmentAsset {
+            xml: "src/mj_kdl_wrapper/third_party/menagerie/robotiq_2f85/2f85.xml"
+        },
+        table-mjcf: SceneObject {
+            xml: "src/mj_kdl_wrapper/src/examples/assets/table.xml"
+        }
+    },
+    ASSEMBLY {
+        Object table using <table-mjcf> {
+            position: { z: 0.72 m },
+            orientation: {}
+        },
+        Robot robot using <kinova-mjcf> {
+            attach-to: <table>.site(table_top),
+            position: {},
+            orientation: {},
+            chain: { root: base_link, end: g_pinch }
+        },
+        Attachment gripper using <gripper-mjcf> {
+            attach-to: <robot>.site(pinch_site),
+            prefix: g_,
+            tcp-site: g_pinch,
+            actuator: g_fingers_actuator
+        }
+    }
+}
+
+CONTEXT (ns=app) shared {
+    world: World {
+        gravity:      Gravity,
+        pose-ee-base: Pose { of: g_pinch, wrt: base_link, as-seen-by: base_link }
+    },
+    spec: Spec {
+        gravity-vec: Vector { x = 0.0, y = 0.0, z = -9.81 m/s2 }
+    }
+}
+
+MOTION_SPEC (ns=app) m_helix {
+    MOVE: "EE follows a helix around a snapshot axis"
+
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>,
+        spec: Spec {
+            alpha:       TrajectoryProgress,
+            radius:      LinearDistance = 0.08 m,
+            pitch:       LinearDistance = 0.04 m,
+            revolutions: Distance       = 2.0 m,
+            center-pos:  Position = Snapshot of <shared.world.pose-ee-base>.position,
+            axis:        Direction { as-seen-by: base_link } { x = 0.0, y = 0.0, z = -1.0 m },
+            start-pose:  Pose = Snapshot of <shared.world.pose-ee-base>,
+            traj: Trajectory = Helix {
+                center:      <spec.center-pos>,
+                radius:      <spec.radius>,
+                axis:        <spec.axis>,
+                pitch:       <spec.pitch>,
+                revolutions: <spec.revolutions>,
+                orientation: <spec.start-pose>,
+                alpha:       <spec.alpha>
+            }
+        }
+    }
+
+    WHEN {}
+
+    WHILE {
+        follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.traj>.position,
+        hold-ori:   keeping <shared.world.pose-ee-base>.orientation equal to <spec.start-pose>.orientation
+    }
+
+    UNTIL {}
+}
+
+CONSTRAINT_HANDLER (ns=app) handler-helix {
+    CONTEXT {
+        <shared.world>,
+        <shared.spec>
+    }
+
+    MOTION: <m_helix>
+    CONTROL_MODE: JointTorque
+
+    CONTROLLERS {
+        ctrl-follow-pos: PID { constraint: <m_helix.follow-pos>, Kp = 200, Ki = 100, Kd = 40, decay = 0 },
+        ctrl-hold-ori:   PID { constraint: <m_helix.hold-ori>,   Kp = 120, Ki = 50,  Kd = 80, decay = 0 }
+    }
+
+    SOLVERS {
+        arm-solver: Solver {
+            robot:     <helix-env.robot>,
+            algorithm: ACHD,
+            root:      <helix-env.robot.chain.root>,
+            end:       <helix-env.robot.chain.end>,
+            gravity:   <shared.world.gravity> equal to <shared.spec.gravity-vec>
+        }
+    }
+}
