@@ -1,29 +1,35 @@
-MODEL ?= pick_place
-GEN ?= gen/$(MODEL)
-ROOT ?= /home/batsy/work/ms
-VENV ?= $(ROOT)/.venv
+MODEL ?=
+GEN ?= gen/$(or $(MODEL), $(error MODEL is not set. Usage: make MODEL=<name>))
+ROOT ?= $(CURDIR)
 STST ?= stst
 STEPS ?= 45000
-JOBS ?= 4
+JOBS ?= $(shell nproc)
 INSTALL ?= $(ROOT)/install
 
-.PHONY: all jsonld ir codegen configure build run clean
+.PHONY: all jsonld ir codegen configure build run clean check-deps
 
 all: build
 
-jsonld: $(MODEL).robmot
-	$(VENV)/bin/textx generate $(MODEL).robmot --target jsonld -o $(GEN)
+check-deps:
+	@command -v textx >/dev/null 2>&1 || { echo "Error: textx not found. Activate venv or run: pip install textX"; exit 1; }
+	@command -v motion-spec-ir-gen >/dev/null 2>&1 || { echo "Error: motion-spec-ir-gen not found. Activate venv or run: pip install -e src/motion-spec"; exit 1; }
+
+jsonld: $(MODEL).robmot check-deps
+	textx generate $(MODEL).robmot --target jsonld -o $(GEN)
 
 ir: jsonld
-	$(VENV)/bin/motion-spec-ir-gen $(GEN)/$(MODEL)-app.json -o $(GEN)/ir.json
+	motion-spec-ir-gen $(GEN)/$(MODEL)-app.json -o $(GEN)/ir.json
 
 codegen: ir
-	$(VENV)/bin/python -m motion_spec.codegen $(GEN)/ir.json -o $(GEN) --stst-bin $(STST)
+	python -m motion_spec.codegen $(GEN)/ir.json -o $(GEN) --stst-bin $(STST)
+
+OROCOS_DIR ?=
+OROCOS_FLAG = $(if $(OROCOS_DIR),-Dorocos_kdl_DIR="$(OROCOS_DIR)",)
 
 configure: codegen
 	cmake -B $(GEN)/build $(GEN) \
 	    -DCMAKE_PREFIX_PATH="$(INSTALL)" \
-	    -Dorocos_kdl_DIR="$(INSTALL)/orocos_kdl/share/orocos_kdl/cmake"
+	    $(OROCOS_FLAG)
 
 build: configure
 	cmake --build $(GEN)/build --parallel $(JOBS)
@@ -43,4 +49,4 @@ jrh:
 	$(GEN)/build/main --headless --steps $(STEPS)
 
 clean:
-	$(RM) -r $(GEN)/build
+	$(RM) -r $(GEN)
