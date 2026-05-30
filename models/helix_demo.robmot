@@ -47,7 +47,7 @@ CONTEXT (ns=app) shared {
         pose-ee-base: Pose { of: g_pinch, wrt: base_link, as-seen-by: base_link }
     },
     spec: Spec {
-        gravity-vec: Vector { x = 0.0, y = 0.0, z = -9.81 m/s2 }
+        gravity-vec: FreeVector { x = 0.0, y = 0.0, z = -9.81 m/s2 }
     }
 }
 
@@ -59,19 +59,18 @@ MOTION_SPEC (ns=app) m_helix {
         <shared.spec>,
         spec: Spec {
             alpha:       TrajectoryProgress,
-            radius:      LinearDistance = 0.08 m,
             pitch:       LinearDistance = 0.04 m,
             revolutions: Distance       = 2.0 m,
-            center-pos:  Position = Snapshot of <shared.world.pose-ee-base>.position,
-            axis:        Direction { as-seen-by: base_link } { x = 0.0, y = 0.0, z = -1.0 m },
+            axis:        Direction { as-seen-by: base_link } { x = 0.0, y = 0.0, z = -1.0 },
+            radius-vec:  FreeVector { as-seen-by: base_link } { x = 0.08, y = 0.0, z = 0.0 m },
             start-pose:  Pose = Snapshot of <shared.world.pose-ee-base>,
+            center-pos:  Position = Snapshot of <shared.world.pose-ee-base>.position + <spec.radius-vec>,
             traj: Trajectory = Helix {
+                start:       <spec.start-pose>,
                 center:      <spec.center-pos>,
-                radius:      <spec.radius>,
                 axis:        <spec.axis>,
                 pitch:       <spec.pitch>,
                 revolutions: <spec.revolutions>,
-                orientation: <spec.start-pose>,
                 alpha:       <spec.alpha>
             }
         }

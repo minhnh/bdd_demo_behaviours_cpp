@@ -1,15 +1,18 @@
-// Demo: end-effector traces a Circle trajectory in the robot-base frame.
+// Demo: end-effector traces a Figure8 (lemniscate) trajectory in the robot-base frame.
 //
-// Uses the same Kinova/MuJoCo environment as pick_place.robmot. The EE's start
-// point is a snapshot of the initial pose, so alpha=0 sits exactly where the EE
-// already is (no jump). The orbit center is that start position offset by the
-// radius vector, so the circle has radius |radius-vec| in the plane whose normal
-// is plane-normal. The follow-pos constraint tracks the trajectory's position
-// while the orientation is held fixed at the snapshot.
+// Uses the same Kinova/MuJoCo environment as circle_demo.robmot. The figure-8's
+// center, plane-normal, and orientation are all derived from a snapshot of the
+// initial EE pose (so the EE traces the curve around its starting position, in a
+// plane whose normal is the unit-length starting position vector). The follow-pos
+// constraint drives the EE to track the trajectory's position component while the
+// orientation is held fixed at the snapshot.
+//
+// Switch `form: Gerono` to `form: Bernoulli` below to demo the classic infinity
+// (∞) shaped curve instead of the Gerono figure-8.
 
-ns app = "https://secorolab.github.io/models/circle-demo/"
+ns app = "https://secorolab.github.io/models/figure8-demo/"
 
-ENVIRONMENT (ns=app) circle-env {
+ENVIRONMENT (ns=app) figure8-env {
     runtime: MuJoCo,
     ASSETS {
         kinova-mjcf: RobotAsset {
@@ -43,7 +46,7 @@ ENVIRONMENT (ns=app) circle-env {
     },
     TRACE {
         enabled: true,
-        length: 4096,
+        length: 6144,
         color: { r: 1.0, g: 0.5, b: 0.1, a: 1.0 }
     }
 }
@@ -58,23 +61,23 @@ CONTEXT (ns=app) shared {
     }
 }
 
-MOTION_SPEC (ns=app) m_circle {
-    MOVE: "EE traces a circle around its starting position"
+MOTION_SPEC (ns=app) m_figure8 {
+    MOVE: "EE traces a figure-8 around its starting position"
 
     CONTEXT {
         <shared.world>,
         <shared.spec>,
         spec: Spec {
             alpha:        TrajectoryProgress,
-            plane-normal: Direction { as-seen-by: base_link } { x = 0.0, y = 0.0, z = 1.0 },
-            radius-vec:   FreeVector { as-seen-by: base_link } { x = 0.10, y = 0.0, z = 0.0 m },
+            radius:       LinearDistance = 0.10 m,
+            plane-normal: Direction { as-seen-by: base_link } { x = 1.0, y = 0.0, z = 0.0 },
             start-pose:   Pose = Snapshot of <shared.world.pose-ee-base>,
-            center-pos:   Position = Snapshot of <shared.world.pose-ee-base>.position + <spec.radius-vec>,
-            traj: Trajectory = Circle {
-                start:        <spec.start-pose>,
-                center:       <spec.center-pos>,
+            traj: Trajectory = Figure8 {
+                anchor:       <spec.start-pose>,
+                radius:       <spec.radius>,
                 plane-normal: <spec.plane-normal>,
-                alpha:        <spec.alpha>
+                alpha:        <spec.alpha>,
+                form:         Gerono
             }
         }
     }
@@ -89,26 +92,26 @@ MOTION_SPEC (ns=app) m_circle {
     UNTIL {}
 }
 
-CONSTRAINT_HANDLER (ns=app) handler-circle {
+CONSTRAINT_HANDLER (ns=app) handler-figure8 {
     CONTEXT {
         <shared.world>,
         <shared.spec>
     }
 
-    MOTION: <m_circle>
+    MOTION: <m_figure8>
     CONTROL_MODE: JointTorque
 
     CONTROLLERS {
-        ctrl-follow-pos: PID { constraint: <m_circle.follow-pos>, Kp = 200, Ki = 100, Kd = 40, decay = 0 },
-        ctrl-hold-ori:   PID { constraint: <m_circle.hold-ori>,   Kp = 120, Ki = 50,  Kd = 80, decay = 0 }
+        ctrl-follow-pos: PID { constraint: <m_figure8.follow-pos>, Kp = 200, Ki = 100, Kd = 40, decay = 0 },
+        ctrl-hold-ori:   PID { constraint: <m_figure8.hold-ori>,   Kp = 120, Ki = 50,  Kd = 80, decay = 0 }
     }
 
     SOLVERS {
         arm-solver: Solver {
-            robot:     <circle-env.robot>,
+            robot:     <figure8-env.robot>,
             algorithm: ACHD,
-            root:      <circle-env.robot.chain.root>,
-            end:       <circle-env.robot.chain.end>,
+            root:      <figure8-env.robot.chain.root>,
+            end:       <figure8-env.robot.chain.end>,
             gravity:   <shared.world.gravity> equal to <shared.spec.gravity-vec>
         }
     }

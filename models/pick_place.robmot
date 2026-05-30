@@ -68,7 +68,7 @@ CONTEXT (ns=app) shared {
         grasp-roll:     Angle = 3.14159 rad,
         grasp-pitch:    Angle = 0.0 rad,
         grasp-yaw:      Angle = 1.5708 rad,
-        gravity-vec:    Vector { x = 0.0, y = 0.0, z = -9.81 m/s2 },
+        gravity-vec:    FreeVector { x = 0.0, y = 0.0, z = -9.81 m/s2 },
         gripper-closed: Angle = 255.0 deg,
         gripper-open:   Angle = 0.0 deg
     }

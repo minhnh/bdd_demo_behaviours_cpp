@@ -1,5 +1,7 @@
 MODEL ?=
-GEN ?= gen/$(or $(MODEL), $(error MODEL is not set. Usage: make MODEL=<name>))
+# Accept MODEL with or without the trailing .robmot extension.
+MODEL_NAME := $(MODEL:.robmot=)
+GEN ?= gen/$(or $(MODEL_NAME), $(error MODEL is not set. Usage: make MODEL=<name>[.robmot]))
 ROOT ?= $(CURDIR)
 STST ?= stst
 STEPS ?= 45000
@@ -14,11 +16,11 @@ check-deps:
 	@command -v textx >/dev/null 2>&1 || { echo "Error: textx not found. Activate venv or run: pip install textX"; exit 1; }
 	@command -v motion-spec-ir-gen >/dev/null 2>&1 || { echo "Error: motion-spec-ir-gen not found. Activate venv or run: pip install -e src/motion-spec"; exit 1; }
 
-jsonld: $(MODEL).robmot check-deps
-	textx generate $(MODEL).robmot --target jsonld -o $(GEN)
+jsonld: $(MODEL_NAME).robmot check-deps
+	textx generate $(MODEL_NAME).robmot --target jsonld -o $(GEN)
 
 ir: jsonld
-	motion-spec-ir-gen $(GEN)/$(MODEL)-app.json -o $(GEN)/ir.json
+	motion-spec-ir-gen $(GEN)/$(MODEL_NAME)-app.json -o $(GEN)/ir.json
 
 codegen: ir
 	python -m motion_spec.codegen $(GEN)/ir.json -o $(GEN) --stst-bin $(STST)
