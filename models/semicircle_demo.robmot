@@ -33,6 +33,11 @@ ENVIRONMENT (ns=app) semicircle-env {
             tcp-site: g_pinch,
             actuator: g_fingers_actuator
         }
+    },
+    TRACE {
+        enabled: true,
+        length: 4096,
+        color: { r: 0.1, g: 0.8, b: 1.0, a: 1.0 }
     }
 }
 

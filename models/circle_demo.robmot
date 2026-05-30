@@ -40,6 +40,11 @@ ENVIRONMENT (ns=app) circle-env {
             tcp-site: g_pinch,
             actuator: g_fingers_actuator
         }
+    },
+    TRACE {
+        enabled: true,
+        length: 4096,
+        color: { r: 1.0, g: 0.5, b: 0.1, a: 1.0 }
     }
 }
 
