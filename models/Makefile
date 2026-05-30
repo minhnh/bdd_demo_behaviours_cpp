@@ -2,11 +2,13 @@ MODEL ?=
 # Accept MODEL with or without the trailing .robmot extension.
 MODEL_NAME := $(MODEL:.robmot=)
 GEN ?= gen/$(or $(MODEL_NAME), $(error MODEL is not set. Usage: make MODEL=<name>[.robmot]))
-ROOT ?= $(CURDIR)
 STST ?= stst
 STEPS ?= 45000
 JOBS ?= $(shell nproc)
-INSTALL ?= $(ROOT)/install
+# Path to the colcon install tree (must contain mj_kdl_wrapper etc.). Read from the
+# environment (export INSTALL=<path>) or passed on the command line. Required only for
+# configure/build/run; errors with guidance if those targets are used without it.
+INSTALL ?= $(error INSTALL is not set. Export it (e.g. `export INSTALL=<path-to-colcon-install>`) or pass INSTALL=<path> on the command line)
 
 .PHONY: all jsonld ir codegen configure build run clean check-deps
 
