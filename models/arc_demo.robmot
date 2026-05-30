@@ -1,8 +1,9 @@
-// Demo: end-effector traverses a SemiCircle arc between two snapshot points.
+// Demo: end-effector traces an Arc between two snapshot endpoints
+// (amplitude = half the chord reproduces a semicircle).
 
-ns app = "https://secorolab.github.io/models/semicircle-demo/"
+ns app = "https://secorolab.github.io/models/arc-demo/"
 
-ENVIRONMENT (ns=app) semicircle-env {
+ENVIRONMENT (ns=app) arc-env {
     runtime: MuJoCo,
     ASSETS {
         kinova-mjcf: RobotAsset {
@@ -51,7 +52,7 @@ CONTEXT (ns=app) shared {
     }
 }
 
-MOTION_SPEC (ns=app) m_semicircle {
+MOTION_SPEC (ns=app) m_arc {
     MOVE: "EE traces a 180-degree arc between two snapshot endpoints"
 
     CONTEXT {
@@ -84,26 +85,26 @@ MOTION_SPEC (ns=app) m_semicircle {
     UNTIL {}
 }
 
-CONSTRAINT_HANDLER (ns=app) handler-semicircle {
+CONSTRAINT_HANDLER (ns=app) handler-arc {
     CONTEXT {
         <shared.world>,
         <shared.spec>
     }
 
-    MOTION: <m_semicircle>
+    MOTION: <m_arc>
     CONTROL_MODE: JointTorque
 
     CONTROLLERS {
-        ctrl-follow-pos: PID { constraint: <m_semicircle.follow-pos>, Kp = 200, Ki = 100, Kd = 40, decay = 0 },
-        ctrl-hold-ori:   PID { constraint: <m_semicircle.hold-ori>,   Kp = 120, Ki = 50,  Kd = 80, decay = 0 }
+        ctrl-follow-pos: PID { constraint: <m_arc.follow-pos>, Kp = 200, Ki = 100, Kd = 40, decay = 0 },
+        ctrl-hold-ori:   PID { constraint: <m_arc.hold-ori>,   Kp = 120, Ki = 50,  Kd = 80, decay = 0 }
     }
 
     SOLVERS {
         arm-solver: Solver {
-            robot:     <semicircle-env.robot>,
+            robot:     <arc-env.robot>,
             algorithm: ACHD,
-            root:      <semicircle-env.robot.chain.root>,
-            end:       <semicircle-env.robot.chain.end>,
+            root:      <arc-env.robot.chain.root>,
+            end:       <arc-env.robot.chain.end>,
             gravity:   <shared.world.gravity> equal to <shared.spec.gravity-vec>
         }
     }
