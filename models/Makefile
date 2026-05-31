@@ -13,13 +13,14 @@ INSTALL ?=
 # (all -> build), which needs it.
 NEEDS_INSTALL := $(if $(MAKECMDGOALS),$(filter all configure build run run-headless just-run jrh,$(MAKECMDGOALS)),all)
 
-.PHONY: all jsonld ir codegen configure build run clean check-deps
+.PHONY: all jsonld check ir codegen configure build run clean check-deps
 
 all: build
 
 check-deps:
 	@command -v textx >/dev/null 2>&1 || { echo "Error: textx not found. Activate venv or run: pip install textX"; exit 1; }
 	@command -v motion-spec-ir-gen >/dev/null 2>&1 || { echo "Error: motion-spec-ir-gen not found. Activate venv or run: pip install -e src/motion-spec"; exit 1; }
+	@command -v motion-spec-check >/dev/null 2>&1 || { echo "Error: motion-spec-check not found. Activate venv or run: pip install -e src/motion-spec"; exit 1; }
 	@[ -n "$(METAMODELS_PATH)" ] || { echo "Error: METAMODELS_PATH is not set. The JSON-LD generator needs it to resolve metamodel/ontology imports. Export it to your metamodels checkout, e.g. export METAMODELS_PATH=<path-to>/metamodels"; exit 1; }
 	@[ -d "$(METAMODELS_PATH)" ] || { echo "Error: METAMODELS_PATH=$(METAMODELS_PATH) is not a directory. Point it at your metamodels checkout."; exit 1; }
 	@if [ -n "$(NEEDS_INSTALL)" ]; then \
@@ -30,7 +31,12 @@ check-deps:
 jsonld: $(MODEL_NAME).robmot check-deps
 	textx generate $(MODEL_NAME).robmot --target jsonld -o $(GEN)
 
-ir: jsonld
+# SHACL conformance gate: validate the generated graph against the metamodels
+# before it can flow into IR/codegen/build. Run standalone with `make check`.
+check: jsonld
+	motion-spec-check $(GEN)/$(MODEL_NAME)-app.json
+
+ir: check
 	motion-spec-ir-gen $(GEN)/$(MODEL_NAME)-app.json -o $(GEN)/ir.json
 
 codegen: ir
