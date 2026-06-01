@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <chrono>
+#include <format>
 #include <rclcpp/rclcpp.hpp>
 #include "coord2b/functions/event_loop.h"
 #include "bdd_collab_bhv_cpp/collab_pickplace_fsm.hpp"
@@ -28,6 +29,7 @@ bcb::MockupCollabBehaviour::MockupCollabBehaviour(
   rclcpp::Publisher<TrinaryStamped>::SharedPtr pLocatedPlacePublisher
 )
   : mHeartbeatPeriod(std::chrono::milliseconds(pHeartbeatDurMiliSec)),
+    mFeedbackPtr(std::make_shared<Behaviour::Feedback>()),
     mLocatedPickPublisher(pLocatedPickPublisher), mIsHeldPublisher(pIsHeldPublisher),
     mLocatedPlacePublisher(pLocatedPlacePublisher)
 { mNextHeartbeat = pNow + mHeartbeatPeriod; }
@@ -35,7 +37,8 @@ bcb::MockupCollabBehaviour::MockupCollabBehaviour(
 void bcb::MockupCollabBehaviour::step(
   std::shared_ptr<rclcpp::Node>            pNodePtr,
   const struct fsm_nbx                    *pFsmPtr,
-  const unique_identifier_msgs::msg::UUID &pScenarioContextId
+  const unique_identifier_msgs::msg::UUID &pScenarioContextId,
+  std::shared_ptr<GoalHandleBehaviour>     pGoalHandlePtr
 )
 {
     auto now = pNodePtr->get_clock()->now();
@@ -44,6 +47,13 @@ void bcb::MockupCollabBehaviour::step(
     RCLCPP_INFO(
       pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name
     );
+
+    if (pGoalHandlePtr) {
+        mFeedbackPtr->scenario_context_id = pScenarioContextId;
+        mFeedbackPtr->status =
+          std::format("current state: {}", pFsmPtr->states[pFsmPtr->currentStateIndex].name);
+        pGoalHandlePtr->publish_feedback(mFeedbackPtr);
+    }
 
     TrinaryStamped trinaryMsg;
     trinaryMsg.stamp               = now;

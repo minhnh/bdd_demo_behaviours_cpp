@@ -18,20 +18,27 @@
 #include <memory>
 #include <rclcpp/time.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include "rclcpp/publisher.hpp"
 #include "unique_identifier_msgs/msg/uuid.hpp"
 #include "coord2b/types/fsm.h"
 #include "bdd_ros2_interfaces/msg/trinary_stamped.hpp"
+#include "bdd_ros2_interfaces/action/behaviour.hpp"
 
 namespace bdd_collab_bhv {
 
 class BehaviourInterface
 {
   public:
+    using UUID                = unique_identifier_msgs::msg::UUID;
+    using Behaviour           = bdd_ros2_interfaces::action::Behaviour;
+    using GoalHandleBehaviour = rclcpp_action::ServerGoalHandle<Behaviour>;
+
     virtual void step(
-      std::shared_ptr<rclcpp::Node>            pNodePtr,
-      const struct fsm_nbx                    *pFsmPtr,
-      const unique_identifier_msgs::msg::UUID &pScenarioContextId
+      std::shared_ptr<rclcpp::Node>        pNodePtr,
+      const struct fsm_nbx                *pFsmPtr,
+      const UUID                          &pScenarioContextId = UUID(),
+      std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr     = nullptr
     )                             = 0;
     virtual ~BehaviourInterface() = default;
 };
@@ -50,14 +57,17 @@ class MockupCollabBehaviour : public BehaviourInterface
     );
 
     void step(
-      std::shared_ptr<rclcpp::Node>            pNodePtr,
-      const struct fsm_nbx                    *pFsmPtr,
-      const unique_identifier_msgs::msg::UUID &pScenarioContextId
+      std::shared_ptr<rclcpp::Node>        pNodePtr,
+      const struct fsm_nbx                *pFsmPtr,
+      const UUID                          &pScenarioContextId = UUID(),
+      std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr     = nullptr
     ) override;
 
   private:
     rclcpp::Duration mHeartbeatPeriod;
     rclcpp::Time     mNextHeartbeat;
+
+    std::shared_ptr<Behaviour::Feedback> mFeedbackPtr;
 
     rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPickPublisher;
     rclcpp::Publisher<TrinaryStamped>::SharedPtr mIsHeldPublisher;

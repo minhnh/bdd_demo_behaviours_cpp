@@ -193,7 +193,6 @@ void bcb::CollabPickplaceNode::fsm_loop()
             produce_event(mFsmPtr->eventData, collab_pickplace::E_STEP);
 
             response->result.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
-            feedback->scenario_context_id        = activeGoal->mGoalCopy.scenario_context_id;
 
             // Event publishing
             for (unsigned int evt : CollabPickplaceNode::EXPORTED_EVENTS) {
@@ -213,8 +212,8 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 response->result.stamp         = now;
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
 
-                if (auto goal_handle = activeGoal->mGoalHandlerPtr) {
-                    goal_handle->succeed(response);
+                if (auto goalHandle = activeGoal->mGoalHandlerPtr) {
+                    goalHandle->succeed(response);
                 } else {
                     RCLCPP_ERROR(
                       this->get_logger(),
@@ -239,8 +238,8 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 response->result.stamp         = now;
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::FALSE;
 
-                if (auto goal_handle = activeGoal->mGoalHandlerPtr) {
-                    goal_handle->canceled(response);
+                if (auto goalHandle = activeGoal->mGoalHandlerPtr) {
+                    goalHandle->canceled(response);
                 } else {
                     RCLCPP_ERROR(
                       this->get_logger(),
@@ -258,7 +257,16 @@ void bcb::CollabPickplaceNode::fsm_loop()
             }
 
             // Behaviour & FSM update
-            bhvInfPtr->step(nodePtr, mFsmPtr.get(), activeGoal->mGoalCopy.scenario_context_id);
+            if (activeGoal && processingGoal) {
+                bhvInfPtr->step(
+                  nodePtr,
+                  mFsmPtr.get(),
+                  activeGoal->mGoalCopy.scenario_context_id,
+                  activeGoal->mGoalHandlerPtr
+                );
+            } else {
+                bhvInfPtr->step(nodePtr, mFsmPtr.get());
+            }
             fsm_step_nbx(mFsmPtr.get());
             reconfig_event_buffers(mFsmPtr->eventData);
         }
