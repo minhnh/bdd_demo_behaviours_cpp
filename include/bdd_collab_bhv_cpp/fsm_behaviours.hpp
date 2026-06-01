@@ -19,6 +19,7 @@
 #include <rclcpp/time.hpp>
 #include <rclcpp/node.hpp>
 #include "rclcpp/publisher.hpp"
+#include "unique_identifier_msgs/msg/uuid.hpp"
 #include "coord2b/types/fsm.h"
 #include "bdd_ros2_interfaces/msg/trinary_stamped.hpp"
 
@@ -27,7 +28,11 @@ namespace bdd_collab_bhv {
 class BehaviourInterface
 {
   public:
-    virtual void step(std::shared_ptr<rclcpp::Node> pNodePtr, const struct fsm_nbx *pFsmPtr) = 0;
+    virtual void step(
+      std::shared_ptr<rclcpp::Node>            pNodePtr,
+      const struct fsm_nbx                    *pFsmPtr,
+      const unique_identifier_msgs::msg::UUID &pScenarioContextId
+    )                             = 0;
     virtual ~BehaviourInterface() = default;
 };
 
@@ -44,7 +49,11 @@ class MockupCollabBehaviour : public BehaviourInterface
       rclcpp::Publisher<TrinaryStamped>::SharedPtr pLocatedPlacePublisher
     );
 
-    void step(std::shared_ptr<rclcpp::Node> pNodePtr, const struct fsm_nbx *pFsmPtr) override;
+    void step(
+      std::shared_ptr<rclcpp::Node>            pNodePtr,
+      const struct fsm_nbx                    *pFsmPtr,
+      const unique_identifier_msgs::msg::UUID &pScenarioContextId
+    ) override;
 
   private:
     rclcpp::Duration mHeartbeatPeriod;

@@ -216,12 +216,12 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 response->result.stamp         = now;
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
 
-                if (auto goal_handle = activeGoal->mGoalHandlerPtr.lock()) {
+                if (auto goal_handle = activeGoal->mGoalHandlerPtr) {
                     goal_handle->succeed(response);
                 } else {
                     RCLCPP_ERROR(
                       this->get_logger(),
-                      "Goal handler expired, no success response for scenario: %s",
+                      "Goal finished but no active goal handle: %s",
                       uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
                     );
                 }
@@ -242,12 +242,12 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 response->result.stamp         = now;
                 response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::FALSE;
 
-                if (auto goal_handle = activeGoal->mGoalHandlerPtr.lock()) {
+                if (auto goal_handle = activeGoal->mGoalHandlerPtr) {
                     goal_handle->canceled(response);
                 } else {
                     RCLCPP_ERROR(
                       this->get_logger(),
-                      "Goal handler expired, no cancel response for scenario: %s",
+                      "Goal cancel requested but no active goal handle: %s",
                       uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
                     );
                 }
@@ -261,7 +261,7 @@ void bcb::CollabPickplaceNode::fsm_loop()
             }
 
             // Behaviour & FSM update
-            bhvInfPtr->step(nodePtr, mFsmPtr.get());
+            bhvInfPtr->step(nodePtr, mFsmPtr.get(), activeGoal->mGoalCopy.scenario_context_id);
             fsm_step_nbx(mFsmPtr.get());
             reconfig_event_buffers(mFsmPtr->eventData);
         }

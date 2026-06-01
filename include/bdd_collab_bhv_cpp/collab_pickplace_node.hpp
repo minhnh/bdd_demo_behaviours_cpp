@@ -81,8 +81,8 @@ class CollabPickplaceNode : public rclcpp::Node
     // Shared data between server handlers & FSM loop
     struct GoalData
     {
-        std::weak_ptr<GoalHandleBehaviour> mGoalHandlerPtr;
-        Behaviour::Goal                    mGoalCopy;
+        std::shared_ptr<GoalHandleBehaviour> mGoalHandlerPtr;
+        Behaviour::Goal                      mGoalCopy;
     };
 
     std::optional<GoalData> mPendingGoal;

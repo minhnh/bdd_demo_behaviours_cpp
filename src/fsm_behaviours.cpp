@@ -33,8 +33,9 @@ bcb::MockupCollabBehaviour::MockupCollabBehaviour(
 { mNextHeartbeat = pNow + mHeartbeatPeriod; }
 
 void bcb::MockupCollabBehaviour::step(
-  std::shared_ptr<rclcpp::Node> pNodePtr,
-  const struct fsm_nbx         *pFsmPtr
+  std::shared_ptr<rclcpp::Node>            pNodePtr,
+  const struct fsm_nbx                    *pFsmPtr,
+  const unique_identifier_msgs::msg::UUID &pScenarioContextId
 )
 {
     auto now = pNodePtr->get_clock()->now();
@@ -45,8 +46,9 @@ void bcb::MockupCollabBehaviour::step(
     );
 
     TrinaryStamped trinaryMsg;
-    trinaryMsg.stamp         = now;
-    trinaryMsg.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
+    trinaryMsg.stamp               = now;
+    trinaryMsg.scenario_context_id = pScenarioContextId;
+    trinaryMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
 
     if (pFsmPtr->currentStateIndex == collab_pickplace::S_TOUCH_TABLE) {
         mLocatedPickPublisher->publish(trinaryMsg);
