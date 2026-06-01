@@ -163,9 +163,6 @@ void bcb::CollabPickplaceNode::fsm_loop()
     auto now     = this->get_clock()->now();
     auto nxtTick = now + period;
 
-    auto heartbeatPeriod = rclcpp::Duration(std::chrono::milliseconds(HEARTBEAT_MILI_SECS));
-    auto nextHeartbeat   = now + heartbeatPeriod;
-
     std::unique_ptr<BehaviourInterface> bhvInfPtr = nullptr;
     switch (mExecCtx) {
     case ExecutionType::Mockup:
