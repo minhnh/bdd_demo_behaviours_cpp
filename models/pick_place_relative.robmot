@@ -346,7 +346,7 @@ MOTION_SPEC (ns=app) place {
         reach-y:       keeping <shared.world.pose-ee-base>.position.y         equal to <spec.place-y>,
         reach-z:       keeping <shared.world.pose-ee-base>.position.z         equal to <spec.place-z>,
         align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.place-traj>.orientation,
-        @disable support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
         close-gripper: keeping <shared.world.gripper-pos-cmd>                 equal to <shared.spec.gripper-closed>
     }
 
@@ -377,7 +377,7 @@ MOTION_SPEC (ns=app) open-grasp-hold {
         hold-y:          keeping <shared.world.pose-ee-base>.position.y equal to <spec.hold-y>,
         hold-z:          keeping <shared.world.pose-ee-base>.position.z equal to <spec.hold-z>,
         hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation-pose>.orientation,
-        @disable support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.support-z>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.support-z>,
         open-gripper:    keeping <shared.world.gripper-pos-cmd> equal to <shared.spec.gripper-open>
     }
 
@@ -424,7 +424,7 @@ MOTION_SPEC (ns=app) retreat {
         reach-y:       keeping <shared.world.pose-ee-base>.position.y         equal to <spec.place-y>,
         reach-z:       keeping <shared.world.pose-ee-base>.position.z         equal to <spec.place-above-z>,
         align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.retreat-traj>.orientation,
-        @disable support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
         open-gripper:  keeping <shared.world.gripper-pos-cmd>                 equal to <shared.spec.gripper-open>
     }
 

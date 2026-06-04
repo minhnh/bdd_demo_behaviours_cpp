@@ -34,7 +34,7 @@ MOTION_SPEC (ns=app) fall-down {
         spec: Spec {
             vel-x-zero: LinearVelocity = 0.0 m/s,
             vel-y-zero: LinearVelocity = 0.0 m/s,
-            vel-z-down: LinearVelocity = -0.01 m/s,
+            vel-z-down: LinearVelocity = -0.05 m/s,
             pose-ee-start: Pose = Snapshot of <world.pose-ee>
         }
     }

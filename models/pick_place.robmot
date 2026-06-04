@@ -1,4 +1,5 @@
 ns app = "https://secorolab.github.io/models/pick-place/"
+ns pp = "https://secorolab.github.io/models/pick-place/fsm/"
 
 ENVIRONMENT (ns=app) pick-place-env {
     runtime: MuJoCo,
@@ -8,7 +9,7 @@ ENVIRONMENT (ns=app) pick-place-env {
             xml: "src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml"
         },
         gripper-mjcf: AttachmentAsset {
-            xml: "src/mj_kdl_wrapper/third_party/menagerie/robotiq_2f85/2f85.xml"
+            xml: "src/mj_kdl_wrapper/src/examples/assets/robotiq_2f85/2f85.xml"
         },
         table-mjcf: SceneObject {
             xml: "src/mj_kdl_wrapper/src/examples/assets/table.xml"
@@ -33,11 +34,11 @@ ENVIRONMENT (ns=app) pick-place-env {
             actuator: g_fingers_actuator
         },
         Object cube using <cube-object> {
-            position: { x: 0.50 m, z: 0.75 m },
+            position: { x: 0.50 m, z: 0.76 m },
             orientation: {},
             free: true,
             shape: Box,
-            size: { x: 0.03 m, y: 0.03 m, z: 0.03 m },
+            size: { x: 0.02 m, y: 0.02 m, z: 0.02 m },
             color: { r: 0.1, g: 0.35, b: 1.0, a: 1.0 },
             mass: 0.01,
             friction: { slide: 0.8, torsion: 0.01, roll: 0.0001 }
@@ -60,7 +61,7 @@ CONTEXT (ns=app) shared {
         twist-ee-base:    VelocityTwist { of: g_pinch, wrt: base_link, as-seen-by: base_link },
         pose-cube-base:   Pose { of: cube, wrt: base_link, as-seen-by: base_link },
         pose-elbow-base:  Pose { of: half_arm_2_link, wrt: base_link, as-seen-by: base_link },
-        gripper-pos-cmd:  JointPosition { of: g_fingers_actuator }
+        gripper-pos:      JointPosition { of: g_fingers_actuator }
     },
     spec: Spec {
         zero-linvel:    LinearVelocity = 0.0 m/s,
@@ -69,8 +70,9 @@ CONTEXT (ns=app) shared {
         grasp-pitch:    Angle = 0.0 rad,
         grasp-yaw:      Angle = 1.5708 rad,
         gravity-vec:    FreeVector { x = 0.0, y = 0.0, z = -9.81 m/s2 },
-        gripper-closed: Angle = 255.0 deg,
-        gripper-open:   Angle = 0.0 deg
+        gripper-closed: Angle = 0.8 rad,
+        gripper-open:   Angle = 0.0 rad,
+        lost-dist:      LinearDistance = 0.12 m
     }
 }
 
@@ -92,9 +94,7 @@ MOTION_SPEC (ns=app) home {
         hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.home-pose>.orientation
     }
 
-    UNTIL all {
-        at-home-settled: <shared.world.pose-ee-base> equal to <spec.home-pose>
-    }
+    UNTIL {}
 }
 
 MOTION_SPEC (ns=app) pick-above {
@@ -130,16 +130,16 @@ MOTION_SPEC (ns=app) pick-above {
         }
     }
 
-    WHEN {}
+    WHEN {
+        gripper-ready: <shared.world.gripper-pos> equal to <shared.spec.gripper-open>
+    }
 
     WHILE {
         follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.traj>.position,
         follow-ori: keeping <shared.world.pose-ee-base>.orientation equal to <spec.traj>.orientation
     }
 
-    UNTIL all {
-        at-pick-above-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose>
-    }
+    UNTIL {}
 }
 
 MOTION_SPEC (ns=app) pick {
@@ -151,8 +151,8 @@ MOTION_SPEC (ns=app) pick {
         spec: Spec {
             grasp-x:         LinearDistance = Snapshot of <shared.world.pose-cube-base>.position.x,
             grasp-y:         LinearDistance = Snapshot of <shared.world.pose-cube-base>.position.y,
-            grasp-z:         LinearDistance = 0.03 m,
-            grasp-reach:     LinearDistance = 0.06 m,
+            grasp-z:         LinearDistance = 0.01 m,
+            pre-grasp-reach: LinearDistance = 0.3 m,
             pick-alpha:      TrajectoryProgress,
             pick-start-pose: Pose = Snapshot of <shared.world.pose-ee-base>,
             grasp-goal-pose: Pose {
@@ -175,16 +175,16 @@ MOTION_SPEC (ns=app) pick {
         }
     }
 
-    WHEN {}
+    WHEN {
+        aligned-above: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> less than <pick.spec.pre-grasp-reach>
+    }
 
     WHILE {
         follow-pos: keeping <shared.world.pose-ee-base>.position    equal to <spec.pick-traj>.position,
         follow-ori: keeping <shared.world.pose-ee-base>.orientation equal to <spec.pick-traj>.orientation
     }
 
-    UNTIL all {
-        near-cube: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> less than <pick.spec.grasp-reach>
-    }
+    UNTIL {}
 }
 
 MOTION_SPEC (ns=app) grasp-hold {
@@ -199,11 +199,14 @@ MOTION_SPEC (ns=app) grasp-hold {
             hold-z:       LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.z,
             support-lift: LinearDistance = 0.06 m,
             support-z:    LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z + <spec.support-lift>,
-            hold-orientation-pose: Pose = Snapshot of <shared.world.pose-ee-base>
+            hold-orientation-pose: Pose = Snapshot of <shared.world.pose-ee-base>,
+            grasp-reach:  LinearDistance = 0.015 m
         }
     }
 
-    WHEN {}
+    WHEN {
+        near-cube: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> less than <grasp-hold.spec.grasp-reach>
+    }
 
     WHILE {
         hold-x:          keeping <shared.world.pose-ee-base>.position.x equal to <spec.hold-x>,
@@ -211,7 +214,7 @@ MOTION_SPEC (ns=app) grasp-hold {
         hold-z:          keeping <shared.world.pose-ee-base>.position.z equal to <spec.hold-z>,
         hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation-pose>.orientation,
         support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.support-z>,
-        close-gripper:   keeping <shared.world.gripper-pos-cmd> equal to <shared.spec.gripper-closed>
+        close-gripper:   keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>
     }
 
     UNTIL {}
@@ -225,6 +228,7 @@ MOTION_SPEC (ns=app) lift {
         <shared.spec>,
         spec: Spec {
             lift-z:          LinearDistance = 0.32 m,
+            grasp-threshold: Angle = 0.15 rad,
             lift-start-x:    LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.x,
             lift-start-y:    LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.y,
             lift-alpha:      TrajectoryProgress,
@@ -249,16 +253,18 @@ MOTION_SPEC (ns=app) lift {
         }
     }
 
-    WHEN {}
+    WHEN {
+        grasped: <shared.world.gripper-pos> greater than <lift.spec.grasp-threshold>
+    }
 
     WHILE {
         follow-pos:    keeping <shared.world.pose-ee-base>.position    equal to <spec.lift-traj>.position,
         follow-ori:    keeping <shared.world.pose-ee-base>.orientation equal to <spec.lift-traj>.orientation,
-        close-gripper: keeping <shared.world.gripper-pos-cmd>         equal to <shared.spec.gripper-closed>
+        close-gripper: keeping <shared.world.gripper-pos>         equal to <shared.spec.gripper-closed>
     }
 
-    UNTIL all {
-        lin-z-settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    UNTIL {
+        grasp-lost: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> greater than <shared.spec.lost-dist>
     }
 }
 
@@ -272,6 +278,7 @@ MOTION_SPEC (ns=app) place-above {
             place-x:           LinearDistance = 0.40 m,
             place-y:           LinearDistance = 0.24 m,
             place-above-z:     LinearDistance = 0.22 m,
+            lifted-z:          LinearDistance = 0.30 m,
             support-lift:      LinearDistance = 0.06 m,
             support-z:         LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z + <spec.support-lift>,
             place-above-alpha: TrajectoryProgress,
@@ -296,7 +303,9 @@ MOTION_SPEC (ns=app) place-above {
         }
     }
 
-    WHEN {}
+    WHEN {
+        lifted: <shared.world.pose-ee-base>.position.z greater than <place-above.spec.lifted-z>
+    }
 
     WHILE {
         reach-x:       keeping <shared.world.pose-ee-base>.position.x         equal to <spec.place-x>,
@@ -304,11 +313,11 @@ MOTION_SPEC (ns=app) place-above {
         reach-z:       keeping <shared.world.pose-ee-base>.position.z         equal to <spec.place-above-z>,
         align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.place-above-traj>.orientation,
         support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
-        close-gripper: keeping <shared.world.gripper-pos-cmd>                 equal to <shared.spec.gripper-closed>
+        close-gripper: keeping <shared.world.gripper-pos>                 equal to <shared.spec.gripper-closed>
     }
 
-    UNTIL all {
-        at-place-above-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose-above>
+    UNTIL {
+        grasp-lost: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> greater than <shared.spec.lost-dist>
     }
 }
 
@@ -322,9 +331,23 @@ MOTION_SPEC (ns=app) place {
             place-x:           LinearDistance = 0.40 m,
             place-y:           LinearDistance = 0.24 m,
             place-z:           LinearDistance = 0.03 m,
-            support-z:         LinearDistance,
+            place-above-z:     LinearDistance = 0.22 m,
+            support-lift:      LinearDistance = 0.06 m,
+            support-z:         LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z + <spec.support-lift>,
             place-alpha:       TrajectoryProgress,
             place-start-pose:  Pose = Snapshot of <shared.world.pose-ee-base>,
+            pre-place-pose: Pose {
+                position: {
+                    x: <spec.place-x>,
+                    y: <spec.place-y>,
+                    z: <spec.place-above-z>
+                },
+                orientation: {
+                    roll:  <shared.spec.grasp-roll>,
+                    pitch: <shared.spec.grasp-pitch>,
+                    yaw:   <shared.spec.grasp-yaw>
+                }
+            },
             goal-pose-place: Pose {
                 position: {
                     x: <spec.place-x>,
@@ -345,19 +368,21 @@ MOTION_SPEC (ns=app) place {
         }
     }
 
-    WHEN {}
+    WHEN {
+        at-pre-place: <shared.world.pose-ee-base> equal to <place.spec.pre-place-pose>
+    }
 
     WHILE {
         reach-x:       keeping <shared.world.pose-ee-base>.position.x         equal to <spec.place-x>,
         reach-y:       keeping <shared.world.pose-ee-base>.position.y         equal to <spec.place-y>,
         reach-z:       keeping <shared.world.pose-ee-base>.position.z         equal to <spec.place-z>,
         align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.place-traj>.orientation,
-        @disable support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
-        close-gripper: keeping <shared.world.gripper-pos-cmd>                 equal to <shared.spec.gripper-closed>
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
+        close-gripper: keeping <shared.world.gripper-pos>                 equal to <shared.spec.gripper-closed>
     }
 
-    UNTIL all {
-        at-place-settled: <shared.world.pose-ee-base> equal to <spec.goal-pose-place>
+    UNTIL {
+        grasp-lost: distance between <shared.world.pose-ee-base> and <shared.world.pose-cube-base> greater than <shared.spec.lost-dist>
     }
 }
 
@@ -371,20 +396,24 @@ MOTION_SPEC (ns=app) open-grasp-hold {
             hold-x:    LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.x,
             hold-y:    LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.y,
             hold-z:    LinearDistance = Snapshot of <shared.world.pose-ee-base>.position.z,
-            support-z: LinearDistance,
-            hold-orientation-pose: Pose = Snapshot of <shared.world.pose-ee-base>
+            support-lift: LinearDistance = 0.06 m,
+            support-z: LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z + <spec.support-lift>,
+            hold-orientation-pose: Pose = Snapshot of <shared.world.pose-ee-base>,
+            place-z:   LinearDistance = 0.03 m
         }
     }
 
-    WHEN {}
+    WHEN {
+        at-place: <shared.world.pose-ee-base>.position.z equal to <open-grasp-hold.spec.place-z>
+    }
 
     WHILE {
         hold-x:          keeping <shared.world.pose-ee-base>.position.x equal to <spec.hold-x>,
         hold-y:          keeping <shared.world.pose-ee-base>.position.y equal to <spec.hold-y>,
         hold-z:          keeping <shared.world.pose-ee-base>.position.z equal to <spec.hold-z>,
         hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation-pose>.orientation,
-        @disable support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.support-z>,
-        open-gripper:    keeping <shared.world.gripper-pos-cmd> equal to <shared.spec.gripper-open>
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.support-z>,
+        open-gripper:    keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-open>
     }
 
     UNTIL {}
@@ -400,7 +429,8 @@ MOTION_SPEC (ns=app) retreat {
             place-x:           LinearDistance = 0.40 m,
             place-y:           LinearDistance = 0.24 m,
             place-above-z:     LinearDistance = 0.22 m,
-            support-z:         LinearDistance = 1.70 m,
+            support-lift:      LinearDistance = 0.06 m,
+            support-z:         LinearDistance = Snapshot of <shared.world.pose-elbow-base>.position.z + <spec.support-lift>,
             retreat-alpha:     TrajectoryProgress,
             retreat-start-pose: Pose = Snapshot of <shared.world.pose-ee-base>,
             goal-pose-retreat: Pose {
@@ -423,15 +453,17 @@ MOTION_SPEC (ns=app) retreat {
         }
     }
 
-    WHEN {}
+    WHEN {
+        released: <shared.world.gripper-pos> equal to <shared.spec.gripper-open>
+    }
 
     WHILE {
         reach-x:       keeping <shared.world.pose-ee-base>.position.x         equal to <spec.place-x>,
         reach-y:       keeping <shared.world.pose-ee-base>.position.y         equal to <spec.place-y>,
         reach-z:       keeping <shared.world.pose-ee-base>.position.z         equal to <spec.place-above-z>,
         align-ori:     keeping <shared.world.pose-ee-base>.orientation        equal to <spec.retreat-traj>.orientation,
-        @disable support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
-        open-gripper:  keeping <shared.world.gripper-pos-cmd>                 equal to <shared.spec.gripper-open>
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z   equal to <spec.support-z>,
+        open-gripper:  keeping <shared.world.gripper-pos>                 equal to <shared.spec.gripper-open>
     }
 
     UNTIL all {
@@ -449,10 +481,6 @@ CONSTRAINT_HANDLER (ns=app) handler-home {
 
     MOTION: <home>
     CONTROL_MODE: JointTorque
-
-    MONITORS {
-        mon-home-settled: monitor <home.until> and trigger event home-settled when active
-    }
 
     CONTROLLERS {
         ctrl-hold-position:    PID { constraint: <home.hold-position>,    Kp = 200, Ki = 100, Kd = 40, decay = 0 },
@@ -477,7 +505,7 @@ CONSTRAINT_HANDLER (ns=app) handler-pick-above {
     CONTROL_MODE: JointTorque
 
     MONITORS {
-        mon-pick-above-settled: monitor <pick-above.until> and trigger event pick-above-settled when active
+        mon-pick-above-ready: monitor <pick-above.gripper-ready> and trigger event pp.E_PICK_ABOVE_READY when active fallback <home>
     }
 
     CONTROLLERS {
@@ -497,7 +525,7 @@ CONSTRAINT_HANDLER (ns=app) handler-pick {
     CONTROL_MODE: JointTorque
 
     MONITORS {
-        mon-near-cube: monitor <pick.until> and trigger event near-cube when active
+        mon-pick-ready: monitor <pick.aligned-above> and trigger event pp.E_PICK_READY when active fallback <pick-above>
     }
 
     CONTROLLERS {
@@ -517,7 +545,7 @@ CONSTRAINT_HANDLER (ns=app) handler-close-grip {
     CONTROL_MODE: JointTorque
 
     MONITORS {
-        mon-at-cube: monitor <grasp-hold.hold-x> and trigger event at-grasp when active
+        mon-grasp-ready: monitor <grasp-hold.near-cube> and trigger event pp.E_GRASP_READY when active fallback <pick>
     }
 
     CONTROLLERS {
@@ -546,7 +574,8 @@ CONSTRAINT_HANDLER (ns=app) handler-lift {
     CONTROL_MODE: JointTorque
 
     MONITORS {
-        mon-lift-settled: monitor <lift.until> and trigger event lift-settled when active
+        mon-lift-ready: monitor <lift.grasped> and trigger event pp.E_LIFT_READY when active fallback <grasp-hold>,
+        mon-lift-grasp-lost: monitor <lift.until> and trigger event pp.E_GRASP_LOST_LIFT when active
     }
 
     CONTROLLERS {
@@ -571,7 +600,8 @@ CONSTRAINT_HANDLER (ns=app) handler-place-above {
     CONTROL_MODE: JointTorque
 
     MONITORS {
-        mon-place-above-settled: monitor <place-above.until> and trigger event place-above-settled when active
+        mon-place-above-ready: monitor <place-above.lifted> and trigger event pp.E_PLACE_ABOVE_READY when active fallback <lift>,
+        mon-place-above-grasp-lost: monitor <place-above.until> and trigger event pp.E_GRASP_LOST_PLACE_ABOVE when active
     }
 
     CONTROLLERS {
@@ -600,7 +630,8 @@ CONSTRAINT_HANDLER (ns=app) handler-place {
     CONTROL_MODE: JointTorque
 
     MONITORS {
-        mon-place-settled: monitor <place.until> and trigger event place-settled when active
+        mon-place-ready: monitor <place.at-pre-place> and trigger event pp.E_PLACE_READY when active fallback <place-above>,
+        mon-place-grasp-lost: monitor <place.until> and trigger event pp.E_GRASP_LOST_PLACE when active
     }
 
     CONTROLLERS {
@@ -608,7 +639,7 @@ CONSTRAINT_HANDLER (ns=app) handler-place {
         ctrl-pl-reach-y:       PID { constraint: <place.reach-y>,     Kp = 200, Ki = 100, Kd = 40, decay = 0 },
         ctrl-pl-reach-z:       PID { constraint: <place.reach-z>,     Kp = 200, Ki = 100, Kd = 40, decay = 0 },
         ctrl-pl-align-ori:     PID { constraint: <place.align-ori>,   Kp = 120, Ki = 50,  Kd = 80, decay = 0 },
-        ctrl-pl-support-z:     Impedance { constraint: <place.support-elbow-z>, Stiffness = 800, Damping = 80 }
+        ctrl-pl-support-z:     Impedance { constraint: <place.support-elbow-z>, Stiffness = 800, Damping = 160 }
             apply at <shared.world.half-arm-2-link>,
         ctrl-pl-close-gripper: FeedForward { constraint: <place.close-gripper> }
     }
@@ -630,7 +661,7 @@ CONSTRAINT_HANDLER (ns=app) handler-open-grip {
     CONTROL_MODE: JointTorque
 
     MONITORS {
-        mon-open-at-cube: monitor <open-grasp-hold.hold-x> and trigger event at-open-grasp when active
+        mon-open-ready: monitor <open-grasp-hold.at-place> and trigger event pp.E_OPEN_READY when active fallback <place>
     }
 
     CONTROLLERS {
@@ -638,7 +669,7 @@ CONSTRAINT_HANDLER (ns=app) handler-open-grip {
         ctrl-og-hold-y:      PID { constraint: <open-grasp-hold.hold-y>,      Kp = 200, Ki = 100, Kd = 40, decay = 0 },
         ctrl-og-hold-z:      PID { constraint: <open-grasp-hold.hold-z>,      Kp = 200, Ki = 100, Kd = 40, decay = 0 },
         ctrl-og-hold-orientation: PID { constraint: <open-grasp-hold.hold-orientation>, Kp = 120, Ki = 50, Kd = 80, decay = 0 },
-        ctrl-og-support-z:   Impedance { constraint: <open-grasp-hold.support-elbow-z>, Stiffness = 800, Damping = 80 }
+        ctrl-og-support-z:   Impedance { constraint: <open-grasp-hold.support-elbow-z>, Stiffness = 800, Damping = 160 }
             apply at <shared.world.half-arm-2-link>,
         ctrl-og-open-gripper: FeedForward { constraint: <open-grasp-hold.open-gripper> }
     }
@@ -661,7 +692,8 @@ CONSTRAINT_HANDLER (ns=app) handler-retreat {
     CONTROL_MODE: JointTorque
 
     MONITORS {
-        mon-retreat-settled: monitor <retreat.until> and trigger event retreat-settled when active
+        mon-retreat-ready:   monitor <retreat.released> and trigger event pp.E_RETREAT_READY when active fallback <open-grasp-hold>,
+        mon-retreat-settled: monitor <retreat.until>    and trigger event pp.E_RETREAT_SETTLED when active
     }
 
     CONTROLLERS {
@@ -669,7 +701,7 @@ CONSTRAINT_HANDLER (ns=app) handler-retreat {
         ctrl-ret-reach-y:       PID { constraint: <retreat.reach-y>,     Kp = 200, Ki = 100, Kd = 40, decay = 0 },
         ctrl-ret-reach-z:       PID { constraint: <retreat.reach-z>,     Kp = 200, Ki = 100, Kd = 40, decay = 0 },
         ctrl-ret-align-ori:     PID { constraint: <retreat.align-ori>,   Kp = 120, Ki = 50,  Kd = 80, decay = 0 },
-        ctrl-ret-support-z:     Impedance { constraint: <retreat.support-elbow-z>, Stiffness = 800, Damping = 80 }
+        ctrl-ret-support-z:     Impedance { constraint: <retreat.support-elbow-z>, Stiffness = 800, Damping = 160 }
             apply at <shared.world.half-arm-2-link>,
         ctrl-ret-open-gripper:  FeedForward { constraint: <retreat.open-gripper> }
     }
