@@ -72,6 +72,10 @@ class MockupCollabBehaviour : public BehaviourInterface
     rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPickPublisher;
     rclcpp::Publisher<TrinaryStamped>::SharedPtr mIsHeldPublisher;
     rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPlacePublisher;
+
+    TrinaryStamped mLocatedPickMsg;
+    TrinaryStamped mIsHeldMsg;
+    TrinaryStamped mLocatedPlaceMsg;
 };
 
 } // namespace bdd_collab_bhv

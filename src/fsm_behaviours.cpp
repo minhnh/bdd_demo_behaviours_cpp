@@ -48,30 +48,37 @@ void bcb::MockupCollabBehaviour::step(
       pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name
     );
 
-    if (!pScenarioContextId.uuid.empty() && pGoalHandlePtr) {
+    if (pGoalHandlePtr) {
         mFeedbackPtr->scenario_context_id = pScenarioContextId;
         mFeedbackPtr->status =
           std::format("current state: {}", pFsmPtr->states[pFsmPtr->currentStateIndex].name);
         pGoalHandlePtr->publish_feedback(mFeedbackPtr);
     }
 
-    TrinaryStamped trinaryMsg;
-    trinaryMsg.stamp               = now;
-    trinaryMsg.scenario_context_id = pScenarioContextId;
-    trinaryMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
-
     if (pFsmPtr->currentStateIndex == collab_pickplace::S_TOUCH_TABLE) {
-        mLocatedPickPublisher->publish(trinaryMsg);
+        mLocatedPickMsg.stamp               = now;
+        mLocatedPickMsg.scenario_context_id = pScenarioContextId;
+        mLocatedPickMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
+        mLocatedPickPublisher->publish(mLocatedPickMsg);
+
         produce_event(pFsmPtr->eventData, collab_pickplace::E_TABLE_TOUCHED);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_SLIDE) {
         produce_event(pFsmPtr->eventData, collab_pickplace::E_OBJ_REACHED);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_GRASP) {
-        mIsHeldPublisher->publish(trinaryMsg);
+        mIsHeldMsg.stamp               = now;
+        mIsHeldMsg.scenario_context_id = pScenarioContextId;
+        mIsHeldMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
+        mIsHeldPublisher->publish(mIsHeldMsg);
+
         produce_event(pFsmPtr->eventData, collab_pickplace::E_GRASP_DONE);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_COLLAB_MOVE) {
         produce_event(pFsmPtr->eventData, collab_pickplace::E_PLACE_REACHED);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_RELEASE) {
-        mLocatedPlacePublisher->publish(trinaryMsg);
+        mLocatedPlaceMsg.stamp               = now;
+        mLocatedPlaceMsg.scenario_context_id = pScenarioContextId;
+        mLocatedPlaceMsg.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
+        mLocatedPlacePublisher->publish(mLocatedPlaceMsg);
+
         produce_event(pFsmPtr->eventData, collab_pickplace::E_RELEASE_DONE);
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_RECOVER) {
         produce_event(pFsmPtr->eventData, collab_pickplace::E_RECOVER_DONE);
