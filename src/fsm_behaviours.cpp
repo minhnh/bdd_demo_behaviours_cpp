@@ -48,7 +48,7 @@ void bcb::MockupCollabBehaviour::step(
       pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name
     );
 
-    if (pGoalHandlePtr) {
+    if (!pScenarioContextId.uuid.empty() && pGoalHandlePtr) {
         mFeedbackPtr->scenario_context_id = pScenarioContextId;
         mFeedbackPtr->status =
           std::format("current state: {}", pFsmPtr->states[pFsmPtr->currentStateIndex].name);

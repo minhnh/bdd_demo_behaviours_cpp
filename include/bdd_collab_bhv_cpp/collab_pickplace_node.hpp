@@ -53,6 +53,7 @@ class CollabPickplaceNode : public rclcpp::Node
     using GoalHandleBehaviour = rclcpp_action::ServerGoalHandle<Behaviour>;
     using Event               = bdd_ros2_interfaces::msg::Event;
     using TrinaryStamped      = bdd_ros2_interfaces::msg::TrinaryStamped;
+    using UUID                = unique_identifier_msgs::msg::UUID;
 
     explicit CollabPickplaceNode(const rclcpp::NodeOptions &pOptions = rclcpp::NodeOptions());
 

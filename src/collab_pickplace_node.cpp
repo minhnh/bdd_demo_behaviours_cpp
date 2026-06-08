@@ -257,16 +257,12 @@ void bcb::CollabPickplaceNode::fsm_loop()
             }
 
             // Behaviour & FSM update
-            if (activeGoal && processingGoal) {
-                bhvInfPtr->step(
-                  nodePtr,
-                  mFsmPtr.get(),
-                  activeGoal->mGoalCopy.scenario_context_id,
-                  activeGoal->mGoalHandlerPtr
-                );
-            } else {
-                bhvInfPtr->step(nodePtr, mFsmPtr.get());
-            }
+            bhvInfPtr->step(
+              nodePtr,
+              mFsmPtr.get(),
+              activeGoal && processingGoal ? activeGoal->mGoalCopy.scenario_context_id : UUID(),
+              activeGoal && processingGoal ? activeGoal->mGoalHandlerPtr : nullptr
+            );
             fsm_step_nbx(mFsmPtr.get());
             reconfig_event_buffers(mFsmPtr->eventData);
         }
