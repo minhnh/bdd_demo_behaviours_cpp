@@ -6,6 +6,10 @@
 #include <stdexcept>
 #include <yaml-cpp/yaml.h>
 
+#define LOCATED_AT_PICK_KEY "located_at_pick"
+#define IS_HELD_KEY "is_held"
+#define LOCATED_AT_PLACE_KEY "located_at_place"
+
 namespace bdd_collab_bhv {
 
 using TopicConfig = std::map<std::string, std::string>;
@@ -16,13 +20,13 @@ inline TopicConfig load_topics(const std::string &file_path)
         YAML::Node root = YAML::LoadFile(file_path);
 
         TopicConfig topics;
-        topics["located_at_pick"]  = root["located_at_pick"].as<std::string>();
-        topics["is_held"]          = root["is_held"].as<std::string>();
-        topics["located_at_place"] = root["located_at_place"].as<std::string>();
+        topics[LOCATED_AT_PICK_KEY]  = root[LOCATED_AT_PICK_KEY].as<std::string>();
+        topics[IS_HELD_KEY]          = root[IS_HELD_KEY].as<std::string>();
+        topics[LOCATED_AT_PLACE_KEY] = root[LOCATED_AT_PLACE_KEY].as<std::string>();
 
         if (
-          topics["located_at_pick"].empty() || topics["is_held"].empty()
-          || topics["located_at_place"].empty()
+          topics[LOCATED_AT_PICK_KEY].empty() || topics[IS_HELD_KEY].empty()
+          || topics[LOCATED_AT_PLACE_KEY].empty()
         ) {
             throw std::runtime_error(
               "YAML must contain non-empty values for 'located_at_pick', 'is_held', and "
