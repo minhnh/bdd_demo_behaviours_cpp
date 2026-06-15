@@ -176,8 +176,6 @@ void bcb::CollabPickplaceNode::fsm_loop()
         );
     }
 
-    auto  response = std::make_shared<Behaviour::Result>();
-    auto  feedback = std::make_shared<Behaviour::Feedback>();
     Event evt_msg;
 
     while (rclcpp::ok() && mFsmLoopRunning.load(std::memory_order_acquire)) {
@@ -191,8 +189,6 @@ void bcb::CollabPickplaceNode::fsm_loop()
         {
             std::lock_guard<std::mutex> lockFsm(mFsmMutex);
             produce_event(mFsmPtr->eventData, collab_pickplace::E_STEP);
-
-            response->result.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
 
             // Event publishing
             for (unsigned int evt : CollabPickplaceNode::EXPORTED_EVENTS) {
@@ -208,23 +204,6 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 produce_event(mFsmPtr->eventData, collab_pickplace::E_NEW_GOAL);
                 processingGoal = true;
             }
-            if (consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED)) {
-                response->result.stamp         = now;
-                response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::TRUE;
-
-                if (auto goalHandle = activeGoal->mGoalHandlerPtr) {
-                    goalHandle->succeed(response);
-                } else {
-                    RCLCPP_ERROR(
-                      this->get_logger(),
-                      "Goal finished but no active goal handle: %s",
-                      uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
-                    );
-                }
-
-                processingGoal = false;
-                activeGoal.reset();
-            }
 
             if (mCancelRequested.load(std::memory_order_acquire)) {
                 produce_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_CANCELLED);
@@ -234,22 +213,6 @@ void bcb::CollabPickplaceNode::fsm_loop()
                   "Goal cancel requested: %s",
                   uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
                 );
-
-                response->result.stamp         = now;
-                response->result.trinary.value = bdd_ros2_interfaces::msg::Trinary::FALSE;
-
-                if (auto goalHandle = activeGoal->mGoalHandlerPtr) {
-                    goalHandle->canceled(response);
-                } else {
-                    RCLCPP_ERROR(
-                      this->get_logger(),
-                      "Goal cancel requested but no active goal handle: %s",
-                      uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
-                    );
-                }
-
-                processingGoal = false;
-                activeGoal.reset();
             }
 
             if (mFsmPtr->currentStateIndex == collab_pickplace::S_IDLE) {
@@ -257,14 +220,21 @@ void bcb::CollabPickplaceNode::fsm_loop()
             }
 
             // Behaviour & FSM update
+            fsm_step_nbx(mFsmPtr.get());
+            reconfig_event_buffers(mFsmPtr->eventData);
+
             bhvInfPtr->step(
               nodePtr,
               mFsmPtr.get(),
               activeGoal && processingGoal ? activeGoal->mGoalCopy.scenario_context_id : UUID(),
               activeGoal && processingGoal ? activeGoal->mGoalHandlerPtr : nullptr
             );
-            fsm_step_nbx(mFsmPtr.get());
-            reconfig_event_buffers(mFsmPtr->eventData);
+
+            // Reset if goal was finished or cancelled
+            if (processingGoal && (consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED) || consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_CANCELLED))) {
+                processingGoal = false;
+                activeGoal.reset();
+            }
         }
 
         // ensure loop rate

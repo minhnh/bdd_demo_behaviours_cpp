@@ -30,6 +30,7 @@ bcb::MockupCollabBehaviour::MockupCollabBehaviour(
 )
   : mHeartbeatPeriod(std::chrono::milliseconds(pHeartbeatDurMiliSec)),
     mFeedbackPtr(std::make_shared<Behaviour::Feedback>()),
+    mResponsePtr(std::make_shared<Behaviour::Result>()),
     mLocatedPickPublisher(pLocatedPickPublisher), mIsHeldPublisher(pIsHeldPublisher),
     mLocatedPlacePublisher(pLocatedPlacePublisher)
 { mNextHeartbeat = pNow + mHeartbeatPeriod; }
@@ -42,12 +43,31 @@ void bcb::MockupCollabBehaviour::step(
 )
 {
     auto now = pNodePtr->get_clock()->now();
+
+    // Publish result response
+    if (pGoalHandlePtr) {
+        if (consume_event(pFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED)) {
+            mResponsePtr->result.scenario_context_id = pScenarioContextId;
+            mResponsePtr->result.stamp               = now;
+            mResponsePtr->result.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
+            pGoalHandlePtr->succeed(mResponsePtr);
+            return;
+        } else if (consume_event(pFsmPtr->eventData, collab_pickplace::E_GOAL_CANCELLED)) {
+            mResponsePtr->result.scenario_context_id = pScenarioContextId;
+            mResponsePtr->result.stamp               = now;
+            mResponsePtr->result.trinary.value       = bdd_ros2_interfaces::msg::Trinary::FALSE;
+            pGoalHandlePtr->canceled(mResponsePtr);
+            return;
+        }
+    }
+
     if (now < mNextHeartbeat) { return; }
     mNextHeartbeat += mHeartbeatPeriod;
     RCLCPP_INFO(
       pNodePtr->get_logger(), "State: %s", pFsmPtr->states[pFsmPtr->currentStateIndex].name
     );
 
+    // Publish feedback
     if (pGoalHandlePtr) {
         mFeedbackPtr->scenario_context_id = pScenarioContextId;
         mFeedbackPtr->status =

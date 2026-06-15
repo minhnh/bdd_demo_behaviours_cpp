@@ -68,6 +68,7 @@ class MockupCollabBehaviour : public BehaviourInterface
     rclcpp::Time     mNextHeartbeat;
 
     std::shared_ptr<Behaviour::Feedback> mFeedbackPtr;
+    std::shared_ptr<Behaviour::Result>   mResponsePtr;
 
     rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPickPublisher;
     rclcpp::Publisher<TrinaryStamped>::SharedPtr mIsHeldPublisher;
