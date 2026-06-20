@@ -9,10 +9,10 @@ ENVIRONMENT (ns=app) pick-place-env {
             xml: "src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml"
         },
         gripper-mjcf: AttachmentAsset {
-            xml: "src/mj_kdl_wrapper/src/examples/assets/robotiq_2f85/2f85.xml"
+            xml: "src/mj_kdl_wrapper/assets/robotiq_2f85/2f85.xml"
         },
         table-mjcf: SceneObject {
-            xml: "src/mj_kdl_wrapper/src/examples/assets/table.xml"
+            xml: "src/mj_kdl_wrapper/assets/table.xml"
         },
         cube-object: SceneObject
     },

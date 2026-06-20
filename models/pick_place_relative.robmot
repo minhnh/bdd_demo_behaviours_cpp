@@ -11,7 +11,7 @@ ENVIRONMENT (ns=app) pick-place-relative-env {
             xml: "src/mj_kdl_wrapper/third_party/menagerie/robotiq_2f85/2f85.xml"
         },
         table-mjcf: SceneObject {
-            xml: "src/mj_kdl_wrapper/src/examples/assets/table.xml"
+            xml: "src/mj_kdl_wrapper/assets/table.xml"
         },
         cube-object: SceneObject
     },
