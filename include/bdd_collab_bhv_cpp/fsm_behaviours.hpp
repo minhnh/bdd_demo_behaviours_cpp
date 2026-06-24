@@ -18,27 +18,65 @@
 #include <memory>
 #include <rclcpp/time.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include "rclcpp/publisher.hpp"
+#include "unique_identifier_msgs/msg/uuid.hpp"
 #include "coord2b/types/fsm.h"
+#include "bdd_ros2_interfaces/msg/trinary_stamped.hpp"
+#include "bdd_ros2_interfaces/action/behaviour.hpp"
 
 namespace bdd_collab_bhv {
 
 class BehaviourInterface
 {
   public:
-    virtual void step(std::shared_ptr<rclcpp::Node> pNodePtr, struct fsm_nbx *pFsmPtr) = 0;
+    using UUID                = unique_identifier_msgs::msg::UUID;
+    using Behaviour           = bdd_ros2_interfaces::action::Behaviour;
+    using GoalHandleBehaviour = rclcpp_action::ServerGoalHandle<Behaviour>;
+
+    virtual void step(
+      std::shared_ptr<rclcpp::Node>        pNodePtr,
+      const struct fsm_nbx                *pFsmPtr,
+      const UUID                          &pScenarioContextId = UUID(),
+      std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr     = nullptr
+    )                             = 0;
     virtual ~BehaviourInterface() = default;
 };
 
 class MockupCollabBehaviour : public BehaviourInterface
 {
   public:
-    MockupCollabBehaviour(rclcpp::Time pNow, uint pHeartbeatDurMiliSec);
+    using TrinaryStamped = bdd_ros2_interfaces::msg::TrinaryStamped;
 
-    void step(std::shared_ptr<rclcpp::Node> pNodePtr, struct fsm_nbx *pFsmPtr) override;
+    MockupCollabBehaviour(
+      rclcpp::Time                                 pNow,
+      uint                                         pHeartbeatDurMiliSec,
+      rclcpp::Publisher<TrinaryStamped>::SharedPtr pLocatedPickPublisher,
+      rclcpp::Publisher<TrinaryStamped>::SharedPtr pIsHeldPublisher,
+      rclcpp::Publisher<TrinaryStamped>::SharedPtr pLocatedPlacePublisher
+    );
+
+    void step(
+      std::shared_ptr<rclcpp::Node>        pNodePtr,
+      const struct fsm_nbx                *pFsmPtr,
+      const UUID                          &pScenarioContextId = UUID(),
+      std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr     = nullptr
+    ) override;
 
   private:
     rclcpp::Duration mHeartbeatPeriod;
     rclcpp::Time     mNextHeartbeat;
+
+    std::shared_ptr<Behaviour::Feedback> mFeedbackPtr;
+    std::shared_ptr<Behaviour::Result>   mResponsePtr;
+
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPickPublisher;
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mIsHeldPublisher;
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPlacePublisher;
+
+    TrinaryStamped mLocatedPickMsg;
+    TrinaryStamped mIsHeldMsg;
+    TrinaryStamped mLocatedPlaceMsg;
 };
 
 } // namespace bdd_collab_bhv

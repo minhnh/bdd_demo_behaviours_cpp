@@ -1,4 +1,6 @@
-NAME: collab_pickplace
+ns tmpl = "https://secorolab.github.io/models/acceptance-criteria/bdd/templates/"
+
+FSM (ns=tmpl) collab_pickplace {
 DESCRIPTION: "FSM for a collaborative pick&place task with human"
 
 STATES:
@@ -13,7 +15,6 @@ STATES:
     S_EXIT
 
 START_STATE: @S_START
-CURRENT_STATE: @S_START
 END_STATE: @S_EXIT
 
 EVENTS:
@@ -163,3 +164,4 @@ REACTIONS:
     R_E_STEP_RECOVER:
         WHEN: @E_STEP
         DO: @T_RECOVER_SELF
+}
