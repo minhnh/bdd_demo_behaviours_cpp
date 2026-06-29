@@ -26,13 +26,14 @@
 #include <rclcpp_action/server.hpp>
 #include <rclcpp/utilities.hpp>
 #include <utility>
-#include "bdd_collab_bhv_cpp/collab_pickplace.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace_fsm.hpp"
 #include "coord2b/functions/event_loop.h"
 #include "coord2b/functions/fsm.h"
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
 #include "bdd_collab_bhv_cpp/conversions.hpp"
 #include "bdd_collab_bhv_cpp/fsm_behaviours.hpp"
 #include "bdd_collab_bhv_cpp/collab_pickplace_node.hpp"
+#include "bdd_collab_bhv_cpp/utils.hpp"
 
 #define TICK_MILI_SECS 1        // 1kHz
 #define HEARTBEAT_MILI_SECS 500 // 2Hz
@@ -47,6 +48,8 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
 
     declare_parameter<std::string>("bhv_server_name", "bhv_server");
     declare_parameter<std::string>("exec_context", "mockup");
+    declare_parameter<std::string>("event_topic", "");
+    declare_parameter<std::string>("topic_config", "");
 
     auto execCtxStr = get_parameter("exec_context").as_string();
     if (execCtxStr.compare("mockup") == 0) {
@@ -105,6 +108,32 @@ bcb::CollabPickplaceNode::CollabPickplaceNode(const rclcpp::NodeOptions &pOption
     mBhvServerPtr                = rclcpp_action::create_server<Behaviour>(
       this, serverName, goalHandler, cancelHandler, accepted_handler
     );
+
+    const std::string eventTopic = get_parameter("event_topic").as_string();
+    if (eventTopic.empty()) {
+        throw std::runtime_error("'event_topic' parameter is empty or not provided");
+    }
+    RCLCPP_INFO(this->get_logger(), "Publishing events on topic: %s", eventTopic.c_str());
+    mEventPublisher = this->create_publisher<Event>(eventTopic, rclcpp::QoS(10));
+
+    const std::string topicConfigPath = get_parameter("topic_config").as_string();
+    if (topicConfigPath.empty()) {
+        throw std::runtime_error("'topic_config' parameter is empty or not provided");
+    }
+    try {
+        auto topicConfig   = bcb::load_topics(topicConfigPath);
+        mLocatedPickTopic  = topicConfig["located_at_pick"];
+        mIsHeldTopic       = topicConfig["is_held"];
+        mLocatedPlaceTopic = topicConfig["located_at_place"];
+    } catch (const std::exception &e) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to load topic config: %s", e.what());
+        throw;
+    }
+    mLocatedPickPublisher =
+      this->create_publisher<TrinaryStamped>(mLocatedPickTopic, rclcpp::QoS(10));
+    mIsHeldPublisher = this->create_publisher<TrinaryStamped>(mIsHeldTopic, rclcpp::QoS(10));
+    mLocatedPlacePublisher =
+      this->create_publisher<TrinaryStamped>(mLocatedPlaceTopic, rclcpp::QoS(10));
 }
 
 void bcb::CollabPickplaceNode::start_fsm()
@@ -137,7 +166,9 @@ void bcb::CollabPickplaceNode::fsm_loop()
     std::unique_ptr<BehaviourInterface> bhvInfPtr = nullptr;
     switch (mExecCtx) {
     case ExecutionType::Mockup:
-        bhvInfPtr = std::make_unique<MockupCollabBehaviour>(now, HEARTBEAT_MILI_SECS);
+        bhvInfPtr = std::make_unique<MockupCollabBehaviour>(
+          now, HEARTBEAT_MILI_SECS, mLocatedPickPublisher, mIsHeldPublisher, mLocatedPlacePublisher
+        );
         break;
     default:
         throw std::runtime_error(
@@ -145,7 +176,11 @@ void bcb::CollabPickplaceNode::fsm_loop()
         );
     }
 
+    Event evt_msg;
+
     while (rclcpp::ok() && mFsmLoopRunning.load(std::memory_order_acquire)) {
+        now = this->get_clock()->now();
+
         if (!processingGoal) {
             activeGoal = std::move(mPendingGoal);
             mPendingGoal.reset();
@@ -155,14 +190,29 @@ void bcb::CollabPickplaceNode::fsm_loop()
             std::lock_guard<std::mutex> lockFsm(mFsmMutex);
             produce_event(mFsmPtr->eventData, collab_pickplace::E_STEP);
 
+            // Event publishing
+            for (unsigned int evt : CollabPickplaceNode::EXPORTED_EVENTS) {
+                if (!activeGoal || !consume_event(mFsmPtr->eventData, evt)) continue;
+                evt_msg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
+                evt_msg.stamp               = now;
+                evt_msg.uri                 = collab_pickplace::EVENT_URIS[evt];
+                mEventPublisher->publish(evt_msg);
+            }
+
             // Goal handling
             if (activeGoal && !processingGoal) {
                 produce_event(mFsmPtr->eventData, collab_pickplace::E_NEW_GOAL);
                 processingGoal = true;
             }
-            if (consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED)) {
-                processingGoal = false;
-                activeGoal.reset();
+
+            if (mCancelRequested.load(std::memory_order_acquire)) {
+                produce_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_CANCELLED);
+                mCancelRequested.store(false, std::memory_order_release);
+                RCLCPP_INFO(
+                  this->get_logger(),
+                  "Goal cancel requested: %s",
+                  uuid_to_hex(activeGoal ? activeGoal->mGoalCopy.scenario_context_id : UUID()).c_str()
+                );
             }
 
             if (mFsmPtr->currentStateIndex == collab_pickplace::S_IDLE) {
@@ -170,9 +220,21 @@ void bcb::CollabPickplaceNode::fsm_loop()
             }
 
             // Behaviour & FSM update
-            bhvInfPtr->step(nodePtr, mFsmPtr.get());
+            bool goalCompleted = false;
+            bhvInfPtr->step(
+              nodePtr,
+              mFsmPtr.get(),
+              activeGoal && processingGoal ? activeGoal->mGoalCopy.scenario_context_id : UUID(),
+              activeGoal && processingGoal ? activeGoal->mGoalHandlerPtr : nullptr,
+              &goalCompleted
+            );
             fsm_step_nbx(mFsmPtr.get());
             reconfig_event_buffers(mFsmPtr->eventData);
+
+            if (goalCompleted) {
+                processingGoal = false;
+                activeGoal.reset();
+            }
         }
 
         // ensure loop rate

@@ -10,7 +10,9 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>bdd_ros2_interfaces</depend>
+  <depend>coord2b</depend>
   <depend>rclcpp</depend>
+  <depend>yaml-cpp</depend>
   <depend>rclcpp_action</depend>
   <depend>rclcpp_components</depend>
 

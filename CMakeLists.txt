@@ -11,6 +11,7 @@ find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(bdd_ros2_interfaces REQUIRED)
 find_package(coord2b REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 include_directories(
   include
@@ -35,12 +36,16 @@ target_link_libraries(
   ${rclcpp_TARGETS}
   ${rclcpp_action_TARGETS}
   ${rclcpp_components_TARGETS}
+  yaml-cpp
 )
 
 install(TARGETS collab_pickplace_node
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME})
 
 ament_package()

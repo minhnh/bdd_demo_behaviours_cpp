@@ -7,6 +7,12 @@ launch:
   - arg:
       name: "bhv_server_name"
       default: "/bhv_server"
+  - arg:
+      name: "event_topic"
+      default: "/bdd/events"
+  - arg:
+      name: "topic_config"
+      default: "$(find-pkg-share bdd_collab_bhv_cpp)/config/mockup_bhv_topics.yaml"
   - node:
       pkg: "bdd_collab_bhv_cpp"
       exec: "collab_pickplace_node"
@@ -15,3 +21,7 @@ launch:
       param:
         - name: "bhv_server_name"
           value: "$(var bhv_server_name)"
+        - name: "event_topic"
+          value: "$(var event_topic)"
+        - name: "topic_config"
+          value: "$(var topic_config)"

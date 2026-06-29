@@ -23,8 +23,11 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <string_view>
 #include <thread>
+#include "unique_identifier_msgs/msg/uuid.hpp"
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
-#include "bdd_collab_bhv_cpp/collab_pickplace.hpp"
+#include "bdd_ros2_interfaces/msg/event.hpp"
+#include "bdd_ros2_interfaces/msg/trinary_stamped.hpp"
+#include "bdd_collab_bhv_cpp/collab_pickplace_fsm.hpp"
 
 namespace bdd_collab_bhv {
 
@@ -49,6 +52,9 @@ class CollabPickplaceNode : public rclcpp::Node
   public:
     using Behaviour           = bdd_ros2_interfaces::action::Behaviour;
     using GoalHandleBehaviour = rclcpp_action::ServerGoalHandle<Behaviour>;
+    using Event               = bdd_ros2_interfaces::msg::Event;
+    using TrinaryStamped      = bdd_ros2_interfaces::msg::TrinaryStamped;
+    using UUID                = unique_identifier_msgs::msg::UUID;
 
     explicit CollabPickplaceNode(const rclcpp::NodeOptions &pOptions = rclcpp::NodeOptions());
 
@@ -59,16 +65,26 @@ class CollabPickplaceNode : public rclcpp::Node
   private:
     rclcpp_action::Server<Behaviour>::SharedPtr mBhvServerPtr;
 
+    rclcpp::Publisher<Event>::SharedPtr mEventPublisher;
+
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPickPublisher;
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mIsHeldPublisher;
+    rclcpp::Publisher<TrinaryStamped>::SharedPtr mLocatedPlacePublisher;
+
     std::thread   mFsmThread;
     std::mutex    mFsmMutex;
     std::mutex    mGoalMutex;
     ExecutionType mExecCtx;
 
+    std::string mLocatedPickTopic;
+    std::string mIsHeldTopic;
+    std::string mLocatedPlaceTopic;
+
     // Shared data between server handlers & FSM loop
     struct GoalData
     {
-        std::weak_ptr<GoalHandleBehaviour> mGoalHandlerPtr;
-        Behaviour::Goal                    mGoalCopy;
+        std::shared_ptr<GoalHandleBehaviour> mGoalHandlerPtr;
+        Behaviour::Goal                      mGoalCopy;
     };
 
     std::optional<GoalData> mPendingGoal;
@@ -82,6 +98,15 @@ class CollabPickplaceNode : public rclcpp::Node
 
     // Functions
     void fsm_loop();
+
+    // Exported events
+    static constexpr const unsigned int EXPORTED_EVENTS[] = {
+        collab_pickplace::E_TABLE_TOUCHED,
+        collab_pickplace::E_GRASP_DONE,
+        collab_pickplace::E_PLACE_REACHED,
+        collab_pickplace::E_RELEASE_DONE,
+    };
+    static constexpr unsigned int NUM_EXPORTED_EVENTS = 4;
 
 }; // CollabPickplaceNode
 } // namespace bdd_collab_bhv
