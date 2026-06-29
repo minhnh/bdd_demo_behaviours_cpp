@@ -23,6 +23,7 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <string_view>
 #include <thread>
+#include "unique_identifier_msgs/msg/uuid.hpp"
 #include "bdd_ros2_interfaces/action/behaviour.hpp"
 #include "bdd_ros2_interfaces/msg/event.hpp"
 #include "bdd_ros2_interfaces/msg/trinary_stamped.hpp"
