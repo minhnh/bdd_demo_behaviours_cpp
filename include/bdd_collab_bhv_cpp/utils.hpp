@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <yaml-cpp/yaml.h>
 
-#define LOCATED_AT_PICK_KEY "located_at_pick"
-#define IS_HELD_KEY "is_held"
-#define LOCATED_AT_PLACE_KEY "located_at_place"
+inline constexpr const char LOCATED_AT_PICK_KEY[]  = "located_at_pick";
+inline constexpr const char IS_HELD_KEY[]          = "is_held";
+inline constexpr const char LOCATED_AT_PLACE_KEY[] = "located_at_place";
 
 namespace bdd_collab_bhv {
 
