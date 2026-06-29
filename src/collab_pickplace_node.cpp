@@ -192,7 +192,7 @@ void bcb::CollabPickplaceNode::fsm_loop()
 
             // Event publishing
             for (unsigned int evt : CollabPickplaceNode::EXPORTED_EVENTS) {
-                if (!consume_event(mFsmPtr->eventData, evt)) continue;
+                if (!activeGoal || !consume_event(mFsmPtr->eventData, evt)) continue;
                 evt_msg.scenario_context_id = activeGoal->mGoalCopy.scenario_context_id;
                 evt_msg.stamp               = now;
                 evt_msg.uri                 = collab_pickplace::EVENT_URIS[evt];
@@ -211,7 +211,7 @@ void bcb::CollabPickplaceNode::fsm_loop()
                 RCLCPP_INFO(
                   this->get_logger(),
                   "Goal cancel requested: %s",
-                  uuid_to_hex(activeGoal->mGoalCopy.scenario_context_id).c_str()
+                  uuid_to_hex(activeGoal ? activeGoal->mGoalCopy.scenario_context_id : UUID()).c_str()
                 );
             }
 
