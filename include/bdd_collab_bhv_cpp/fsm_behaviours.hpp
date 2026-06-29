@@ -38,7 +38,8 @@ class BehaviourInterface
       std::shared_ptr<rclcpp::Node>        pNodePtr,
       const struct fsm_nbx                *pFsmPtr,
       const UUID                          &pScenarioContextId = UUID(),
-      std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr     = nullptr
+      std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr     = nullptr,
+      bool                                *pGoalCompleted     = nullptr
     )                             = 0;
     virtual ~BehaviourInterface() = default;
 };
@@ -60,7 +61,8 @@ class MockupCollabBehaviour : public BehaviourInterface
       std::shared_ptr<rclcpp::Node>        pNodePtr,
       const struct fsm_nbx                *pFsmPtr,
       const UUID                          &pScenarioContextId = UUID(),
-      std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr     = nullptr
+      std::shared_ptr<GoalHandleBehaviour> pGoalHandlePtr     = nullptr,
+      bool                                *pGoalCompleted     = nullptr
     ) override;
 
   private:

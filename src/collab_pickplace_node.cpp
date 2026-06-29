@@ -220,18 +220,18 @@ void bcb::CollabPickplaceNode::fsm_loop()
             }
 
             // Behaviour & FSM update
-            fsm_step_nbx(mFsmPtr.get());
-            reconfig_event_buffers(mFsmPtr->eventData);
-
+            bool goalCompleted = false;
             bhvInfPtr->step(
               nodePtr,
               mFsmPtr.get(),
               activeGoal && processingGoal ? activeGoal->mGoalCopy.scenario_context_id : UUID(),
-              activeGoal && processingGoal ? activeGoal->mGoalHandlerPtr : nullptr
+              activeGoal && processingGoal ? activeGoal->mGoalHandlerPtr : nullptr,
+              &goalCompleted
             );
+            fsm_step_nbx(mFsmPtr.get());
+            reconfig_event_buffers(mFsmPtr->eventData);
 
-            // Reset if goal was finished or cancelled
-            if (processingGoal && (consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_FINISHED) || consume_event(mFsmPtr->eventData, collab_pickplace::E_GOAL_CANCELLED))) {
+            if (goalCompleted) {
                 processingGoal = false;
                 activeGoal.reset();
             }

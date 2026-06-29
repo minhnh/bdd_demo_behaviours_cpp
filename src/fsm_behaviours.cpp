@@ -39,7 +39,8 @@ void bcb::MockupCollabBehaviour::step(
   std::shared_ptr<rclcpp::Node>            pNodePtr,
   const struct fsm_nbx                    *pFsmPtr,
   const unique_identifier_msgs::msg::UUID &pScenarioContextId,
-  std::shared_ptr<GoalHandleBehaviour>     pGoalHandlePtr
+  std::shared_ptr<GoalHandleBehaviour>     pGoalHandlePtr,
+  bool                                    *pGoalCompleted
 )
 {
     auto now = pNodePtr->get_clock()->now();
@@ -51,12 +52,14 @@ void bcb::MockupCollabBehaviour::step(
             mResponsePtr->result.stamp               = now;
             mResponsePtr->result.trinary.value       = bdd_ros2_interfaces::msg::Trinary::TRUE;
             pGoalHandlePtr->succeed(mResponsePtr);
+            *pGoalCompleted = true;
             return;
         } else if (consume_event(pFsmPtr->eventData, collab_pickplace::E_GOAL_CANCELLED)) {
             mResponsePtr->result.scenario_context_id = pScenarioContextId;
             mResponsePtr->result.stamp               = now;
             mResponsePtr->result.trinary.value       = bdd_ros2_interfaces::msg::Trinary::FALSE;
             pGoalHandlePtr->canceled(mResponsePtr);
+            *pGoalCompleted = true;
             return;
         }
     }
@@ -103,4 +106,6 @@ void bcb::MockupCollabBehaviour::step(
     } else if (pFsmPtr->currentStateIndex == collab_pickplace::S_RECOVER) {
         produce_event(pFsmPtr->eventData, collab_pickplace::E_RECOVER_DONE);
     }
+
+    return;
 }
