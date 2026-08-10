@@ -109,7 +109,7 @@ scene inst (ns=dps_mjc) pick_place_scene_mjc {
         tree <world_tree>
 
         body cube {
-            frame cube_origin {
+            frame aruco_12 {
                 pose cube_in_world {
                     wrt: <world_tree.world_body.world>
                     xyz: (0.50, 0.0, 0.76) m
@@ -119,7 +119,7 @@ scene inst (ns=dps_mjc) pick_place_scene_mjc {
         }
 
         body cube2 {
-            frame cube2_origin {
+            frame aruco_13 {
                 pose cube2_in_world {
                     wrt: <world_tree.world_body.world>
                     xyz: (0.50, -0.20, 0.76) m

@@ -7,8 +7,9 @@ ros (ns=app) {
     publishers {
         bdd-events: topic "/bdd/events" message "bdd_ros2_interfaces/msg/Event",
     },
-    action-clients {
-        locate: action "/perception/locate" type "aruco_perception/action/LocateObjects" {
+    subscribers {
+        object-poses: topic "/perception/objects" message "vision_msgs/msg/Detection3DArray" {
+            observes { <pick_place_graph.cube>, <pick_place_graph.cube2> }
             pose from results
         },
     },
@@ -100,35 +101,6 @@ guarded-motion (ns=app) home {
     until {}
 }
 
-guarded-motion (ns=app) detect-cube {
-    description: "Hold the home pose while the perception server is asked where the cube is"
-
-    context {
-        spec {
-            pose hold-pose = snapshot of <shared.world.pose-ee-base>
-        }
-    }
-
-    locate-cube: detect { <pick_place_graph.cube>, <pick_place_graph.cube2> } using <app.locate>
-
-    when {
-        gripper-ready: <shared.world.gripper-pos> equal to <shared.spec.gripper-open> within <shared.spec.satisfied-band-rot>
-    }
-
-    while {
-        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <spec.hold-pose>.position within <shared.spec.satisfied-band>,
-        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-pose>.orientation within <shared.spec.satisfied-band-rot>
-    }
-
-    until any {
-        located: <locate-cube>.status equal to succeeded,
-        detect-failed any {
-            lost: <locate-cube>.status equal to aborted,
-            hung: elapsed greater than 10.0 s
-        }
-    }
-}
-
 guarded-motion (ns=app) pick-above {
     description: "Move TCP to the pre-grasp position above the cube along a path"
 
@@ -151,7 +123,9 @@ guarded-motion (ns=app) pick-above {
         }
     }
 
-    when {}
+    when {
+        gripper-ready: <shared.world.gripper-pos> equal to <shared.spec.gripper-open> within <shared.spec.satisfied-band-rot>
+    }
 
     while {
         follow-tan: moving <shared.world.pose-ee-base> along <spec.approach-path> at <spec.approach-speed>,
@@ -438,34 +412,13 @@ constraint-handler (ns=app) handler-home {
     }
 }
 
-constraint-handler (ns=app) handler-detect {
-    handles: <detect-cube>
-    monitors {
-        mon-detect-ready: monitor <detect-cube.gripper-ready> {
-            satisfied { trigger: event <dp.E_DETECT_READY> },
-            violated { hold: <home> },
-        },
-        mon-cube-detected: monitor <detect-cube.located> {
-            satisfied { trigger: event <dp.E_CUBE_DETECTED>, publish: event to <app.bdd-events> },
-        },
-        mon-detect-failed: monitor <detect-cube.detect-failed> {
-            satisfied { trigger: event <dp.E_DETECT_FAILED> },
-        }
-    }
-
-    controllers {
-        pid ctrl-dt-hold-position    { constraint: <detect-cube.hold-position>,    Kp: 200, Ki: 100, Kd: 40, decay: 0 },
-        pid ctrl-dt-hold-orientation { constraint: <detect-cube.hold-orientation>, Kp: 120, Ki: 50,  Kd: 80, decay: 0 }
-    }
-
-    solvers {
-        <handler-home.arm-solver>
-    }
-}
-
 constraint-handler (ns=app) handler-pick-above {
     handles: <pick-above>
     monitors {
+        mon-pa-gripper-ready: monitor <pick-above.gripper-ready> {
+            satisfied { trigger: event <dp.E_GRIPPER_READY> },
+            violated { hold: <home> },
+        },
         mon-pa-advancing: monitor <pick-above.advance> {
             satisfied { flag: pa-advancing },
         }
