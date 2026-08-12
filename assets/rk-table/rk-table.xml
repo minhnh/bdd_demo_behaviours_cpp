@@ -5,7 +5,7 @@
           scale="0.001 0.001 0.001"/>
   </asset>
   <worldbody>
-    <body euler="90 0 0">
+    <body name="root" euler="90 0 0">
       <geom type="mesh" mesh="rk-table"/>
       <site name="table_top" pos="0 0.762 -0.0595" size="0.03" rgba="1 0 0 1"/>
     </body>
