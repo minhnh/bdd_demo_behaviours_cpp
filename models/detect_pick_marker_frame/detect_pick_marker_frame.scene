@@ -1,12 +1,6 @@
 ns dpm_env = "https://secorolab.github.io/models/environments/detect-pick-marker-frame/"
 ns dpm_agn = "https://secorolab.github.io/models/agents/detect-pick-marker-frame/"
 ns dpm_scene = "https://secorolab.github.io/models/scenes/detect-pick-marker-frame/"
-ns dpm_mjc = "https://secorolab.github.io/models/scenes/detect-pick-marker-frame-mjc/"
-
-obj set (ns=dpm_env) pickplace_objects {
-    object cube,
-    object cube2
-}
 
 obj set (ns=dpm_env) ws_objects {
     object table
@@ -25,8 +19,7 @@ comp (ns=dpm_env) comp_table_pickplace of ws <pickplace_workspaces.table_ws> {
     obj <ws_objects.table>
 }
 
-scene (ns=dpm_scene) pick_place_scene {
-    obj set <pickplace_objects>
+scene (ns=dpm_scene) marker_frame_scene {
     ws comp <comp_table_pickplace>
     agn set <pickplace_agents>
 }
