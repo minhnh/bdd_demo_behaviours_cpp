@@ -1,0 +1,10 @@
+# Where each agent starts. Keyed by the name the execution context binds.
+
+[ros.perception]
+# How long to wait at startup for every subscribed object pose to arrive once. Nothing may
+# snapshot a pose the world has not stated yet, so the run fails rather than starts blind.
+wait_s = 10.0
+
+[pickplace_agents.arm1]
+# Joint configuration the simulator resets to, in the chain's joint order [rad].
+home = [0.0, 0.2618, 3.1416, -2.2689, 0.0, 0.9599, 1.5708]
