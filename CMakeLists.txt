@@ -42,6 +42,9 @@ target_link_libraries(
 install(TARGETS collab_pickplace_node
   DESTINATION lib/${PROJECT_NAME})
 
+install(DIRECTORY assets
+  DESTINATION share/${PROJECT_NAME})
+
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
 

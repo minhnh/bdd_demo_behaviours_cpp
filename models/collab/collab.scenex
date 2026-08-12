@@ -1,0 +1,40 @@
+import "collab.scene"
+import "../robots/kinova-ft-2f85.ktree"
+
+scene inst (ns=collab) collab-scene-simreal {
+    scene: <collab-scn>
+    kgraph (ns=collab) collab-kgraph {
+        tree <kinova-ft-2f85>
+
+        body world { frame root {} }
+
+        body robot-table-body {
+            frame top-center {
+                pose in-world {
+                    wrt: <world.root> xyz: (0.295, 0.725, 0.0) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            frame arm-mount {
+                pose wrt-top-center {
+                    xyz: (0.0, 0.7, 0.0) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+        }
+
+        joints {
+            fixed arm_on_table {
+                parent: <robot-table-body.top-center>
+                child: <kinova.base_link.base_link_origin>
+            }
+        }
+    }
+
+    obj <ws-objects.table-robot> {
+        model robot-table-mjc as mjcf {
+            ros pkg = "bdd_collab_bhv_cpp", path = "assets/table.xml"
+            map body <collab-kgraph.robot-table-body> to "robot_table"
+        }
+    }
+}

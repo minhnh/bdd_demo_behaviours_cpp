@@ -1,6 +1,6 @@
 import "detect_pick_marker_frame.scene"
-import "../kinova_gen3_7dof.ktree"
-import "../robotiq_2f85.ktree"
+import "../robots/kinova_gen3_7dof.ktree"
+import "../robots/robotiq_2f85.ktree"
 
 ns dpm_mjc = "https://secorolab.github.io/models/scenes/detect-pick-marker-frame-mjc/"
 

@@ -1,6 +1,6 @@
 import "detect_pick_single.scene"
-import "../kinova_gen3_7dof.ktree"
-import "../robotiq_2f85.ktree"
+import "../robots/kinova_gen3_7dof.ktree"
+import "../robots/robotiq_2f85.ktree"
 
 ns dps_mjc = "https://secorolab.github.io/models/scenes/detect-pick-single-mjc/"
 

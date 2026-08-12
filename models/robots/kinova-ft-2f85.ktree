@@ -1,0 +1,66 @@
+import "./kinova_gen3_7dof.ktree"
+import "./robotiq_2f85.ktree"
+
+ns robots="https://secorolab.github.io/models/robots/configs/"
+
+ktree inst (ns=robots) kinova of <kinova_tree>
+ktree inst (ns=robots) gripper of <gripper_tree>
+
+ktree (ns=robots) ft_tree {
+    body wrist_ft_body {
+        // The coupler between bracelet and gripper: a 65 mm cylinder whose origin is the
+        // bracelet mating face, +z along the tool axis -- which is -z of the bracelet.
+        frame wrist_ft_body_origin { }
+        // The sensing element sits mid-cylinder, as it does on the real tool; ft_mount.xml
+        // puts the site there.
+        frame wrist_ft_site {
+            pose wrist_ft_site_in_wrist_ft_body {
+                wrt: <wrist_ft_body.wrist_ft_body_origin>
+                xyz: (0.0, 0.0, 0.0325) m
+                orientation: euler { angles: (0.0, 0.0, 0.0) unit: rad }
+            }
+        }
+        // The far face, where the gripper bolts on.
+        frame wrist_ft_mount {
+            pose wrist_ft_mount_in_wrist_ft_body {
+                wrt: <wrist_ft_body.wrist_ft_body_origin>
+                xyz: (0.0, 0.0, 0.065) m
+                orientation: euler { angles: (0.0, 0.0, 0.0) unit: rad }
+            }
+        }
+        // The measured tool weighs 1.195 kg -- coupler, sensor and gripper together -- and the
+        // gripper bodies carry 1.061604 of it from their MJCF, so the coupler carries the rest,
+        // as a solid cylinder 75 mm across.
+        inertia {
+            frame: <wrist_ft_site>
+            mass: 0.133396 kg
+            inertia-matrix: (
+                (9.386e-5, 0.0, 0.0),
+                (0.0, 9.386e-5, 0.0),
+                (0.0, 0.0, 9.379e-5)
+            ) kg*m^2
+        }
+    }
+    joints { }
+}
+
+ktree (ns=robots) kinova-ft-2f85 {
+    tree <kinova>
+    tree <ft_tree>
+    tree <gripper>
+
+    joints {
+        fixed ft_on_pinch_site {
+            parent: <kinova.bracelet_link.pinch_site>
+            child: <ft_tree.wrist_ft_body.wrist_ft_body_origin>
+        }
+        fixed g_mount_on_ft {
+            parent: <ft_tree.wrist_ft_body.wrist_ft_site>
+            child: <gripper.g_base_mount.g_mount_interface>
+        }
+        serial {
+            root: <kinova.base_link.base_link_origin>
+            tip: <gripper.g_base.g_pinch>
+        }
+    }
+}
