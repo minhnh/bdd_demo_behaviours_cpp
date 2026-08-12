@@ -26,8 +26,8 @@ scene inst (ns=collab) collab-scene-simreal {
             }
             frame arm-mount {
                 pose wrt-table-top {
-                    wrt: <world.root> xyz: (0.0, 0.7, 0.0) m
-                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                    wrt: <table_top> xyz: (0.7, 0.0, 0.0) m
+                    orientation: euler {angles: (-90.0, 0.0, 0.0) unit: deg}
                 }
             }
             frame table-com {
@@ -51,13 +51,41 @@ scene inst (ns=collab) collab-scene-simreal {
             }
         }
 
+        body rk-table-body {
+            frame table_top {
+                pose in-world {
+                    wrt: <world.root> xyz: (-0.9, 1.8, -0.7) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            frame table-com {
+                pose com-in-table-top {
+                    wrt: <rk-table-body.table_top> xyz: (-0.0815, 0.0999, 0.7034) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            // Estimated from the STEP solids: two 15 kg lift columns, a 13.65 kg top, a 25 kg
+            // cabinet, and aluminium density for the modelled profiles, gantry, rails and fittings.
+            // ponytail: replace with measured mass properties if this table becomes dynamic; the
+            // current estimate is intended for a stationary workstation.
+            inertia {
+                frame: <table-com>
+                mass: 111.45 kg
+                inertia-matrix: (
+                    (19.026, -1.350, -2.245),
+                    (-1.350, 40.606, -3.692),
+                    (-2.245, -3.692, 31.393)
+                ) kg*m^2
+            }
+        }
+
         joints {
             fixed table_on_world {
    parent: <world.root>
    child: <robot-table-body.table_top>
 }
             fixed arm_on_table {
-                parent: <robot-table-body.table_top>
+                parent: <robot-table-body.arm-mount>
                 child: <kinova.base_link.base_link_origin>
             }
         }
@@ -65,8 +93,15 @@ scene inst (ns=collab) collab-scene-simreal {
 
     obj <ws-objects.table-robot> {
         model robot-table-mjc as mjcf {
-            sys path = '../../assets/table.xml'
+            ros pkg="bdd_collab_bhv_cpp", path= 'assets/table.xml'
             map body <collab-kgraph.robot-table-body> to "robot_table"
+        }
+    }
+
+    obj <ws-objects.rk-table> {
+        model robot-table-mjc as mjcf {
+            ros pkg="bdd_collab_bhv_cpp", path= 'assets/rk-table/rk-table.xml'
+            map body <collab-kgraph.rk-table-body> to "rk_table"
         }
     }
 

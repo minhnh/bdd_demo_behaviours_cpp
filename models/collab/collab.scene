@@ -5,7 +5,7 @@ obj set (ns=collab) collab-objects {
 }
 
 obj set (ns=collab) ws-objects {
-    object table-wall,
+    object rk-table,
     object table-robot
 }
 
@@ -19,7 +19,7 @@ agn set (ns=collab) collab-agents {
     agent gripper
 }
 
-comp (ns=collab) wall-cmp of ws <collab-workspaces.wall-ws> {obj <ws-objects.table-wall>}
+comp (ns=collab) wall-cmp of ws <collab-workspaces.wall-ws> {obj <ws-objects.rk-table>}
 comp (ns=collab) robot-cmp of ws <collab-workspaces.robot-ws> {obj <ws-objects.table-robot>}
 
 scene (ns=collab) collab-scn {
