@@ -1,0 +1,7 @@
+# MuJoCo reset configurations, in each driven agent's joint order [rad].
+
+[collab-agents.kinova]
+home = [0.0, 0.2618, 3.1416, -2.2689, 0.0, 0.9599, 1.5708]
+
+[collab-agents.gripper]
+home = [0.0]
