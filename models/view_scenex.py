@@ -18,8 +18,11 @@ from pathlib import Path
 import mj_kdl_wrapper as mjk
 import rdflib
 from motion_spec.classes.scene import MjcfSceneSpec
+from motion_spec_dsl.rdf_parser.vocab import GEOM_ENT
 from motion_spec.rdf_parser import resources
-from motion_spec.rdf_parser.model import Model
+from motion_spec.rdf_parser.model import Model, local_name
+from rdf_utils.models.geom_coord import get_translation_between_points
+from rdf_utils.models.vocab import URI_KC_EXT_PRED_ROOT
 from scene_dsl.langs import scenex_metamodel
 from scene_dsl.rdf.scenex import create_scenex_model_graph
 
@@ -45,7 +48,23 @@ def read_scenex(scenex_path: Path) -> MjcfSceneSpec:
         imported_models=[],
         imported_provenance=[],
     )
-    return resources.read_scene(model)
+    scene = resources.read_scene(model)
+    ground = next(
+        (
+            frame
+            for frame in graph.subjects(rdflib.RDF.type, GEOM_ENT.Frame)
+            if local_name(frame) == "ground"
+        ),
+        None,
+    )
+    body = graph.value(predicate=GEOM_ENT.simplices, object=ground) if ground else None
+    root = graph.value(body, URI_KC_EXT_PRED_ROOT) if body else None
+    if ground is not None and root is not None:
+        ground_origin = graph.value(ground, GEOM_ENT.origin) or ground
+        root_origin = graph.value(root, GEOM_ENT.origin) or root
+        if translation := get_translation_between_points(ground_origin, root_origin, graph):
+            scene.floor_z = translation[2]
+    return scene
 
 
 def find_asset(relative: str, start: Path) -> str:
