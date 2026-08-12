@@ -6,7 +6,16 @@ scene inst (ns=collab) collab-scene-simreal {
     kgraph (ns=collab) collab-kgraph {
         tree <kinova-ft-2f85>
 
-        body world { frame root {} }
+        body world {
+            frame root {}
+            frame ground {
+                pose ground_in_world {
+                    wrt: <world.root>
+                    xyz: (0.0, 0.0, -0.72) m
+                    orientation: euler { axes: xyz extrinsic angles: (0, 0, 0) unit: deg }
+                }
+            }
+        }
 
         body robot-table-body {
             frame top-center {
