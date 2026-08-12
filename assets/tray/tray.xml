@@ -2,7 +2,7 @@
   <!--
     Open-top printed tray (240 x 200 x 80 mm outer) with a fin handle on the front
     wall, as photographed. Single root body, so it can be added as a SceneObject.
-    Standalone view: python -m mujoco.viewer --mjcf=tray.xml
+    Standalone view: open tray.xml with python -m mujoco.viewer.
 
     Measured from the meshes (mm): walls 2.3 (sides/back) / 3.2 (front), floor 2.0,
     wall height 77.1 (sides/back) / 79.9 (front). Handle: 20 thick, 75 out, 40 tall,

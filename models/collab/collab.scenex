@@ -79,6 +79,33 @@ scene inst (ns=collab) collab-scene-simreal {
             }
         }
 
+        body container-body {
+            frame container-root {
+                pose in-world {
+                    wrt: <world.root> xyz: (-0.9, 1.8, 0.05) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            frame container-com {
+                pose com-in-container {
+                    wrt: <container-body.container-root> xyz: (0.000025, -0.023302, 0.028773) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            // COM is derived from the exact hollow meshes in tray.xml; inertia is calibrated to
+            // the measured 350 g printed mass (an effective mesh density of 1046.7 kg/m^3).
+            // ponytail: regenerate if the print geometry or measured mass changes.
+            inertia {
+                frame: <container-com>
+                mass: 0.350 kg
+                inertia-matrix: (
+                    (0.002839864, 0.000000373, 0.000000416),
+                    (0.000000373, 0.002233384, 0.000103658),
+                    (0.000000416, 0.000103658, 0.004655829)
+                ) kg*m^2
+            }
+        }
+
         joints {
             fixed table_on_world {
    parent: <world.root>
@@ -102,6 +129,13 @@ scene inst (ns=collab) collab-scene-simreal {
         model robot-table-mjc as mjcf {
             ros pkg="bdd_collab_bhv_cpp", path= 'assets/rk-table/rk-table.xml'
             map body <collab-kgraph.rk-table-body> to "rk_table"
+        }
+    }
+
+    obj <collab-objects.container> {
+        model tray-mjc as mjcf {
+            ros pkg="bdd_collab_bhv_cpp", path= 'assets/tray/tray.xml'
+            map body <collab-kgraph.container-body> to "container"
         }
     }
 
