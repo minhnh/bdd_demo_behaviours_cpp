@@ -1,0 +1,387 @@
+import "sim_basic_motion_loop_rne.fsm"
+import "sim_basic_motion_loop_rne.scenex"
+
+ns app = "https://secorolab.github.io/models/sim-basic-motion-loop-rne/"
+ns bml = "https://secorolab.github.io/models/sim-basic-motion-loop-rne/fsm/"
+
+exec-context (ns=app) sim-basic-motion-loop-rne-exec {
+    runs-scene: <sim_basic_motion_loop_scene_mjc>
+    platform:   simulation { name: "MuJoCo" }
+    config:     "robot.toml"
+    timestep:   1.0 ms
+}
+
+context (ns=app) shared {
+    world {
+        pose pose-ee-base {
+            of:         <gripper.g_base.g_pinch>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
+        pose pose-elbow-base {
+            of:         <kinova.forearm_link.forearm_link_origin>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
+        velocity-twist twist-ee-base {
+            of:         <gripper.g_base.g_pinch>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
+        joint-position gripper-pos {
+            joint: <gripper.g_left_driver_joint>
+        }
+    },
+    spec {
+        // Capture once: this is both the initial hold target and the height reference for the
+        // fixed Cartesian pre-touch pose.
+        pose home-pose = snapshot of <shared.world.pose-ee-base>,
+        pose pre-touch-pose = snapshot of <shared.world.pose-ee-base> on event <bml.E_PRE_TOUCH_REACHED>,
+        linear-distance support-z = snapshot of <shared.world.pose-elbow-base>.position.z,
+        linear-distance pre-touch-x = 0.0 m,
+        linear-distance pre-touch-y = -0.80 m,
+        angle pre-touch-roll = 0.0 deg,
+        angle pre-touch-pitch = 90.0 deg,
+        angle pre-touch-yaw = -90.0 deg,
+        linear-velocity pre-touch-speed = 0.05 m/s,
+        linear-distance pre-touch-arc-amplitude = 0.10 m,
+        linear-velocity zero-linvel = 0.0 m/s,
+        linear-velocity descend-vel = -0.05 m/s,
+        linear-distance forward-distance = 0.05 m,
+        linear-velocity arc-speed = 0.05 m/s,
+        linear-velocity min-arc-speed = 0.005 m/s,
+        linear-distance arc-height = 0.18 m,
+        linear-distance place-x = 0.80 m,
+        linear-distance place-y = 0.00 m,
+        linear-distance place-z = 0.04 m,
+        angle place-roll = 0.0 deg,
+        angle place-pitch = 90.0 deg,
+        angle place-yaw = 0.0 deg,
+        angle gripper-closed = 0.8 rad,
+        angle gripper-open = 0.0 rad,
+        angle grasp-threshold = 0.65 rad
+    }
+}
+
+tolerances {
+    linear-distance:  0.01 m,
+    angular-distance: 0.1 rad,
+    linear-velocity:  0.01 m/s,
+    position:         0.01 m,
+    orientation:      0.01 rad
+}
+
+guarded-motion (ns=app) home {
+    description: "Stabilize at the TCP pose captured when the run begins."
+    context { }
+    when { }
+    while {
+        hold-position: keeping <shared.world.pose-ee-base>.position equal to <shared.spec.home-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.home-pose>.orientation,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+    until all {
+        settled-x: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        settled-y: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        settled-z: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+guarded-motion (ns=app) pre-touch {
+    description: "Follow a horizontal arc from the home pose to the fixed pre-touch pose."
+    context {
+        spec {
+            direction path-normal { as-seen-by: <kinova.base_link.base_link_origin> } = (0.0, 0.0, 1.0),
+            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            pose target-pose = {
+                position: (<shared.spec.pre-touch-x>, <shared.spec.pre-touch-y>, <shared.spec.home-pose>.position.z) m,
+                orientation: euler {
+                    axes: xyz extrinsic,
+                    angles: (<shared.spec.pre-touch-roll>, <shared.spec.pre-touch-pitch>, <shared.spec.pre-touch-yaw>)
+                }
+            },
+            path pre-touch-path = arc {
+                start: <spec.start-pose>,
+                end: <spec.target-pose>,
+                amplitude: <shared.spec.pre-touch-arc-amplitude>,
+                plane-normal: <spec.path-normal>
+            }
+        }
+    }
+    when { }
+    while {
+        follow-tangent: moving <shared.world.pose-ee-base> along <spec.pre-touch-path> at <shared.spec.pre-touch-speed>,
+        follow-position: keeping <shared.world.pose-ee-base>.position on <spec.pre-touch-path>,
+        follow-orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.pre-touch-path>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+    until all {
+        at-pre-touch-position: <shared.world.pose-ee-base>.position equal to <spec.target-pose>.position,
+        at-pre-touch-orientation: <shared.world.pose-ee-base>.orientation equal to <spec.target-pose>.orientation
+    }
+}
+
+guarded-motion (ns=app) touchdown {
+    description: "Descend vertically from the pre-touch pose until simulated table contact stops the TCP."
+    context {
+        spec {
+            pose start-pose = snapshot of <shared.world.pose-ee-base>
+        }
+    }
+    when { }
+    while {
+        hold-x: keeping <shared.world.pose-ee-base>.position.x equal to <spec.start-pose>.position.x,
+        hold-y: keeping <shared.world.pose-ee-base>.position.y equal to <spec.start-pose>.position.y,
+        lower-z: keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.descend-vel>,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.pre-touch-pose>.orientation,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+    until {
+        contact-table: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+guarded-motion (ns=app) forward {
+    description: "Move forward along base X while holding the touchdown height, lateral coordinate, and orientation."
+    context {
+        spec {
+            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            linear-distance target-x = <spec.start-pose>.position.x + <shared.spec.forward-distance>
+        }
+    }
+    when { }
+    while {
+        move-x: keeping <shared.world.pose-ee-base>.position.x equal to <spec.target-x>,
+        hold-y: keeping <shared.world.pose-ee-base>.position.y equal to <spec.start-pose>.position.y,
+        hold-z: keeping <shared.world.pose-ee-base>.position.z equal to <spec.start-pose>.position.z,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.pre-touch-pose>.orientation,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+    until {
+        reached-forward: <shared.world.pose-ee-base>.position.x greater than <spec.target-x>
+    }
+}
+
+guarded-motion (ns=app) close-gripper {
+    description: "Close the gripper while holding the TCP at the object approach pose."
+    context {
+        spec { pose hold-pose = snapshot of <shared.world.pose-ee-base> }
+    }
+    when { }
+    while {
+        hold-position: keeping <shared.world.pose-ee-base>.position equal to <spec.hold-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.pre-touch-pose>.orientation,
+        close: keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+    until {
+        closed: <shared.world.gripper-pos> greater than <shared.spec.grasp-threshold>
+    }
+}
+
+guarded-motion (ns=app) arc-motion {
+    description: "Trace an arc from the grasp pose to the fixed place pose."
+    context {
+        spec {
+            direction path-normal { as-seen-by: <kinova.base_link.base_link_origin> } = (0.9863939238, 0.1643989873, 0.0),
+            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            pose end-pose = {
+                position: (<shared.spec.place-x>, <shared.spec.place-y>, <shared.spec.place-z>) m,
+                orientation: euler {
+                    axes: xyz extrinsic,
+                    angles: (<shared.spec.place-roll>, <shared.spec.place-pitch>, <shared.spec.place-yaw>)
+                }
+            },
+            path arc-path = arc {
+                start: <spec.start-pose>,
+                end: <spec.end-pose>,
+                amplitude: <shared.spec.arc-height>,
+                plane-normal: <spec.path-normal>
+            }
+        }
+    }
+    when { }
+    while {
+        follow-tangent: moving <shared.world.pose-ee-base> along <spec.arc-path> at <shared.spec.arc-speed>,
+        follow-position: keeping <shared.world.pose-ee-base>.position on <spec.arc-path>,
+        follow-orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.arc-path>,
+        advance: progress of <shared.world.pose-ee-base> along <spec.arc-path> more than <shared.spec.min-arc-speed>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+    until all {
+        at-place-position: <shared.world.pose-ee-base>.position equal to <spec.end-pose>.position,
+        at-place-orientation: <shared.world.pose-ee-base>.orientation equal to <spec.end-pose>.orientation
+    }
+}
+
+guarded-motion (ns=app) open-gripper {
+    description: "Open the gripper while holding the final arc pose."
+    context {
+        spec { pose hold-pose = snapshot of <shared.world.pose-ee-base> }
+    }
+    when { }
+    while {
+        hold-position: keeping <shared.world.pose-ee-base>.position equal to <spec.hold-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-pose>.orientation,
+        open: keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-open>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+    until {
+        opened: <shared.world.gripper-pos> equal to <shared.spec.gripper-open>
+    }
+}
+
+constraint-handler (ns=app) handler-home {
+    handles: <home>
+    runs-in: <bml.S_HOME>
+    monitors {
+        mon-home-settled: monitor <home.until> {
+            satisfied for 0.3 s { trigger: event <bml.E_HOME_SETTLED> }
+        }
+    }
+    controllers {
+        pid ctrl-home-position { <home.hold-position>, Kp: 200, Ki: 100, Kd: 40, decay: 0 },
+        pid ctrl-home-orientation { <home.hold-orientation>, Kp: 120, Ki: 70, Kd: 80, decay: 0 },
+        impedance ctrl-home-support-z { <home.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers {
+        arm-solver: serial-chain {
+            agent: <agents.arm1>,
+            algorithm: rne,
+            gravity: (0.0, 0.0, 9.81) m/s^2
+        }
+    }
+}
+
+constraint-handler (ns=app) handler-pre-touch {
+    handles: <pre-touch>
+    runs-in: <bml.S_PRE_TOUCH>
+    monitors {
+        mon-pre-touch-reached: monitor <pre-touch.until> {
+            satisfied for 0.3 s { trigger: event <bml.E_PRE_TOUCH_REACHED> }
+        }
+    }
+    controllers {
+        pid ctrl-pre-touch-tangent { <pre-touch.follow-tangent>, Kp: 20, Ki: 4, Kd: 0, decay: 0 },
+        pid ctrl-pre-touch-position {
+            constraint: <pre-touch.follow-position>,
+            measured-derivative: <shared.world.twist-ee-base>.linvel,
+            Kp: 180, Ki: 0, Kd: 40, decay: 0
+        },
+        pid ctrl-pre-touch-orientation {
+            constraint: <pre-touch.follow-orientation>,
+            measured-derivative: <shared.world.twist-ee-base>.angvel,
+            Kp: 250, Ki: 0, Kd: 80, decay: 0
+        },
+        impedance ctrl-pre-touch-support-z { <pre-touch.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers { <handler-home.arm-solver> }
+}
+
+constraint-handler (ns=app) handler-touchdown {
+    handles: <touchdown>
+    runs-in: <bml.S_TOUCHDOWN>
+    monitors {
+        mon-contact: monitor <touchdown.until> {
+            satisfied for 0.3 s { trigger: event <bml.E_CONTACT> }
+        }
+    }
+    controllers {
+        pid ctrl-touchdown-x { <touchdown.hold-x>, Kp: 100, Ki: 0, Kd: 30, decay: 0 },
+        pid ctrl-touchdown-y { <touchdown.hold-y>, Kp: 100, Ki: 0, Kd: 30, decay: 0 },
+        pid ctrl-touchdown-z { <touchdown.lower-z>, Kp: 100, Ki: 0, Kd: 0, decay: 0 },
+        pid ctrl-touchdown-orientation { <touchdown.hold-orientation>, Kp: 150, Ki: 0, Kd: 80, decay: 0 },
+        impedance ctrl-touchdown-support-z { <touchdown.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers { <handler-home.arm-solver> }
+}
+
+constraint-handler (ns=app) handler-forward {
+    handles: <forward>
+    runs-in: <bml.S_FORWARD>
+    monitors {
+        mon-forward-done: monitor <forward.until> {
+            satisfied for 0.3 s { trigger: event <bml.E_FORWARD_DONE> }
+        }
+    }
+    controllers {
+        pid ctrl-forward-x { <forward.move-x>, Kp: 180, Ki: 0, Kd: 40, decay: 0 },
+        pid ctrl-forward-y { <forward.hold-y>, Kp: 100, Ki: 0, Kd: 30, decay: 0 },
+        pid ctrl-forward-z { <forward.hold-z>, Kp: 100, Ki: 0, Kd: 30, decay: 0 },
+        pid ctrl-forward-orientation { <forward.hold-orientation>, Kp: 150, Ki: 0, Kd: 80, decay: 0 },
+        impedance ctrl-forward-support-z { <forward.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers { <handler-home.arm-solver> }
+}
+
+constraint-handler (ns=app) handler-close-gripper {
+    handles: <close-gripper>
+    runs-in: <bml.S_GRIPPER_CLOSE>
+    monitors {
+        mon-gripper-closed: monitor <close-gripper.until> {
+            satisfied for 0.3 s { trigger: event <bml.E_GRIPPER_CLOSED> }
+        }
+    }
+    controllers {
+        pid ctrl-close-hold-position { <close-gripper.hold-position>, Kp: 180, Ki: 0, Kd: 40, decay: 0 },
+        pid ctrl-close-hold-orientation { <close-gripper.hold-orientation>, Kp: 150, Ki: 0, Kd: 80, decay: 0 },
+        feed-forward ctrl-close-gripper { <close-gripper.close> },
+        impedance ctrl-close-support-z { <close-gripper.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers {
+        <handler-home.arm-solver>,
+        gripper-command-solver: command-forwarding { agent: <agents.gripper1> }
+    }
+}
+
+constraint-handler (ns=app) handler-arc {
+    handles: <arc-motion>
+    runs-in: <bml.S_ARC>
+    monitors {
+        mon-arc-complete: monitor <arc-motion.until> {
+            satisfied for 0.3 s { trigger: event <bml.E_ARC_COMPLETE> }
+        }
+    }
+    controllers {
+        pid ctrl-follow-tangent { <arc-motion.follow-tangent>, Kp: 20, Ki: 4, Kd: 0, decay: 0 },
+        pid ctrl-follow-position {
+            constraint: <arc-motion.follow-position>,
+            measured-derivative: <shared.world.twist-ee-base>.linvel,
+            Kp: 200, Ki: 0, Kd: 40, decay: 0
+        },
+        pid ctrl-follow-orientation {
+            constraint: <arc-motion.follow-orientation>,
+            measured-derivative: <shared.world.twist-ee-base>.angvel,
+            Kp: 240, Ki: 0, Kd: 160, decay: 0
+        },
+        impedance ctrl-arc-support-z { <arc-motion.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers { <handler-home.arm-solver> }
+}
+
+constraint-handler (ns=app) handler-open-gripper {
+    handles: <open-gripper>
+    runs-in: <bml.S_GRIPPER_OPEN>
+    monitors {
+        mon-gripper-opened: monitor <open-gripper.until> {
+            satisfied for 0.3 s { trigger: event <bml.E_GRIPPER_OPENED> }
+        }
+    }
+    controllers {
+        pid ctrl-open-hold-position { <open-gripper.hold-position>, Kp: 180, Ki: 0, Kd: 40, decay: 0 },
+        pid ctrl-open-hold-orientation { <open-gripper.hold-orientation>, Kp: 150, Ki: 0, Kd: 80, decay: 0 },
+        feed-forward ctrl-open-gripper { <open-gripper.open> },
+        impedance ctrl-open-support-z { <open-gripper.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers {
+        <handler-home.arm-solver>,
+        <handler-close-gripper.gripper-command-solver>
+    }
+}
