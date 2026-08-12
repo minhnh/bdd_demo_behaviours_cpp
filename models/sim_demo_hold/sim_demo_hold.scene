@@ -1,0 +1,25 @@
+ns sdh_env = "https://secorolab.github.io/models/environments/sim-demo-hold/"
+ns sdh_agn = "https://secorolab.github.io/models/agents/sim-demo-hold/"
+ns sdh_scene = "https://secorolab.github.io/models/scenes/sim-demo-hold/"
+
+obj set (ns=sdh_env) workspace_objects {
+    object table
+}
+
+ws set (ns=sdh_env) workspaces {
+    workspace table_ws
+}
+
+agn set (ns=sdh_agn) agents {
+    agent arm1,
+    agent gripper1
+}
+
+comp (ns=sdh_env) table_workspace of ws <workspaces.table_ws> {
+    obj <workspace_objects.table>
+}
+
+scene (ns=sdh_scene) sim_demo_hold_scene {
+    ws comp <table_workspace>
+    agn set <agents>
+}
