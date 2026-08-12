@@ -21,12 +21,12 @@ scene inst (ns=collab) collab-scene-simreal {
             frame top-center {
                 pose in-world {
                     wrt: <world.root> xyz: (0.295, 0.725, 0.0) m
-                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                    orientation: euler {angles: (89, 0.0, 0.0) unit: deg}
                 }
             }
             frame arm-mount {
                 pose wrt-top-center {
-                    xyz: (0.0, 0.7, 0.0) m
+                    wrt: <world.root> xyz: (0.0, 0.7, 0.0) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
@@ -44,6 +44,39 @@ scene inst (ns=collab) collab-scene-simreal {
         model robot-table-mjc as mjcf {
             ros pkg = "bdd_collab_bhv_cpp", path = "assets/table.xml"
             map body <collab-kgraph.robot-table-body> to "robot_table"
+        }
+    }
+
+    agn <collab-agents.kinova> {
+        model kinova-mjc as mjcf {
+            sys path = 'src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml'
+            map tree <kinova> to "base_link"
+        }
+
+        model ft-mjc as mjcf {
+            sys path = 'src/mj_kdl_wrapper/assets/ft_sensor.xml'
+            map tree <ft_tree> to "wrist_ft_body"
+        }
+
+        force-torque wrist_ft {
+            frame: <ft_tree.wrist_ft_body.wrist_ft_site>
+            observes: force torque
+            update-rate: 1000.0 Hz
+        }
+
+        camera wrist {
+            frame: <kinova.bracelet_link.wrist_anchor>
+            type: rgb
+            resolution: (640, 480)
+            fov: 41.83792730009236 deg
+            update-rate: 30.0 Hz
+        }
+    }
+
+    agn <collab-agents.gripper> {
+        model gripper-mjc as mjcf {
+            sys path = 'src/mj_kdl_wrapper/assets/robotiq_2f85/2f85.xml'
+            map tree <gripper> to "base_mount"
         }
     }
 }

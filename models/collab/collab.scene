@@ -15,7 +15,8 @@ ws set (ns=collab) collab-workspaces {
 }
 
 agn set (ns=collab) collab-agents {
-    agent kinova
+    agent kinova,
+    agent gripper
 }
 
 comp (ns=collab) wall-cmp of ws <collab-workspaces.wall-ws> {obj <ws-objects.table-wall>}

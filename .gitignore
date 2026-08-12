@@ -1,2 +1,4 @@
 thirdparty
 models/*/generation/
+__pycache__
+*.pyc
