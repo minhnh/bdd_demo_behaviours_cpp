@@ -22,7 +22,8 @@ context (ns=app) shared {
             as-seen-by: <kinova.base_link.base_link_origin>
         },
         joint-position gripper-pos {
-            joint: <gripper.g_left_driver_joint>
+            joint: <gripper.g_left_driver_joint>,
+            normalization: (-pi, pi) rad
         },
         // Not controlled: recorded, so the run says what the arm was pushed with while holding.
         wrench ext-force {
