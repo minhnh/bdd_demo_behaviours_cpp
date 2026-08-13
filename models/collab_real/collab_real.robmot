@@ -1,29 +1,42 @@
-import "collab.fsm"
-import "collab.scenex"
+import "../collab/collab.fsm"
+import "../collab/collab.scenex"
 ns app = "https://secorolab.github.io/models/demos/collab/exec/"
 
-exec-context (ns=app) sim-demo-hold-exec {
+exec-context (ns=app) real-demo-collab-exec {
     runs-scene: <collab-scene-simreal>
-    platform:   simulation { name: "MuJoCo" }
+    platform:   real-world {
+                    <collab-agents.kinova> realized by KinovaGen3,
+                    <collab-agents.gripper> realized by Robotiq2F85,
+                    <collab-scene-simreal.wrist_ft> realized by RobotiqFT300s
+                }
     config:     "robot.toml"
     timestep:   1.0 ms
 }
 
 context (ns=app) shared {
     world {
+        joint-position joint-3-angle {
+            joint: <kinova.joint_3>,
+            normalization: (-pi, pi) rad
+        },
+        joint-position joint-4-angle {
+            joint: <kinova.joint_4>,
+            normalization: (-pi, pi) rad
+        },
+        joint-position joint-6-angle {
+            joint: <kinova.joint_6>,
+            normalization: (-pi, pi) rad
+        },
         pose pose-ee-base {
             of:         <gripper.g_base.g_pinch>,
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
-        pose pose-elbow-base {
-            of:         <kinova.forearm_link.forearm_link_origin>,
-            wrt:        <kinova.base_link.base_link_origin>,
-            as-seen-by: <kinova.base_link.base_link_origin>
+        joint-position gripper-pos {
+            joint: <gripper.g_left_driver_joint>
         },
         joint-position gripper-pos {
-            joint: <gripper.g_left_driver_joint>,
-            normalization: (-pi, pi) rad
+            joint: <gripper.g_left_driver_joint>
         },
         // Not controlled: recorded, so the run says what the arm was pushed with while holding.
         wrench ext-force {
@@ -36,19 +49,20 @@ context (ns=app) shared {
         // Shared, not per motion: the two states alternate, and a target re-captured on each
         // entry would follow the standing error and walk the hold away from where it began.
         pose start-pose       = snapshot of <shared.world.pose-ee-base>,
-        // Six constraints leave the 7th joint free, so the elbow can sink under gravity with
-        // the end-effector still on target. This is the actuator-4 bend the arm folds over --
-        // everything beyond it hangs off this point. Held where it started, like the pose above.
-        length support-z = snapshot of <shared.world.pose-elbow-base>.position.z,
         angle gripper-closed  = 0.8 rad,
         angle gripper-open    = 0.0 rad,
-        angle grasp-threshold = 0.65 rad
+        angle grasp-threshold = 0.65 rad,
+        angle joint-3-target                 = 3.14 rad,
+        angle joint-4-upper-limit            = -45.0 deg,
+        angle joint-4-lower-limit            = -144.0 deg,
+        angle joint-6-upper-limit            = 116.0 deg,
+        angle joint-6-lower-limit            = -117.0 deg
     }
 }
 
 ros (ns=app) {
     publishers {
-        ext-force-wrench: topic "/wrist_ft" message "geometry_msgs/msg/WrenchStamped",
+        ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
     },
     always {
         publish at 100.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
@@ -58,8 +72,8 @@ ros (ns=app) {
 // The bands this model is tuned against, stated once by the kind of error they bound rather
 // than on each constraint that takes them.
 tolerances {
-    position:         0.05 m,
-    orientation:      0.01 rad
+    position:         0.01 m,
+    orientation:      5 deg
 }
 
 guarded-motion (ns=app) hold-close {
@@ -74,7 +88,9 @@ guarded-motion (ns=app) hold-close {
         hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <shared.spec.start-pose>.position,
         hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation,
         close-gripper:    keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>,
-        support-elbow-z:  keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+        hold-elbow:       keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range:    keeping <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range:    keeping<shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
     }
 
     until {
@@ -93,7 +109,9 @@ guarded-motion (ns=app) hold-open {
         hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <shared.spec.start-pose>.position,
         hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation,
         open-gripper:     keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-open>,
-        support-elbow-z:  keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+        hold-elbow:       keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range:    keeping <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range:    keeping<shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
     }
 
     until {
@@ -110,11 +128,12 @@ constraint-handler (ns=app) handler-close {
         }
     }
     controllers {
-        pid ctrl-hold-position    { <hold-close.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
-        pid ctrl-hold-orientation { <hold-close.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
+        pid ctrl-hold-position    { <hold-close.hold-position>,    Kp: 75, Ki: 0, Kd: 15, decay: 0 },
+        pid ctrl-hold-orientation { <hold-close.hold-orientation>, Kp: 200, Ki: 10, Kd: 32, decay: 0 },
         feed-forward ctrl-close-gripper { <hold-close.close-gripper> },
-        impedance ctrl-support-z { <hold-close.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
-            apply at <kinova.forearm_link>
+        pid ctrl-hold-close-joint-3 { constraint: <hold-close.hold-elbow>, Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-hold-close-joint-4-range { constraint: <hold-close.joint-4-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-hold-close-joint-6-range { constraint: <hold-close.joint-6-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
     }
     solvers {
         arm-solver: serial-chain {
@@ -140,8 +159,9 @@ constraint-handler (ns=app) handler-open {
         pid ctrl-open-hold-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
         pid ctrl-open-hold-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
         feed-forward ctrl-open-gripper { <hold-open.open-gripper> },
-        impedance ctrl-open-support-z { <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
-            apply at <kinova.forearm_link>
+        pid ctrl-hold-open-joint-3 { constraint: <hold-open.hold-elbow>, Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-hold-open-joint-4-range { constraint: <hold-open.joint-4-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-hold-open-joint-6-range { constraint: <hold-open.joint-6-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
     }
     solvers {
         <handler-close.arm-solver>,
