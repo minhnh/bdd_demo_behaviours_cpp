@@ -1,5 +1,5 @@
-import "collab.fsm"
-import "collab.scenex"
+import "collab_sim.fsm"
+import "../collab/collab.scenex"
 ns app = "https://secorolab.github.io/models/demos/collab/exec/"
 
 exec-context (ns=app) sim-demo-hold-exec {
@@ -48,7 +48,13 @@ context (ns=app) shared {
 
 ros (ns=app) {
     publishers {
-        ext-force-wrench: topic "/wrist_ft" message "geometry_msgs/msg/WrenchStamped",
+        ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
+    },
+    action-servers {
+        collab-bhv: action "/bdd/collab_bhv_server" type "bdd_ros2_interfaces/action/Behaviour" {
+            on-goal: produce event <collab-coord.E_GOAL>,
+            on-end: { result.trinary.value: TRUE },
+        },
     },
     always {
         publish at 100.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
@@ -101,6 +107,24 @@ guarded-motion (ns=app) hold-open {
     }
 }
 
+guarded-motion (ns=app) hold-wait {
+    description: "Hold the starting pose until a goal starts the cycle"
+
+    context { }
+
+    when {}
+
+    while {
+        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <shared.spec.start-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation,
+        open-gripper:     keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-open>,
+        support-elbow-z:  keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+
+    // Nothing here ends it: the goal does, through the FSM.
+    until {}
+}
+
 constraint-handler (ns=app) handler-close {
     handles: <hold-close>
     runs-in: <collab-coord.S_CLOSE>
@@ -141,6 +165,22 @@ constraint-handler (ns=app) handler-open {
         pid ctrl-open-hold-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
         feed-forward ctrl-open-gripper { <hold-open.open-gripper> },
         impedance ctrl-open-support-z { <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers {
+        <handler-close.arm-solver>,
+        <handler-close.gripper-command-solver>
+    }
+}
+
+constraint-handler (ns=app) handler-wait {
+    handles: <hold-wait>
+    runs-in: <collab-coord.S_WAIT>
+    controllers {
+        pid ctrl-wait-hold-position    { <hold-wait.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
+        pid ctrl-wait-hold-orientation { <hold-wait.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
+        feed-forward ctrl-wait-gripper { <hold-wait.open-gripper> },
+        impedance ctrl-wait-support-z { <hold-wait.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
             apply at <kinova.forearm_link>
     }
     solvers {
