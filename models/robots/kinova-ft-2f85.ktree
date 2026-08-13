@@ -7,6 +7,7 @@ ktree inst (ns=robots) kinova of <kinova_tree>
 ktree inst (ns=robots) gripper of <gripper_tree>
 
 ktree (ns=robots) ft_tree {
+    root: <wrist_ft_body.wrist_ft_body_origin>
     body wrist_ft_body {
         // The coupler between bracelet and gripper: a 65 mm cylinder whose origin is the
         // bracelet mating face, +z along the tool axis -- which is -z of the bracelet.
@@ -45,6 +46,7 @@ ktree (ns=robots) ft_tree {
 }
 
 ktree (ns=robots) kinova-ft-2f85 {
+    root: <kinova.base_link.base_link_origin>
     tree <kinova>
     tree <ft_tree>
     tree <gripper>

@@ -12,17 +12,13 @@ from __future__ import annotations
 
 import argparse
 import os
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import mj_kdl_wrapper as mjk
 import rdflib
 from motion_spec.classes.scene import MjcfSceneSpec
-from motion_spec_dsl.rdf_parser.vocab import GEOM_ENT
 from motion_spec.rdf_parser import resources
-from motion_spec.rdf_parser.model import Model, local_name
-from rdf_utils.models.geom_coord import get_translation_between_points
-from rdf_utils.models.vocab import URI_KC_EXT_PRED_ROOT
+from motion_spec.rdf_parser.model import Model
 from scene_dsl.langs import scenex_metamodel
 from scene_dsl.rdf.scenex import create_scenex_model_graph
 
@@ -48,23 +44,7 @@ def read_scenex(scenex_path: Path) -> MjcfSceneSpec:
         imported_models=[],
         imported_provenance=[],
     )
-    scene = resources.read_scene(model)
-    ground = next(
-        (
-            frame
-            for frame in graph.subjects(rdflib.RDF.type, GEOM_ENT.Frame)
-            if local_name(frame) == "ground"
-        ),
-        None,
-    )
-    body = graph.value(predicate=GEOM_ENT.simplices, object=ground) if ground else None
-    root = graph.value(body, URI_KC_EXT_PRED_ROOT) if body else None
-    if ground is not None and root is not None:
-        ground_origin = graph.value(ground, GEOM_ENT.origin) or ground
-        root_origin = graph.value(root, GEOM_ENT.origin) or root
-        if translation := get_translation_between_points(ground_origin, root_origin, graph):
-            scene.floor_z = translation[2]
-    return scene
+    return resources.read_scene(model)
 
 
 def find_asset(relative: str, start: Path) -> str:
@@ -106,13 +86,6 @@ def find_asset(relative: str, start: Path) -> str:
     )
 
 
-def has_floor_geom(mjcf_path: str) -> bool:
-    """Whether an asset brings its own floor: mj_kdl_wrapper's plane is a geom named "floor",
-    and a second one (e.g. tray.xml's) collides with it at compile time.
-    """
-    return any(geom.get("name") == "floor" for geom in ET.parse(mjcf_path).iter("geom"))
-
-
 def _target(kind: str, name: str) -> mjk.AttachTarget:
     return mjk.AttachTarget(getattr(mjk.AttachKind, kind), name)
 
@@ -121,7 +94,6 @@ def build_spec(scene: MjcfSceneSpec, start: Path) -> mjk.SceneSpec:
     """The scene as a wrapper SceneSpec, with every authored asset path resolved."""
     spec = mjk.SceneSpec()
     spec.timestep = scene.timestep_s
-    spec.floor_z = scene.floor_z
     spec.add_skybox = True
 
     robots = []
@@ -170,8 +142,17 @@ def build_spec(scene: MjcfSceneSpec, start: Path) -> mjk.SceneSpec:
         objects.append(object_spec)
     spec.objects = objects
 
-    assets = [obj.mjcf_path for obj in objects if obj.mjcf_path]
-    spec.add_floor = not any(has_floor_geom(asset) for asset in assets)
+    sites = []
+    for frame in scene.frames:
+        site = mjk.SiteSpec()
+        site.body = frame.body
+        site.name = frame.name
+        site.pos = [frame.pos_x, frame.pos_y, frame.pos_z]
+        site.quat = [frame.quat_x, frame.quat_y, frame.quat_z, frame.quat_w]
+        sites.append(site)
+    spec.sites = sites
+
+    spec.add_floor = True
     return spec
 
 
@@ -181,7 +162,7 @@ def build_scene(scenex_path: Path) -> mjk.Scene:
 
 
 def describe(spec: mjk.SceneSpec, scene: mjk.Scene) -> None:
-    print(f"timestep: {spec.timestep} s, floor_z: {spec.floor_z} m")
+    print(f"timestep: {spec.timestep} s, floor at the anchor (z = {spec.floor_z} m)")
     for robot in spec.robots:
         print(f"robot: {robot.path} @ {robot.attach_to.kind} '{robot.attach_to.name}'")
         for attachment in robot.attachments:

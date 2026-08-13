@@ -8,6 +8,7 @@ ktree inst (ns=sdh_mjc) kinova of <kinova_tree>
 ktree inst (ns=sdh_mjc) gripper of <gripper_tree>
 
 ktree (ns=sdh_mjc) ft_tree {
+    root: <wrist_ft_body.wrist_ft_body_origin>
     body wrist_ft_body {
         frame wrist_ft_body_origin { }
         // The sensor reads at the body it is: ft_sensor.xml puts the site at its origin.
@@ -46,6 +47,7 @@ ktree (ns=sdh_mjc) ft_tree {
 }
 
 ktree (ns=sdh_mjc) kinova_ft_2f85 {
+    root: <kinova.base_link.base_link_origin>
     tree <kinova>
     tree <ft_tree>
     tree <gripper>
@@ -67,6 +69,7 @@ ktree (ns=sdh_mjc) kinova_ft_2f85 {
 }
 
 ktree (ns=sdh_mjc) world_tree {
+    root: <world_body.world>
     tree <kinova_ft_2f85>
 
     body world_body {
@@ -118,6 +121,7 @@ scene inst (ns=sdh_mjc) sim_demo_hold_scene_mjc {
     scene: <sim_demo_hold_scene>
 
     kgraph (ns=sdh_mjc) sim_demo_hold_graph {
+        anchor: <world_tree.world_body.world>
         tree <world_tree>
     }
 

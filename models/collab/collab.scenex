@@ -4,24 +4,29 @@ import "../robots/kinova-ft-2f85.ktree"
 scene inst (ns=collab) collab-scene-simreal {
     scene: <collab-scn>
     kgraph (ns=collab) collab-kgraph {
+        anchor: <world.root>
         tree <kinova-ft-2f85>
 
         body world {
+            // What the scene stands on: the floor is here, and every placement resolves
+            // into this frame. Named for MuJoCo, whose compiler matches on "world".
             frame root {}
-            frame ground {
-                pose ground_in_world {
-                    wrt: <world.root>
-                    xyz: (0.0, 0.0, -0.72) m
-                    orientation: euler { axes: xyz extrinsic angles: (0, 0, 0) unit: deg }
-                }
-            }
         }
 
         body robot-table-body {
+            // The body's root frame, so the asset's own origin: the centre of the table top,
+            // which is what the MJCF places and what its site is named after.
             frame table_top {
-                pose in-world {
-                    wrt: <world.root> xyz: (0.295, 0.725, 0.0) m
+                pose top_on_anchor {
+                    wrt: <robot-table-body.table_anchor> xyz: (0.295, 0.725, 0.0) m
                     orientation: euler {angles: (90.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            // The corner the table is anchored by, above the world origin at table height.
+            frame table_anchor {
+                pose in-world {
+                    wrt: <world.root> xyz: (0.0, 0.0, 0.72) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
             frame arm-mount {
@@ -54,7 +59,14 @@ scene inst (ns=collab) collab-scene-simreal {
         body rk-table-body {
             frame table_top {
                 pose in-world {
-                    wrt: <world.root> xyz: (-0.9, 1.8, -0.7) m
+                    wrt: <world.root> xyz: (-0.9, 1.8, 0.02) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            // The height the tray stands at, measured from this table's own origin.
+            frame work_surface {
+                pose surface_on_rk_table {
+                    wrt: <rk-table-body.table_top> xyz: (0.0, 0.0, 0.75) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
@@ -81,8 +93,8 @@ scene inst (ns=collab) collab-scene-simreal {
 
         body drawer-body {
             frame drawer-root {
-                pose in-world {
-                    wrt: <world.root> xyz: (-0.9, 1.8, 0.05) m
+                pose on-rk-table {
+                    wrt: <rk-table-body.work_surface> xyz: (0.0, 0.0, 0.0) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
@@ -108,9 +120,13 @@ scene inst (ns=collab) collab-scene-simreal {
 
         joints {
             fixed table_on_world {
-   parent: <world.root>
-   child: <robot-table-body.table_top>
-}
+                parent: <world.root>
+                child: <robot-table-body.table_anchor>
+            }
+            fixed rk_table_on_world {
+                parent: <world.root>
+                child: <rk-table-body.table_top>
+            }
             fixed arm_on_table {
                 parent: <robot-table-body.arm-mount>
                 child: <kinova.base_link.base_link_origin>
