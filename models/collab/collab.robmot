@@ -48,17 +48,10 @@ context (ns=app) shared {
 
 ros (ns=app) {
     publishers {
-        wrist-ft: topic "/wrist_ft" message "geometry_msgs/msg/WrenchStamped",
+        ext-force-wrench: topic "/wrist_ft" message "geometry_msgs/msg/WrenchStamped",
     },
     always {
-        wrist-ft-stream: to <app.wrist-ft> {
-            wrench.force.x:  <shared.world.ext-force>.force.x,
-            wrench.force.y:  <shared.world.ext-force>.force.y,
-            wrench.force.z:  <shared.world.ext-force>.force.z,
-            wrench.torque.x: <shared.world.ext-force>.torque.x,
-            wrench.torque.y: <shared.world.ext-force>.torque.y,
-            wrench.torque.z: <shared.world.ext-force>.torque.z,
-        },
+        publish at 100.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
     },
 }
 
@@ -117,8 +110,8 @@ constraint-handler (ns=app) handler-close {
         }
     }
     controllers {
-        pid ctrl-hold-position    { <hold-close.hold-position>,    Kp: 550, Ki: 50, Kd: 2, decay: 0.1 },
-        pid ctrl-hold-orientation { <hold-close.hold-orientation>, Kp: 250, Ki: 50, Kd: 2, decay: 0.1 },
+        pid ctrl-hold-position    { <hold-close.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
+        pid ctrl-hold-orientation { <hold-close.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
         feed-forward ctrl-close-gripper { <hold-close.close-gripper> },
         impedance ctrl-support-z { <hold-close.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
             apply at <kinova.forearm_link>
@@ -127,7 +120,7 @@ constraint-handler (ns=app) handler-close {
         arm-solver: serial-chain {
             agent:     <collab-agents.kinova>,
             algorithm: rne,
-            gravity:   (0.0, 0.0, 9.81) m/s^2
+            gravity:   (0.0, 0.0, -9.81) m/s^2
         },
         gripper-command-solver: command-forwarding {
             agent: <collab-agents.gripper>
@@ -144,8 +137,8 @@ constraint-handler (ns=app) handler-open {
         }
     }
     controllers {
-        pid ctrl-open-hold-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 2, decay: 0.1 },
-        pid ctrl-open-hold-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 2, decay: 0.1 },
+        pid ctrl-open-hold-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
+        pid ctrl-open-hold-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
         feed-forward ctrl-open-gripper { <hold-open.open-gripper> },
         impedance ctrl-open-support-z { <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
             apply at <kinova.forearm_link>

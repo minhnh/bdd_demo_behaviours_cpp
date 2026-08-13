@@ -111,7 +111,7 @@ constraint-handler (ns=app) handler-close {
         arm-solver: serial-chain {
             agent:     <agents.arm1>,
             algorithm: rne,
-            gravity:   (0.0, 0.0, 9.81) m/s^2
+            gravity:   (0.0, 0.0, -9.81) m/s^2
         },
         gripper-command-solver: command-forwarding {
             agent: <agents.gripper1>

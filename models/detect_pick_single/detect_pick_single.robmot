@@ -460,7 +460,7 @@ constraint-handler (ns=app) handler-close-grip {
     handles: <grasp-hold>
     monitors {
         mon-grasp-ready: monitor <grasp-hold.near-cube> {
-            satisfied { trigger: event <dp.E_GRASP_READY>, publish: event to <app.bdd-events> },
+            satisfied { trigger: event <dp.E_GRASP_READY>, publish: event to <ros.publishers.bdd-events> },
             violated { hold: <pick> },
         }
     }
@@ -600,7 +600,7 @@ constraint-handler (ns=app) handler-retreat {
             violated { hold: <open-grasp-hold> },
         },
         mon-retreat-settled: monitor <retreat.until> {
-            satisfied { trigger: event <dp.E_RETREAT_SETTLED>, publish: event to <app.bdd-events> },
+            satisfied { trigger: event <dp.E_RETREAT_SETTLED>, publish: event to <ros.publishers.bdd-events> },
         }
     }
 

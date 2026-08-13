@@ -44,13 +44,13 @@ context (ns=app) shared {
         angle pre-touch-pitch = 90.0 deg,
         angle pre-touch-yaw = -90.0 deg,
         linear-velocity pre-touch-speed = 0.05 m/s,
-        length pre-touch-arc-amplitude = 0.10 m,
+        distance pre-touch-arc-amplitude = 0.10 m,
         linear-velocity zero-linvel = 0.0 m/s,
         linear-velocity descend-vel = -0.05 m/s,
         length forward-distance = 0.05 m,
         linear-velocity arc-speed = 0.05 m/s,
         linear-velocity min-arc-speed = 0.005 m/s,
-        length arc-height = 0.18 m,
+        distance arc-height = 0.18 m,
         length place-x = 0.80 m,
         length place-y = 0.00 m,
         length place-z = 0.04 m,
@@ -247,7 +247,8 @@ constraint-handler (ns=app) handler-home {
         arm-solver: serial-chain {
             agent: <agents.arm1>,
             algorithm: rne,
-            gravity: (0.0, 0.0, 9.81) m/s^2
+            // RNE is given the gravity field, and takes it as written.
+            gravity: (0.0, 0.0, -9.81) m/s^2
         }
     }
 }
