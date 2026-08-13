@@ -1,7 +1,6 @@
 import "collab.fsm"
 import "collab.scenex"
-ns app = "https://secorolab.github.io/models/sim-demo-hold/"
-ns rdh = "https://secorolab.github.io/models/sim-demo-hold/fsm/"
+ns app = "https://secorolab.github.io/models/demos/collab/exec/"
 
 exec-context (ns=app) sim-demo-hold-exec {
     runs-scene: <collab-scene-simreal>
@@ -103,10 +102,10 @@ guarded-motion (ns=app) hold-open {
 
 constraint-handler (ns=app) handler-close {
     handles: <hold-close>
-    runs-in: <rdh.S_CLOSE>
+    runs-in: <collab-coord.S_CLOSE>
     monitors {
         mon-closed: monitor <hold-close.until> {
-            satisfied for 0.3 s { trigger: event <rdh.E_GRIPPER_CLOSED> },
+            satisfied for 0.3 s { trigger: event <collab-coord.E_GRIPPER_CLOSED> },
         }
     }
     controllers {
@@ -130,10 +129,10 @@ constraint-handler (ns=app) handler-close {
 
 constraint-handler (ns=app) handler-open {
     handles: <hold-open>
-    runs-in: <rdh.S_OPEN>
+    runs-in: <collab-coord.S_OPEN>
     monitors {
         mon-opened: monitor <hold-open.until> {
-            satisfied for 0.3 s { trigger: event <rdh.E_GRIPPER_OPENED> },
+            satisfied for 0.3 s { trigger: event <collab-coord.E_GRIPPER_OPENED> },
         }
     }
     controllers {
