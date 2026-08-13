@@ -13,43 +13,51 @@ obs provider (ns=collab-bdd) ee-wrench-topic {
     ros topic: "/ee_wrench" type: "geometry_msgs/msg/WrenchStamped"
 }
 
+observation (ns=collab-bdd) container-pose {
+    provider: <obj-recog-topic> observes var <transport-tmpl.container>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+
+observation (ns=collab-bdd) pick-ws-pose {
+    provider: <obj-recog-topic> observes var <transport-tmpl.pick-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+
+observation (ns=collab-bdd) place-ws-pose {
+    provider: <obj-recog-topic> observes var <transport-tmpl.place-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+
+observation (ns=collab-bdd) ee-wrench-obs {
+    provider: <ee-wrench-topic>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+}
+
 obs policy (ns=collab-bdd) container-at-pick-ws
     for <transport-tmpl.container-in-scene> horizon: 2.0 seconds
 {
-    observation container-pose {
-        provider: <obj-recog-topic> observes var <transport-tmpl.container>
-    }
-    observation pick-ws-pose {
-        provider: <obj-recog-topic> observes var <transport-tmpl.pick-ws>
-    }
-    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
-    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+    observations: { <container-pose>, <pick-ws-pose> }
     evaluator: linear distance { less-than: 0.30 m }
 }
 
 obs policy (ns=collab-bdd) container-at-place-ws
     for <transport-tmpl.container-at-dest> horizon: 2.0 seconds
 {
-    observation container-pose {
-        provider: <obj-recog-topic> observes var <transport-tmpl.container>
-    }
-    observation place-ws-pose {
-        provider: <obj-recog-topic> observes var <transport-tmpl.place-ws>
-    }
-    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
-    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+    observations: { <container-pose>, <place-ws-pose> }
     evaluator: linear distance { less-than: 0.30 m }
 }
 
 obs policy (ns=collab-bdd) container-not-dropped-trin
     for <transport-tmpl.container-not-dropped>
-{ trinary topic: "/obs_policy/container-not-dropped" }
+{ trinary topic: "/obs_policy/container_not_dropped" }
 
 obs policy (ns=collab-bdd) compliant-ee-wrench
     for <compliant-transport.robot-compliant>
 {
-    observation ee-wrench-obs { provider: <ee-wrench-topic> }
-    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    observations: { <ee-wrench-obs> }
     evaluator: py { module: bdd_exec_ros2.observation, attr: WrenchForceNormWithinLimitEvaluator }
 }
 
