@@ -1,0 +1,62 @@
+import "collab.scene"
+ns collab-bdd= "https://secorolab.github.io/models/sim-demo-hold/bdd/"
+ns collab-coord= "https://secorolab.github.io/models/sim-demo-hold/coordination/"
+
+Task (ns=collab-bdd) collab-transport
+
+Event (ns=collab-bdd) scenario-start
+Event (ns=collab-bdd) scenario-end
+// Events coming from coordination model, e.g. FSM
+Event (ns=collab-coord) E_PICK_START
+Event (ns=collab-coord) E_PICK_END
+Event (ns=collab-coord) E_PLACE_START
+Event (ns=collab-coord) E_PLACE_END
+
+Scenario Template (ns=collab-bdd) transport-tmpl {
+    duration: from <scenario-start> until <scenario-end>
+    task: <collab-transport>
+
+    var container
+    var robot
+    var pick-ws
+    var place-ws
+
+    Given:
+        container-in-scene: holds(<container> is located at <pick-ws>, before <E_PICK_START>)
+    When:
+        Behaviour (ns=collab-bdd) collab-transport-bhv {
+            duration: from <E_PICK_START> until <E_PLACE_END>
+            <robot> picks <container> and places at <place-ws>
+        }
+    Then:
+    (
+        container-not-dropped: holds(
+            pred("\"{robot}\" does not drop \"{container}\"", robot=<robot>, container=<container>),
+            from <E_PICK_END> until <E_PLACE_START>
+        )
+        and
+        container-at-dest: holds(<container> is located at <pick-ws>, after <E_PLACE_END>)
+    )
+}
+
+User Story (ns=collab-bdd) collab-transport-us {
+    As A ""
+    I Want ""
+    So That ""
+
+    Scenarios:
+        Scenario compliant-transport {
+            template: <transport-tmpl>
+            scene: <collab-scene>
+            Then:
+                robot-compliant: holds(
+                    pred("\"{robot}\" is compliant", robot=<transport-tmpl.robot>),
+                    from <E_PICK_END> until <E_PLACE_START>
+                )
+
+            variation:
+            | <transport-tmpl.container> | <transport-tmpl.pick-ws> | <transport-tmpl.place-ws> | <transport-tmpl.robot> |
+            |---|
+            | <collab-objects.drawer> | <collab-workspaces.wall-ws> | <collab-workspaces.robot-ws> |  <collab-agents.kinova> |
+        }
+}

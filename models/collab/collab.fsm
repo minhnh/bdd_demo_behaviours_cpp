@@ -2,6 +2,10 @@ ns collab-coord='https://secorolab.github.io/models/demos/collab/coordination/'
 
 evt loop (ns=collab-coord) sim_demo_hold_fsm_events {
     evt E_STEP,
+    evt E_PICK_START,
+    evt E_PICK_END,
+    evt E_PLACE_START,
+    evt E_PLACE_END,
     evt E_GRIPPER_CLOSED,
     evt E_GRIPPER_OPENED
 }
