@@ -33,7 +33,7 @@ obs policy (ns=collab-bdd) container-at-place-ws
     observation container-pose {
         provider: <obj-recog-topic> observes var <transport-tmpl.container>
     }
-    observation pick-ws-pose {
+    observation place-ws-pose {
         provider: <obj-recog-topic> observes var <transport-tmpl.place-ws>
     }
     time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
