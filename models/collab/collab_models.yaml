@@ -1,0 +1,8 @@
+- path: "models/collab/collab.bdd"
+  format: "robbdd"
+  path_type: "ros"
+  package_name: "bdd_collab_bhv_cpp"
+- path: "models/collab/collab.bddx"
+  format: "robbdd"
+  path_type: "ros"
+  package_name: "bdd_collab_bhv_cpp"

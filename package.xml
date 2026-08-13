@@ -16,6 +16,8 @@
   <depend>rclcpp_action</depend>
   <depend>rclcpp_components</depend>
 
+  <exec_depend>bdd_exec_ros2</exec_depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

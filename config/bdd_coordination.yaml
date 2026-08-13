@@ -1,0 +1,6 @@
+/bdd/collab_coordinator:
+  ros__parameters:
+    bhv_server_name: "/bdd/collab_bhv_server"
+    event_topic: "/bdd/events"
+    status_timer_period: 0.5
+    timeout: 60.0
