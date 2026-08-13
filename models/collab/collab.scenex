@@ -169,7 +169,7 @@ scene inst (ns=collab) collab-scene-simreal {
         force-torque wrist_ft {
             frame: <ft_tree.wrist_ft_body.wrist_ft_site>
             observes: force torque
-            update-rate: 1000.0 Hz
+            update-rate: 100.0 Hz
         }
 
         camera wrist {
