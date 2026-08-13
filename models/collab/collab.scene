@@ -1,28 +1,28 @@
-ns collab='https://secorolab.github.io/models/environments/secorolab/collab/'
+ns collab-scn='https://secorolab.github.io/models/demos/collab/scene/'
 
-obj set (ns=collab) collab-objects {
+obj set (ns=collab-scn) collab-objects {
     object drawer
 }
 
-obj set (ns=collab) ws-objects {
+obj set (ns=collab-scn) ws-objects {
     object rk-table,
     object table-robot
 }
 
-ws set (ns=collab) collab-workspaces {
+ws set (ns=collab-scn) collab-workspaces {
     workspace wall-ws,
     workspace robot-ws
 }
 
-agn set (ns=collab) collab-agents {
+agn set (ns=collab-scn) collab-agents {
     agent kinova,
     agent gripper
 }
 
-comp (ns=collab) wall-cmp of ws <collab-workspaces.wall-ws> {obj <ws-objects.rk-table>}
-comp (ns=collab) robot-cmp of ws <collab-workspaces.robot-ws> {obj <ws-objects.table-robot>}
+comp (ns=collab-scn) wall-cmp of ws <collab-workspaces.wall-ws> {obj <ws-objects.rk-table>}
+comp (ns=collab-scn) robot-cmp of ws <collab-workspaces.robot-ws> {obj <ws-objects.table-robot>}
 
-scene (ns=collab) collab-scn {
+scene (ns=collab-scn) collab-scene {
     obj set <collab-objects>
     agn set <collab-agents>
     ws comp <wall-cmp>

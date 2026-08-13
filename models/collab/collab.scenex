@@ -1,9 +1,9 @@
 import "collab.scene"
 import "../robots/kinova-ft-2f85.ktree"
 
-scene inst (ns=collab) collab-scene-simreal {
-    scene: <collab-scn>
-    kgraph (ns=collab) collab-kgraph {
+scene inst (ns=collab-scn) collab-scene-simreal {
+    scene: <collab-scene>
+    kgraph (ns=collab-scn) collab-kgraph {
         tree <kinova-ft-2f85>
 
         body world {
