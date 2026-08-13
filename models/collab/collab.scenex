@@ -32,7 +32,7 @@ scene inst (ns=collab-scn) collab-scene-simreal {
             frame arm-mount {
                 pose wrt-table-top {
                     wrt: <table_top> xyz: (0.7, 0.0, 0.0) m
-                    orientation: euler {angles: (-90.0, 0.0, 0.0) unit: deg}
+                    orientation: euler {angles: (-180.0, 0.0, 0.0) unit: deg}
                 }
             }
             frame table-com {
@@ -59,7 +59,7 @@ scene inst (ns=collab-scn) collab-scene-simreal {
         body rk-table-body {
             frame table_top {
                 pose in-world {
-                    wrt: <world.root> xyz: (-0.9, 1.8, 0.02) m
+                    wrt: <world.root> xyz: (-0.75, 1.87, 0.02) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }

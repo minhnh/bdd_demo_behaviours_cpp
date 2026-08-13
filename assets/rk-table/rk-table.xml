@@ -9,7 +9,6 @@
       <geom type="mesh" mesh="rk-table" contype="0" conaffinity="0"/>
       <geom name="tabletop_collision" type="box" pos="0 0.739 0.002"
             size="0.7 0.011 0.323" mass="0" contype="1" conaffinity="1"/>
-      <site name="table_top" pos="0 0.762 -0.0595" size="0.03" rgba="1 0 0 1"/>
     </body>
   </worldbody>
 </mujoco>
