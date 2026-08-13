@@ -64,8 +64,6 @@ context (ns=app) shared {
 }
 
 tolerances {
-    linear-distance:  0.01 m,
-    angular-distance: 0.1 rad,
     linear-velocity:  0.01 m/s,
     position:         0.01 m,
     orientation:      0.01 rad
@@ -227,7 +225,7 @@ guarded-motion (ns=app) open-gripper {
         support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
     }
     until {
-        opened: <shared.world.gripper-pos> equal to <shared.spec.gripper-open>
+        opened: <shared.world.gripper-pos> equal to <shared.spec.gripper-open> within 0.1 rad
     }
 }
 
