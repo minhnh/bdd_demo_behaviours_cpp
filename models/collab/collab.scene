@@ -1,7 +1,7 @@
 ns collab='https://secorolab.github.io/models/environments/secorolab/collab/'
 
 obj set (ns=collab) collab-objects {
-    object container
+    object drawer
 }
 
 obj set (ns=collab) ws-objects {

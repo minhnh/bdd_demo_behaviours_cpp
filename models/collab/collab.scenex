@@ -79,16 +79,16 @@ scene inst (ns=collab) collab-scene-simreal {
             }
         }
 
-        body container-body {
-            frame container-root {
+        body drawer-body {
+            frame drawer-root {
                 pose in-world {
                     wrt: <world.root> xyz: (-0.9, 1.8, 0.05) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
-            frame container-com {
-                pose com-in-container {
-                    wrt: <container-body.container-root> xyz: (0.000025, -0.023302, 0.028773) m
+            frame drawer-com {
+                pose com-in-drawer {
+                    wrt: <drawer-body.drawer-root> xyz: (0.000025, -0.023302, 0.028773) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
@@ -96,7 +96,7 @@ scene inst (ns=collab) collab-scene-simreal {
             // the measured 350 g printed mass (an effective mesh density of 1046.7 kg/m^3).
             // ponytail: regenerate if the print geometry or measured mass changes.
             inertia {
-                frame: <container-com>
+                frame: <drawer-com>
                 mass: 0.350 kg
                 inertia-matrix: (
                     (0.002839864, 0.000000373, 0.000000416),
@@ -132,10 +132,10 @@ scene inst (ns=collab) collab-scene-simreal {
         }
     }
 
-    obj <collab-objects.container> {
+    obj <collab-objects.drawer> {
         model tray-mjc as mjcf {
             ros pkg="bdd_collab_bhv_cpp", path= 'assets/tray/tray.xml'
-            map body <collab-kgraph.container-body> to "container"
+            map body <collab-kgraph.drawer-body> to "drawer"
         }
     }
 
