@@ -39,11 +39,27 @@ context (ns=app) shared {
         // Six constraints leave the 7th joint free, so the elbow can sink under gravity with
         // the end-effector still on target. This is the actuator-4 bend the arm folds over --
         // everything beyond it hangs off this point. Held where it started, like the pose above.
-        linear-distance support-z = snapshot of <shared.world.pose-elbow-base>.position.z,
+        length support-z = snapshot of <shared.world.pose-elbow-base>.position.z,
         angle gripper-closed  = 0.8 rad,
         angle gripper-open    = 0.0 rad,
         angle grasp-threshold = 0.65 rad
     }
+}
+
+ros (ns=app) {
+    publishers {
+        wrist-ft: topic "/wrist_ft" message "geometry_msgs/msg/WrenchStamped",
+    },
+    always {
+        wrist-ft-stream: to <app.wrist-ft> {
+            wrench.force.x:  <shared.world.ext-force>.force.x,
+            wrench.force.y:  <shared.world.ext-force>.force.y,
+            wrench.force.z:  <shared.world.ext-force>.force.z,
+            wrench.torque.x: <shared.world.ext-force>.torque.x,
+            wrench.torque.y: <shared.world.ext-force>.torque.y,
+            wrench.torque.z: <shared.world.ext-force>.torque.z,
+        },
+    },
 }
 
 // The bands this model is tuned against, stated once by the kind of error they bound rather

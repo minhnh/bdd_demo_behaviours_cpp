@@ -37,23 +37,23 @@ context (ns=app) shared {
         // fixed Cartesian pre-touch pose.
         pose home-pose = snapshot of <shared.world.pose-ee-base>,
         pose pre-touch-pose = snapshot of <shared.world.pose-ee-base> on event <bml.E_PRE_TOUCH_REACHED>,
-        linear-distance support-z = snapshot of <shared.world.pose-elbow-base>.position.z,
-        linear-distance pre-touch-x = 0.0 m,
-        linear-distance pre-touch-y = -0.80 m,
+        length support-z = snapshot of <shared.world.pose-elbow-base>.position.z,
+        length pre-touch-x = 0.0 m,
+        length pre-touch-y = -0.80 m,
         angle pre-touch-roll = 0.0 deg,
         angle pre-touch-pitch = 90.0 deg,
         angle pre-touch-yaw = -90.0 deg,
         linear-velocity pre-touch-speed = 0.05 m/s,
-        linear-distance pre-touch-arc-amplitude = 0.10 m,
+        length pre-touch-arc-amplitude = 0.10 m,
         linear-velocity zero-linvel = 0.0 m/s,
         linear-velocity descend-vel = -0.05 m/s,
-        linear-distance forward-distance = 0.05 m,
+        length forward-distance = 0.05 m,
         linear-velocity arc-speed = 0.05 m/s,
         linear-velocity min-arc-speed = 0.005 m/s,
-        linear-distance arc-height = 0.18 m,
-        linear-distance place-x = 0.80 m,
-        linear-distance place-y = 0.00 m,
-        linear-distance place-z = 0.04 m,
+        length arc-height = 0.18 m,
+        length place-x = 0.80 m,
+        length place-y = 0.00 m,
+        length place-z = 0.04 m,
         angle place-roll = 0.0 deg,
         angle place-pitch = 90.0 deg,
         angle place-yaw = 0.0 deg,
@@ -144,7 +144,7 @@ guarded-motion (ns=app) forward {
     context {
         spec {
             pose start-pose = snapshot of <shared.world.pose-ee-base>,
-            linear-distance target-x = <spec.start-pose>.position.x + <shared.spec.forward-distance>
+            length target-x = <spec.start-pose>.position.x + <shared.spec.forward-distance>
         }
     }
     when { }
