@@ -27,6 +27,11 @@ ros (ns=app) {
     },
 }
 
+tolerances {
+    position:         0.05 m,
+    orientation:      0.01 rad
+}
+
 context (ns=app) shared {
     world {
         pose pose-table-anchor-cam {
@@ -38,54 +43,43 @@ context (ns=app) shared {
             of:         <kinova.bracelet_link.bracelet_link_origin>,
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
-        },
-        pose pose-elbow-base {
-            of:         <kinova.forearm_link.forearm_link_origin>,
-            wrt:        <kinova.base_link.base_link_origin>,
-            as-seen-by: <kinova.base_link.base_link_origin>
         }
     },
     spec {
-        pose start-pose  = snapshot of <shared.world.pose-ee-base>,
-        length support-z = snapshot of <shared.world.pose-elbow-base>.position.z
+        length anchor-moved-band = 0.01 m
     }
 }
 
-tolerances {
-    position:         0.05 m,
-    orientation:      0.01 rad
-}
+guarded-motion (ns=app) watch-anchor {
+    description: "Command nothing; report what the camera says the table anchor is"
 
-guarded-motion (ns=app) hold {
-    description: "Hold the pose the arm started in"
-
-    context { }
+    context {
+        spec {
+            pose anchor-ref = snapshot of <shared.world.pose-table-anchor-cam>
+        }
+    }
 
     when {}
 
     while {
-        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <shared.spec.start-pose>.position,
-        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation,
-        support-elbow-z:  keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+        anchor-moved: distance between <shared.world.pose-table-anchor-cam> and <spec.anchor-ref> greater than <shared.spec.anchor-moved-band>
     }
 
     until {}
 }
 
-constraint-handler (ns=app) handler-hold {
-    handles: <hold>
+constraint-handler (ns=app) handler-watch {
+    handles: <watch-anchor>
     runs-in: <rpt.S_HOLD>
-    controllers {
-        pid ctrl-hold-position    { <hold.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
-        pid ctrl-hold-orientation { <hold.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
-        impedance ctrl-support-z { <hold.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
-            apply at <kinova.forearm_link>
+    monitors {
+        mon-anchor: monitor <watch-anchor.anchor-moved> {
+            satisfied for 0.3 s { trigger: event <rpt.E_ANCHOR_SEEN> },
+        }
     }
+    controllers { }
     solvers {
         arm-solver: serial-chain {
-            agent:     <agents.arm1>,
-            algorithm: achd,
-            gravity:   (0.0, 0.0, 9.81) m/s^2
+            agent: <agents.arm1>
         }
     }
 }

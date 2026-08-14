@@ -1,7 +1,8 @@
 ns rpt = "https://secorolab.github.io/models/real-perception-test/fsm/"
 
 evt loop (ns=rpt) real_perception_test_fsm_events {
-    evt E_STEP
+    evt E_STEP,
+    evt E_ANCHOR_SEEN
 }
 
 fsm (ns=rpt) real_perception_test_fsm {
