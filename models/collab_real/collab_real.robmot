@@ -128,8 +128,8 @@ constraint-handler (ns=app) handler-close {
         }
     }
     controllers {
-        pid ctrl-hold-position    { <hold-close.hold-position>,    Kp: 75, Ki: 0, Kd: 15, decay: 0 },
-        pid ctrl-hold-orientation { <hold-close.hold-orientation>, Kp: 200, Ki: 10, Kd: 32, decay: 0 },
+        pid ctrl-hold-close-position    { <hold-close.hold-position>,    Kp: 500, Ki: 20, Kd: 100, decay: 0 },
+        pid ctrl-hold-close-orientation { <hold-close.hold-orientation>, Kp: 1400, Ki: 0, Kd: 200, decay: 0 },
         feed-forward ctrl-close-gripper { <hold-close.close-gripper> },
         pid ctrl-hold-close-joint-3 { constraint: <hold-close.hold-elbow>, Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-hold-close-joint-4-range { constraint: <hold-close.joint-4-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
@@ -156,8 +156,8 @@ constraint-handler (ns=app) handler-open {
         }
     }
     controllers {
-        pid ctrl-open-hold-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
-        pid ctrl-open-hold-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
+        pid ctrl-hold-open-position    { <hold-open.hold-position>,    Kp: 500, Ki: 20, Kd: 100, decay: 0 },
+        pid ctrl-hold-open-orientation { <hold-open.hold-orientation>, Kp: 1400, Ki: 0, Kd: 200, decay: 0 },
         feed-forward ctrl-open-gripper { <hold-open.open-gripper> },
         pid ctrl-hold-open-joint-3 { constraint: <hold-open.hold-elbow>, Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-hold-open-joint-4-range { constraint: <hold-open.joint-4-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
