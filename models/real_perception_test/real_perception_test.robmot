@@ -18,7 +18,7 @@ ros (ns=app) {
     },
     subscribers {
         table-anchor: topic "/recognized_objects" message "vision_msgs/msg/Detection3DArray" {
-            observes { <world_tree.robot-table-body.table_anchor> }
+            observes { <shared.world.pose-table-anchor-cam> }
             pose from results
         },
     },
