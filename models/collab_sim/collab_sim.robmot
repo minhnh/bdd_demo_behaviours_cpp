@@ -1,4 +1,4 @@
-import "../collab/collab.fsm"
+import "./collab_sim.fsm"
 import "../collab/collab.scenex"
 ns app = "https://secorolab.github.io/models/demos/collab/exec/"
 
