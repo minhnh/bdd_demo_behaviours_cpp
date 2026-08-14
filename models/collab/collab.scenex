@@ -162,7 +162,7 @@ scene inst (ns=collab-scn) collab-scene-simreal {
         }
 
         model ft-mjc as mjcf {
-            sys path = 'src/mj_kdl_wrapper/assets/ft_sensor.xml'
+            sys path = 'src/bdd_collab_bhv_cpp/assets/ft_mount.xml'
             map tree <ft_tree> to "wrist_ft_body"
         }
 

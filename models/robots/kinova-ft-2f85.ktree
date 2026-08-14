@@ -57,7 +57,7 @@ ktree (ns=robots) kinova-ft-2f85 {
             child: <ft_tree.wrist_ft_body.wrist_ft_body_origin>
         }
         fixed g_mount_on_ft {
-            parent: <ft_tree.wrist_ft_body.wrist_ft_site>
+            parent: <ft_tree.wrist_ft_body.wrist_ft_mount>
             child: <gripper.g_base_mount.g_mount_interface>
         }
         serial {
