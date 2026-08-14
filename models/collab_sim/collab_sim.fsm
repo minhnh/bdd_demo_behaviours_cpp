@@ -3,12 +3,15 @@ ns collab-coord='https://secorolab.github.io/models/demos/collab/coordination/'
 evt loop (ns=collab-coord) sim_demo_hold_fsm_events {
     evt E_STEP,
     evt E_GOAL,
+    evt E_OBJ_LOCATED,
+    evt E_TABLE_TOUCHED,
+    evt E_OBJ_REACHED,
+    evt E_OBJ_GRASPED,
+    // Exported events
     evt E_PICK_START,
     evt E_PICK_END,
     evt E_PLACE_START,
-    evt E_PLACE_END,
-    evt E_GRIPPER_CLOSED,
-    evt E_GRIPPER_OPENED
+    evt E_PLACE_END
 }
 
 fsm (ns=collab-coord) sim_demo_hold_fsm {
@@ -17,8 +20,10 @@ fsm (ns=collab-coord) sim_demo_hold_fsm {
     states {
         S_START,
         S_WAIT,
+        S_LOOK,
+        S_TOUCH,
+        S_SLIDE,
         S_CLOSE,
-        S_OPEN,
         S_DONE
     }
 
@@ -29,15 +34,33 @@ fsm (ns=collab-coord) sim_demo_hold_fsm {
 
     transitions {
         T_START_WAIT  { from: <S_START>, to: <S_WAIT> },
-        T_WAIT_CLOSE  { from: <S_WAIT>,  to: <S_CLOSE> },
-        T_CLOSE_OPEN  { from: <S_CLOSE>, to: <S_OPEN> },
-        T_OPEN_CLOSE  { from: <S_OPEN>,  to: <S_CLOSE> }
+        T_WAIT_LOOK  { from: <S_WAIT>,  to: <S_LOOK> },
+        T_LOOK_TOUCH  { from: <S_LOOK>, to: <S_TOUCH> },
+        T_TOUCH_SLIDE  { from: <S_TOUCH>, to: <S_SLIDE> },
+        T_SLIDE_CLOSE  { from: <S_SLIDE>,  to: <S_CLOSE> },
+        T_CLOSE_WAIT  { from: <S_CLOSE>,  to: <S_WAIT> }
     }
 
     reactions {
-        R_STEP_START     { when: <sim_demo_hold_fsm_events.E_STEP>,           do: <T_START_WAIT> },
-        R_GOAL           { when: <sim_demo_hold_fsm_events.E_GOAL>,           do: <T_WAIT_CLOSE> },
-        R_GRIPPER_CLOSED { when: <sim_demo_hold_fsm_events.E_GRIPPER_CLOSED>, do: <T_CLOSE_OPEN> },
-        R_GRIPPER_OPENED { when: <sim_demo_hold_fsm_events.E_GRIPPER_OPENED>, do: <T_OPEN_CLOSE> }
+        R_STEP_START {
+            when: <sim_demo_hold_fsm_events.E_STEP>, do: <T_START_WAIT>
+        },
+        R_GOAL {
+            when: <sim_demo_hold_fsm_events.E_GOAL>, do: <T_WAIT_LOOK>
+        },
+        R_OBJ_LOCATED {
+            when: <sim_demo_hold_fsm_events.E_OBJ_LOCATED>, do: <T_LOOK_TOUCH>,
+            fires { <sim_demo_hold_fsm_events.E_PICK_START> }
+        },
+        R_TABLE_TOUCHED {
+            when: <sim_demo_hold_fsm_events.E_TABLE_TOUCHED>, do: <T_TOUCH_SLIDE>
+        },
+        R_OBJ_REACHED {
+            when: <sim_demo_hold_fsm_events.E_OBJ_REACHED>, do: <T_SLIDE_CLOSE>
+        },
+        R_OBJ_GRASPED {
+            when: <sim_demo_hold_fsm_events.E_OBJ_GRASPED>, do: <T_CLOSE_WAIT>,
+            fires { <sim_demo_hold_fsm_events.E_PICK_END> }
+        }
     }
 }
