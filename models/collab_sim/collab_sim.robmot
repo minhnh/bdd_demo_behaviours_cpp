@@ -157,7 +157,7 @@ constraint-handler (ns=app) handler-look {
         mon-opened: monitor <hold-open.until> {
             satisfied for 0.3 s {
                 trigger: event <collab-coord.E_OBJ_LOCATED>,
-                publish: event to <ros.publishers.bdd-events>
+                publish: events { <collab-coord.E_PICK_START> } to <ros.publishers.bdd-events>
             },
         }
     }
@@ -229,7 +229,7 @@ constraint-handler (ns=app) handler-close {
         mon-opened: monitor <hold-close.until> {
             satisfied for 0.3 s {
                 trigger: event <collab-coord.E_OBJ_GRASPED>,
-                publish: event to <ros.publishers.bdd-events>
+                publish: events { <collab-coord.E_PICK_END> } to <ros.publishers.bdd-events>
             },
         }
     }

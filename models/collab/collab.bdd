@@ -1,6 +1,6 @@
 import "collab.scene"
-ns collab-bdd= "https://secorolab.github.io/models/sim-demo-hold/bdd/"
-ns collab-coord= "https://secorolab.github.io/models/sim-demo-hold/coordination/"
+ns collab-bdd= "https://secorolab.github.io/models/demos/bdd/"
+ns collab-coord='https://secorolab.github.io/models/demos/collab/coordination/'
 
 Task (ns=collab-bdd) collab-transport
 
