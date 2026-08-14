@@ -16,6 +16,11 @@ context (ns=app) shared {
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
+        pose pose-handle-base {
+            of:         <collab-kgraph.drawer-body.drawer-handle>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
         velocity-twist twist-ee-base {
             of:         <gripper.g_base.g_pinch>,
             wrt:        <kinova.base_link.base_link_origin>,
@@ -145,12 +150,12 @@ guarded-motion (ns=app) touchdown {
 }
 
 guarded-motion (ns=app) forward {
-    description: "Move the TCP at constant velocity along the arm base Y axis"
+    description: "Move the TCP to the drawer handle"
 
     context {
         spec {
             pose start-pose = snapshot of <shared.world.pose-ee-base>,
-            length target-y = <spec.start-pose>.position.y + <shared.spec.forward-distance>
+            pose target-pose = snapshot of <shared.world.pose-handle-base>
         }
     }
 
@@ -158,19 +163,17 @@ guarded-motion (ns=app) forward {
 
     while {
         move-forward:
-            keeping <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.forward-vel>,
+            keeping <shared.world.pose-ee-base>.position
+            equal to <spec.target-pose>.position within <shared.spec.position-band>,
         hold-ori:
-            keeping <shared.world.pose-ee-base>.orientation equal to <spec.start-pose>.orientation,
-        hold-z:
-            keeping <shared.world.pose-ee-base>.position.z equal to <spec.start-pose>.position.z
-            within <shared.spec.position-band>,
-        press-down:
-            keeping <shared.world.press-wrench>.force.z equal to <shared.spec.press-force>
-            within <shared.spec.press-band>
+            keeping <shared.world.pose-ee-base>.orientation
+            equal to <spec.start-pose>.orientation
     }
 
     until {
-        reached-forward: <shared.world.pose-ee-base>.position.y less than <spec.target-y>
+        reached-forward:
+            distance between <shared.world.pose-ee-base> and <spec.target-pose>
+            less than <shared.spec.position-band>
     }
 }
 
@@ -350,12 +353,8 @@ constraint-handler (ns=app) handler-slide {
         }
     }
     controllers {
-        pid ctrl-move-forward { <forward.move-forward>, Kp: 200, Ki: 0, Kd: 0, decay: 0 },
-        pid ctrl-forward-ori  { <forward.hold-ori>,     Kp: 120, Ki: 50,  Kd: 80, decay: 0 },
-        pid ctrl-forward-z    { <forward.hold-z>,       Kp: 200, Ki: 100, Kd: 40, decay: 0 },
-        feed-forward ctrl-press-down { <forward.press-down> }
-            as force
-            apply at <gripper.g_base>
+        pid ctrl-move-forward { <forward.move-forward>, Kp: 200, Ki: 100, Kd: 40, decay: 0 },
+        pid ctrl-forward-ori  { <forward.hold-ori>,     Kp: 120, Ki: 50,  Kd: 80, decay: 0 }
     }
     solvers {
         <handler-wait.arm-solver>
