@@ -16,6 +16,11 @@ context (ns=app) shared {
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
+        velocity-twist twist-ee-base {
+            of:         <gripper.g_base.g_pinch>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
         pose pose-elbow-base {
             of:         <kinova.forearm_link.forearm_link_origin>,
             wrt:        <kinova.base_link.base_link_origin>,
@@ -42,6 +47,9 @@ context (ns=app) shared {
         length support-z = snapshot of <shared.world.pose-elbow-base>.position.z,
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
         pose look-wall-pose = [config.poses.look-wall-table] for <shared.world.pose-ee-base>,
+        length touchdown-position-band = 0.01 m,
+        linear-velocity zero-linvel = 0.0 m/s,
+        linear-velocity descend-vel = -0.05 m/s,
         angle gripper-closed  = 0.8 rad,
         angle gripper-open    = 0.0 rad,
         angle grasp-threshold = 0.65 rad
@@ -67,6 +75,7 @@ ros (ns=app) {
 // The bands this model is tuned against, stated once by the kind of error they bound rather
 // than on each constraint that takes them.
 tolerances {
+    linear-velocity:  0.01 m/s,
     position:         0.05 m,
     orientation:      0.01 rad
 }
@@ -94,6 +103,29 @@ guarded-motion (ns=app) look {
         at-home-orientation:
             <shared.world.pose-ee-base>.orientation
             equal to <shared.spec.look-wall-pose>.orientation
+    }
+}
+
+guarded-motion (ns=app) touchdown {
+    description: "Lower the TCP until it contacts the table"
+
+    context {
+        spec {
+            pose start-pose = snapshot of <shared.world.pose-ee-base>
+        }
+    }
+
+    when {}
+
+    while {
+        hold-x:   keeping <shared.world.pose-ee-base>.position.x equal to <spec.start-pose>.position.x within <shared.spec.touchdown-position-band>,
+        hold-y:   keeping <shared.world.pose-ee-base>.position.y equal to <spec.start-pose>.position.y within <shared.spec.touchdown-position-band>,
+        lower-z:  keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.descend-vel>,
+        hold-ori: keeping <shared.world.pose-ee-base>.orientation equal to <spec.start-pose>.orientation
+    }
+
+    until {
+        contact-table: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
     }
 }
 
@@ -199,25 +231,21 @@ constraint-handler (ns=app) handler-look {
 }
 
 constraint-handler (ns=app) handler-touch {
-    handles: <hold-close>
+    handles: <touchdown>
     runs-in: <collab-coord.S_TOUCH>
     monitors {
-        mon-opened: monitor <hold-close.until> {
+        mon-contact: monitor <touchdown.until> {
             satisfied for 0.3 s { trigger: event <collab-coord.E_TABLE_TOUCHED> },
         }
     }
     controllers {
-        pid ctrl-touch-position    { <hold-close.hold-position>,    Kp: 550, Ki: 50, Kd: 2, decay: 0.1 },
-        pid ctrl-touch-orientation { <hold-close.hold-orientation>, Kp: 250, Ki: 50, Kd: 2, decay: 0.1 },
-        feed-forward ctrl-touch-gripper { <hold-close.close-gripper> },
-        impedance ctrl-touch-support-z {
-            <hold-close.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
-        }
-        apply at <kinova.forearm_link>
+        pid ctrl-touchdown-x   { <touchdown.hold-x>,   Kp: 80,  Ki: 20, Kd: 25, decay: 0 },
+        pid ctrl-touchdown-y   { <touchdown.hold-y>,   Kp: 80,  Ki: 20, Kd: 25, decay: 0 },
+        pid ctrl-touchdown-z   { <touchdown.lower-z>,  Kp: 200, Ki: 0,  Kd: 0,  decay: 0 },
+        pid ctrl-touchdown-ori { <touchdown.hold-ori>, Kp: 120, Ki: 50, Kd: 80, decay: 0 }
     }
     solvers {
-        <handler-wait.arm-solver>,
-        <handler-wait.gripper-command-solver>
+        <handler-wait.arm-solver>
     }
 }
 
