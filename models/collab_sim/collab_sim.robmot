@@ -2,7 +2,7 @@ import "../collab/collab.fsm"
 import "../collab/collab.scenex"
 ns app = "https://secorolab.github.io/models/demos/collab/exec/"
 
-exec-context (ns=app) sim-demo-hold-exec {
+exec-context (ns=app) sim-collab-exec {
     runs-scene: <collab-scene-simreal>
     platform:   simulation { name: "MuJoCo" }
     config:     "robot.toml"
@@ -58,7 +58,7 @@ ros (ns=app) {
         },
     },
     always {
-        publish at 100.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
+        publish at 20.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
     },
 }
 
@@ -239,6 +239,127 @@ constraint-handler (ns=app) handler-close {
         feed-forward ctrl-close-gripper { <hold-close.close-gripper> },
         impedance ctrl-close-support-z {
             <hold-close.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
+        }
+        apply at <kinova.forearm_link>
+    }
+    solvers {
+        <handler-wait.arm-solver>,
+        <handler-wait.gripper-command-solver>
+    }
+}
+
+constraint-handler (ns=app) handler-lift {
+    handles: <hold-open>
+    runs-in: <collab-coord.S_LIFT>
+    monitors {
+        mon-opened: monitor <hold-open.until> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_HEIGHT_REACHED> },
+        }
+    }
+    controllers {
+        pid ctrl-lift-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
+        pid ctrl-lift-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
+        feed-forward ctrl-lift-gripper { <hold-open.open-gripper> },
+        impedance ctrl-lift-support-z {
+            <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
+        }
+        apply at <kinova.forearm_link>
+    }
+    solvers {
+        <handler-wait.arm-solver>,
+        <handler-wait.gripper-command-solver>
+    }
+}
+
+constraint-handler (ns=app) handler-traj {
+    handles: <hold-close>
+    runs-in: <collab-coord.S_FOLLOW_TRAJ>
+    monitors {
+        mon-opened: monitor <hold-close.until> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_FORCE_DETECTED> },
+        }
+    }
+    controllers {
+        pid ctrl-traj-position    { <hold-close.hold-position>,    Kp: 550, Ki: 50, Kd: 2, decay: 0.1 },
+        pid ctrl-traj-orientation { <hold-close.hold-orientation>, Kp: 250, Ki: 50, Kd: 2, decay: 0.1 },
+        feed-forward ctrl-traj-gripper { <hold-close.close-gripper> },
+        impedance ctrl-traj-support-z {
+            <hold-close.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
+        }
+        apply at <kinova.forearm_link>
+    }
+    solvers {
+        <handler-wait.arm-solver>,
+        <handler-wait.gripper-command-solver>
+    }
+}
+
+constraint-handler (ns=app) handler-comply {
+    handles: <hold-open>
+    runs-in: <collab-coord.S_COMPLIANT>
+    monitors {
+        mon-opened: monitor <hold-open.until> {
+            satisfied for 0.3 s {
+                trigger: event <collab-coord.E_DEST_REACHED>,
+                publish: events { <collab-coord.E_PLACE_START> } to <ros.publishers.bdd-events>
+            }
+        }
+    }
+    controllers {
+        pid ctrl-comply-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
+        pid ctrl-comply-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
+        feed-forward ctrl-comply-gripper { <hold-open.open-gripper> },
+        impedance ctrl-comply-support-z {
+            <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
+        }
+        apply at <kinova.forearm_link>
+    }
+    solvers {
+        <handler-wait.arm-solver>,
+        <handler-wait.gripper-command-solver>
+    }
+}
+
+constraint-handler (ns=app) handler-lower {
+    handles: <hold-close>
+    runs-in: <collab-coord.S_LOWER>
+    monitors {
+        mon-opened: monitor <hold-close.until> {
+            satisfied for 0.3 s {
+                trigger: event <collab-coord.E_TABLE_TOUCHED>,
+                publish: events { <collab-coord.E_PLACE_END> } to <ros.publishers.bdd-events>
+            },
+        }
+    }
+    controllers {
+        pid ctrl-lower-position    { <hold-close.hold-position>,    Kp: 550, Ki: 50, Kd: 2, decay: 0.1 },
+        pid ctrl-lower-orientation { <hold-close.hold-orientation>, Kp: 250, Ki: 50, Kd: 2, decay: 0.1 },
+        feed-forward ctrl-lower-gripper { <hold-close.close-gripper> },
+        impedance ctrl-lower-support-z {
+            <hold-close.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
+        }
+        apply at <kinova.forearm_link>
+    }
+    solvers {
+        <handler-wait.arm-solver>,
+        <handler-wait.gripper-command-solver>
+    }
+}
+
+constraint-handler (ns=app) handler-open {
+    handles: <hold-open>
+    runs-in: <collab-coord.S_OPEN>
+    monitors {
+        mon-opened: monitor <hold-open.until> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_OBJ_RELEASED> }
+        }
+    }
+    controllers {
+        pid ctrl-open-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
+        pid ctrl-open-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
+        feed-forward ctrl-open-gripper { <hold-open.open-gripper> },
+        impedance ctrl-open-support-z {
+            <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
         }
         apply at <kinova.forearm_link>
     }
