@@ -1,0 +1,125 @@
+import "real_perception_test.scene"
+import "../robots/kinova_gen3_7dof.ktree"
+
+ns aas_mjc = "https://secorolab.github.io/models/scenes/admittance-arc-single-mjc/"
+
+ktree inst (ns=aas_mjc) kinova of <kinova_tree>
+
+ktree (ns=aas_mjc) world_tree {
+    root: <world.root>
+    tree <kinova>
+
+    body world {
+        // What the scene stands on: the floor is here, and every placement resolves
+        // into this frame. Named for MuJoCo, whose compiler matches on "world".
+        frame root {}
+    }
+
+    body robot-table-body {
+        // The body's root frame, so the asset's own origin: the centre of the table top,
+        // which is what the MJCF places and what its site is named after.
+        frame table_top {
+            pose top_on_anchor {
+                wrt: <robot-table-body.table_anchor> xyz: (0.295, 0.725, 0.0) m
+                orientation: euler {angles: (90.0, 0.0, 0.0) unit: deg}
+            }
+        }
+        // The corner the table is anchored by, above the world origin at table height.
+        frame table_anchor {
+            pose in-world {
+                wrt: <world.root> xyz: (0.0, 0.0, 0.72) m
+                orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+            }
+        }
+        frame arm-mount {
+            pose wrt-table-top {
+                wrt: <table_top> xyz: (0.7, 0.0, 0.0) m
+                orientation: euler {angles: (-180.0, 0.0, 0.0) unit: deg}
+            }
+        }
+        frame table-com {
+            pose com-in-table-top {
+                wrt: <robot-table-body.table_top> xyz: (0.0, 0.0, -0.1075) m
+                orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+            }
+        }
+        // The asset states no mass, so it is estimated from its geometry: a 1.6 x 0.8 x 0.04 m
+        // top at 30 kg on four 0.7 m legs at 2.5 kg each, about the centre of mass that puts
+        // 0.1075 m below the top surface. The table is fixed to the world, so no solver moves
+        // it -- these carry the tree, not the dynamics.
+        inertia {
+            frame: <table-com>
+            mass: 40.0 kg
+            inertia-matrix: (
+                (4.302, 0.0, 0.0),
+                (0.0, 13.662, 0.0),
+                (0.0, 0.0, 15.303)
+            ) kg*m^2
+        }
+    }
+
+    // Mounted in the workspace, not on the arm: the arm moves under it, so no joint of the
+    // chain changes where it looks from.
+    body ws-camera-body {
+        frame ws_camera_body_origin { }
+        // The frame a ROS camera driver states its detections in, which is not the frame the
+        // camera is bolted at: REP-103 optical axes are z forward, x right, y down, where the
+        // mount frame is x forward, y left, z up. This offset is that convention alone.
+        frame ws_camera_optical {
+            pose optical_in_camera_body {
+                wrt: <ws-camera-body.ws_camera_body_origin>
+                xyz: (0.0, 0.0, 0.0) m
+                orientation: euler { axes: xyz extrinsic angles: (-90.0, 0.0, -90.0) unit: deg }
+            }
+        }
+        // Bolted to the world, so no solver moves it -- this carries the tree, not the dynamics.
+        // Estimated as a 90 x 25 x 25 mm, 72 g module about its own origin, a D435.
+        inertia {
+            frame: <ws_camera_body_origin>
+            mass: 0.072 kg
+            inertia-matrix: (
+                (0.0000075, 0.0, 0.0),
+                (0.0, 0.00005235, 0.0),
+                (0.0, 0.0, 0.00005235)
+            ) kg*m^2
+        }
+    }
+
+    joints {
+        fixed table_on_world {
+            parent: <world.root>
+            child: <robot-table-body.table_anchor>
+        }
+        fixed arm_on_table {
+            parent: <robot-table-body.arm-mount>
+            child: <kinova.base_link.base_link_origin>
+        }
+        // Placeholder extrinsic: the identity, so the mount is stated but not measured.
+        // ponytail: replace with the calibrated camera pose before any number here is believed.
+        fixed ws_camera_on_world {
+            parent: <world.root>
+            child: <ws-camera-body.ws_camera_body_origin>
+        }
+        // The arm carries no tool here, so the chain ends at the flange.
+        serial {
+            root: <kinova.base_link.base_link_origin>
+            tip: <kinova.bracelet_link.bracelet_link_origin>
+        }
+    }
+}
+
+scene inst (ns=aas_mjc) admittance_arc_scene_mjc {
+    scene: <admittance_arc_scene>
+
+    kgraph (ns=aas_mjc) admittance_arc_graph {
+        anchor: <world_tree.world.root>
+        tree <world_tree>
+    }
+
+    agn <agents.arm1> {
+        model kinova-mjc as mjcf {
+            sys path = 'src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml'
+            map tree <kinova> to "base_link"
+        }
+    }
+}

@@ -1,0 +1,18 @@
+# Where each device is reached. Keyed by the name the execution context binds.
+#
+# One device: the arm, over the network.
+
+[agents.arm1]
+ip                    = "192.168.1.10"
+user                  = "admin"
+password              = "admin"
+port                  = 10000
+port_real_time        = 10001
+session_timeout_ms    = 60000
+connection_timeout_ms = 2000
+
+# Publishing the driven joints is the deployment's call, not the model's: the section's presence
+# turns it on, and retuning the topic or the rate needs no regeneration.
+[ros.joint_states]
+topic = "/joint_states"
+rate  = 100.0

@@ -1,0 +1,91 @@
+import "real_perception_test.fsm"
+import "real_perception_test.scenex"
+ns app = "https://secorolab.github.io/models/real-perception-test/"
+ns rpt = "https://secorolab.github.io/models/real-perception-test/fsm/"
+
+exec-context (ns=app) real-perception-test-exec {
+    runs-scene: <admittance_arc_scene_mjc>
+    platform:   real-world {
+                    <agents.arm1> realized by KinovaGen3
+                }
+    config:     "robot.toml"
+    timestep:   1.0 ms
+}
+
+ros (ns=app) {
+    publishers {
+        table-anchor-pose: topic "/table_anchor_pose" message "geometry_msgs/msg/PoseStamped",
+    },
+    subscribers {
+        table-anchor: topic "/recognized_objects" message "vision_msgs/msg/Detection3DArray" {
+            observes { <world_tree.robot-table-body.table_anchor> }
+            pose from results
+        },
+    },
+    always {
+        publish at 10.0 Hz to <ros.publishers.table-anchor-pose> with <shared.world.pose-table-anchor-cam>,
+    },
+}
+
+context (ns=app) shared {
+    world {
+        pose pose-table-anchor-cam {
+            of:         <world_tree.robot-table-body.table_anchor>,
+            wrt:        <world_tree.ws-camera-body.ws_camera_optical>,
+            as-seen-by: <world_tree.ws-camera-body.ws_camera_optical>
+        },
+        pose pose-ee-base {
+            of:         <kinova.bracelet_link.bracelet_link_origin>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
+        pose pose-elbow-base {
+            of:         <kinova.forearm_link.forearm_link_origin>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        }
+    },
+    spec {
+        pose start-pose  = snapshot of <shared.world.pose-ee-base>,
+        length support-z = snapshot of <shared.world.pose-elbow-base>.position.z
+    }
+}
+
+tolerances {
+    position:         0.05 m,
+    orientation:      0.01 rad
+}
+
+guarded-motion (ns=app) hold {
+    description: "Hold the pose the arm started in"
+
+    context { }
+
+    when {}
+
+    while {
+        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <shared.spec.start-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation,
+        support-elbow-z:  keeping <shared.world.pose-elbow-base>.position.z equal to <shared.spec.support-z>
+    }
+
+    until {}
+}
+
+constraint-handler (ns=app) handler-hold {
+    handles: <hold>
+    runs-in: <rpt.S_HOLD>
+    controllers {
+        pid ctrl-hold-position    { <hold.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
+        pid ctrl-hold-orientation { <hold.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
+        impedance ctrl-support-z { <hold.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80 }
+            apply at <kinova.forearm_link>
+    }
+    solvers {
+        arm-solver: serial-chain {
+            agent:     <agents.arm1>,
+            algorithm: achd,
+            gravity:   (0.0, 0.0, 9.81) m/s^2
+        }
+    }
+}

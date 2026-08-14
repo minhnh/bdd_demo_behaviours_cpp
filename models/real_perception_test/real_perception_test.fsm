@@ -1,0 +1,30 @@
+ns rpt = "https://secorolab.github.io/models/real-perception-test/fsm/"
+
+evt loop (ns=rpt) real_perception_test_fsm_events {
+    evt E_STEP
+}
+
+fsm (ns=rpt) real_perception_test_fsm {
+    description: "Hold the pose the arm started in while perception reports the table anchor."
+
+    states {
+        S_START,
+        S_HOLD,
+        S_DONE
+    }
+
+    evt loop: <real_perception_test_fsm_events>
+
+    start: <S_START>
+    end:   <S_DONE>
+
+    // Nothing leaves the hold: the run ends when it is stopped, and the end state is here
+    // because the FSM needs one to name, not because this demo reaches it.
+    transitions {
+        T_START_HOLD { from: <S_START>, to: <S_HOLD> }
+    }
+
+    reactions {
+        R_STEP_START { when: <real_perception_test_fsm_events.E_STEP>, do: <T_START_HOLD> }
+    }
+}
