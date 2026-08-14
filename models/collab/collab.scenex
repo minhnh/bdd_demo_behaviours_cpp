@@ -104,6 +104,12 @@ scene inst (ns=collab-scn) collab-scene-simreal {
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
+            frame drawer-handle {
+                pose handle-in-drawer {
+                    wrt: <drawer-body.drawer-root> xyz: (0.0, -0.12, 0.04) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+           }
             // COM is derived from the exact hollow meshes in tray.xml; inertia is calibrated to
             // the measured 350 g printed mass (an effective mesh density of 1046.7 kg/m^3).
             // ponytail: regenerate if the print geometry or measured mass changes.
