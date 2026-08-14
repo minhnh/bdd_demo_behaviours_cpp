@@ -5,7 +5,7 @@
     Standalone view: open tray.xml with python -m mujoco.viewer.
 
     Measured from the meshes (mm): walls 2.3 (sides/back) / 3.2 (front), floor 2.0,
-    wall height 77.1 (sides/back) / 79.9 (front). Handle: 20 thick, 75 out, 40 tall,
+    wall height 77.1 (sides/back) / 79.9 (front). Handle: 20 wide, 40 out, 75 tall,
     centered on the 3.9 screw hole in the front wall (x=120.0, z=40.0).
   -->
   <compiler meshdir="." angle="radian" autolimits="true"/>
@@ -30,7 +30,8 @@
     <body name="root">
       <freejoint name="free"/>
       <geom type="mesh" mesh="tray_body"   material="tray" pos="-0.120 -0.100 0"/>
-      <geom type="mesh" mesh="tray_handle" material="tray" pos="-0.128 -0.2623 0.020"/>
+      <geom type="mesh" mesh="tray_handle" material="tray" pos="-0.12 -0.1 -0.088"
+            euler="1.5708 0 0"/>
 
       <geom name="floor"      class="collision" pos="0 0 0.001"             size="0.1174 0.100 0.001"/>
       <geom name="wall_left"  class="collision" pos="-0.11625 0 0.03856"    size="0.00115 0.100 0.03856"/>
@@ -38,11 +39,12 @@
       <geom name="wall_front" class="collision" pos="0 -0.0984 0.03995"     size="0.120 0.0016 0.03995"/>
       <geom name="wall_back"  class="collision" pos="0 0.0984 0.03856"      size="0.1174 0.0016 0.03856"/>
       <!-- handle fin: square approximation of the round-ended slab -->
-      <geom name="handle"     class="collision" pos="0 -0.1343 0.040"       size="0.010 0.0375 0.020"
+      <geom name="handle"     class="collision" pos="0.008 -0.120 0.040"     size="0.010 0.0375 0.020"
+            euler="1.5708 0 0"
             friction="1.2 0.05 0.005"/>
 
-      <!-- grasp target: outer half of the fin -->
-      <site name="grasp" pos="0 -0.150 0.040" size="0.006" rgba="1 0.2 0.2 0" group="3"/>
+      <!-- grasp target: right half of the fin -->
+      <site name="grasp" pos="0.0157 -0.1068 0.040" size="0.006" rgba="1 0.2 0.2 0" group="3"/>
     </body>
   </worldbody>
 </mujoco>
