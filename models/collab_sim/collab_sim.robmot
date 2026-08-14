@@ -50,6 +50,9 @@ context (ns=app) shared {
         length touchdown-position-band = 0.01 m,
         length forward-position-band = 0.01 m,
         length forward-distance = 0.20 m,
+        length lift-position-band = 0.01 m,
+        length lift-height = 0.40 m,
+        angle lift-angle-band = 0.01 rad,
         linear-velocity zero-linvel = 0.0 m/s,
         linear-velocity descend-vel = -0.05 m/s,
         angle gripper-closed  = 0.8 rad,
@@ -150,6 +153,33 @@ guarded-motion (ns=app) forward {
 
     until {
         reached-forward: <shared.world.pose-ee-base>.position.x greater than <spec.target-x>
+    }
+}
+
+guarded-motion (ns=app) lift {
+    description: "Raise the TCP to 40 cm above the arm base"
+
+    context {
+        spec {
+            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            length support-lift = 0.06 m,
+            length support-z = snapshot of <shared.world.pose-elbow-base>.position.z + <spec.support-lift>
+        }
+    }
+
+    when {}
+
+    while {
+        hold-x:          keeping <shared.world.pose-ee-base>.position.x equal to <spec.start-pose>.position.x within <shared.spec.lift-position-band>,
+        hold-y:          keeping <shared.world.pose-ee-base>.position.y equal to <spec.start-pose>.position.y within <shared.spec.lift-position-band>,
+        lift-z:          keeping <shared.world.pose-ee-base>.position.z equal to <shared.spec.lift-height> within <shared.spec.lift-position-band>,
+        hold-ori:        keeping <shared.world.pose-ee-base>.orientation equal to <spec.start-pose>.orientation within <shared.spec.lift-angle-band>,
+        support-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.support-z> within <shared.spec.lift-position-band>,
+        close-gripper:   keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed> within <shared.spec.lift-angle-band>
+    }
+
+    until {
+        height-reached: <shared.world.pose-ee-base>.position.z greater than <shared.spec.lift-height>
     }
 }
 
@@ -317,21 +347,23 @@ constraint-handler (ns=app) handler-close {
 }
 
 constraint-handler (ns=app) handler-lift {
-    handles: <hold-open>
+    handles: <lift>
     runs-in: <collab-coord.S_LIFT>
     monitors {
-        mon-opened: monitor <hold-open.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_HEIGHT_REACHED> },
+        mon-height-reached: monitor <lift.height-reached> {
+            satisfied { trigger: event <collab-coord.E_HEIGHT_REACHED> },
         }
     }
     controllers {
-        pid ctrl-lift-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
-        pid ctrl-lift-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
-        feed-forward ctrl-lift-gripper { <hold-open.open-gripper> },
+        pid ctrl-lift-x   { <lift.hold-x>,   Kp: 200, Ki: 100, Kd: 40, decay: 0 },
+        pid ctrl-lift-y   { <lift.hold-y>,   Kp: 200, Ki: 100, Kd: 40, decay: 0 },
+        pid ctrl-lift-z   { <lift.lift-z>,   Kp: 15,  Ki: 5,   Kd: 20, decay: 0 },
+        pid ctrl-lift-ori { <lift.hold-ori>, Kp: 120, Ki: 50,  Kd: 80, decay: 0 },
         impedance ctrl-lift-support-z {
-            <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
+            <lift.support-elbow-z>, stiffness: 800, damping: 80
         }
-        apply at <kinova.forearm_link>
+        apply at <kinova.forearm_link>,
+        feed-forward ctrl-lift-gripper { <lift.close-gripper> }
     }
     solvers {
         <handler-wait.arm-solver>,
