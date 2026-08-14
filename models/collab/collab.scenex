@@ -94,7 +94,7 @@ scene inst (ns=collab-scn) collab-scene-simreal {
         body drawer-body {
             frame drawer-root {
                 pose on-rk-table {
-                    wrt: <rk-table-body.work_surface> xyz: (0.2, 0.0, 0.0) m
+                    wrt: <rk-table-body.work_surface> xyz: (0.0, 0.0, 0.0) m
                     orientation: euler {angles: (90.0, 0.0, 0.0) unit: deg}
                 }
             }

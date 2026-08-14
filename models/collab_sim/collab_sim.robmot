@@ -40,6 +40,8 @@ context (ns=app) shared {
         // the end-effector still on target. This is the actuator-4 bend the arm folds over --
         // everything beyond it hangs off this point. Held where it started, like the pose above.
         length support-z = snapshot of <shared.world.pose-elbow-base>.position.z,
+        pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
+        pose look-wall-pose = [config.poses.look-wall-table] for <shared.world.pose-ee-base>,
         angle gripper-closed  = 0.8 rad,
         angle gripper-open    = 0.0 rad,
         angle grasp-threshold = 0.65 rad
@@ -67,6 +69,32 @@ ros (ns=app) {
 tolerances {
     position:         0.05 m,
     orientation:      0.01 rad
+}
+
+guarded-motion (ns=app) look {
+    description: "Move the TCP to the configured home pose"
+
+    context { <shared.spec> }
+
+    when {}
+
+    while {
+        home-position:
+            keeping <shared.world.pose-ee-base>.position
+            equal to <shared.spec.look-wall-pose>.position,
+        home-orientation:
+            keeping <shared.world.pose-ee-base>.orientation
+            equal to <shared.spec.look-wall-pose>.orientation
+    }
+
+    until {
+        at-home-position:
+            <shared.world.pose-ee-base>.position
+            equal to <shared.spec.look-wall-pose>.position,
+        at-home-orientation:
+            <shared.world.pose-ee-base>.orientation
+            equal to <shared.spec.look-wall-pose>.orientation
+    }
 }
 
 guarded-motion (ns=app) hold-close {
@@ -151,10 +179,10 @@ constraint-handler (ns=app) handler-wait {
 }
 
 constraint-handler (ns=app) handler-look {
-    handles: <hold-open>
+    handles: <look>
     runs-in: <collab-coord.S_LOOK>
     monitors {
-        mon-opened: monitor <hold-open.until> {
+        mon-home: monitor <look.until> {
             satisfied for 0.3 s {
                 trigger: event <collab-coord.E_OBJ_LOCATED>,
                 publish: events { <collab-coord.E_PICK_START> } to <ros.publishers.bdd-events>
@@ -162,17 +190,11 @@ constraint-handler (ns=app) handler-look {
         }
     }
     controllers {
-        pid ctrl-look-hold-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
-        pid ctrl-look-hold-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
-        feed-forward ctrl-look-gripper { <hold-open.open-gripper> },
-        impedance ctrl-look-support-z {
-            <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
-        }
-        apply at <kinova.forearm_link>
+        pid ctrl-look-position    { <look.home-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
+        pid ctrl-look-orientation { <look.home-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 }
     }
     solvers {
-        <handler-wait.arm-solver>,
-        <handler-wait.gripper-command-solver>
+        <handler-wait.arm-solver>
     }
 }
 

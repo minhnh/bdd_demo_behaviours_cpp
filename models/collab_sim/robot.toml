@@ -5,3 +5,11 @@ home = [0.0, 0.2618, 3.1416, -2.2689, 0.0, 0.9599, 1.5708]
 
 [collab-agents.gripper]
 home = [0.0]
+
+[poses.home]
+position = [0.673671, 0.001345, 0.433689]
+orientation = [1.570860, 0.000005, 1.570789]
+
+[poses.look-wall-table]
+position = [-0.4, -0.6, 0.433689]
+orientation = [1.570860, 0.000005, 0]
