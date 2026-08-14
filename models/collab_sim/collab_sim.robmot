@@ -48,6 +48,8 @@ context (ns=app) shared {
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
         pose look-wall-pose = [config.poses.look-wall-table] for <shared.world.pose-ee-base>,
         length touchdown-position-band = 0.01 m,
+        length forward-position-band = 0.01 m,
+        length forward-distance = 0.20 m,
         linear-velocity zero-linvel = 0.0 m/s,
         linear-velocity descend-vel = -0.05 m/s,
         angle gripper-closed  = 0.8 rad,
@@ -126,6 +128,28 @@ guarded-motion (ns=app) touchdown {
 
     until {
         contact-table: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+guarded-motion (ns=app) forward {
+    description: "Move the TCP forward five centimetres"
+
+    context {
+        spec {
+            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            length target-x = <spec.start-pose>.position.x + <shared.spec.forward-distance>
+        }
+    }
+
+    when {}
+
+    while {
+        move-forward: keeping <shared.world.pose-ee-base>.position.x equal to <spec.target-x> within <shared.spec.forward-position-band>,
+        hold-ori:     keeping <shared.world.pose-ee-base>.orientation equal to <spec.start-pose>.orientation
+    }
+
+    until {
+        reached-forward: <shared.world.pose-ee-base>.position.x greater than <spec.target-x>
     }
 }
 
@@ -250,25 +274,19 @@ constraint-handler (ns=app) handler-touch {
 }
 
 constraint-handler (ns=app) handler-slide {
-    handles: <hold-open>
+    handles: <forward>
     runs-in: <collab-coord.S_SLIDE>
     monitors {
-        mon-opened: monitor <hold-open.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_OBJ_REACHED> },
+        mon-forward-done: monitor <forward.reached-forward> {
+            satisfied { trigger: event <collab-coord.E_OBJ_REACHED> },
         }
     }
     controllers {
-        pid ctrl-slide-position    { <hold-open.hold-position>,    Kp: 550, Ki: 50, Kd: 47, decay: 0 },
-        pid ctrl-slide-orientation { <hold-open.hold-orientation>, Kp: 250, Ki: 50, Kd: 32, decay: 0 },
-        feed-forward ctrl-slide-gripper { <hold-open.open-gripper> },
-        impedance ctrl-slide-support-z {
-            <hold-open.support-elbow-z>, Ki: 200, stiffness: 2500, damping: 80
-        }
-        apply at <kinova.forearm_link>
+        pid ctrl-move-forward { <forward.move-forward>, Kp: 200, Ki: 100, Kd: 40, decay: 0 },
+        pid ctrl-forward-ori  { <forward.hold-ori>,     Kp: 120, Ki: 50,  Kd: 80, decay: 0 }
     }
     solvers {
-        <handler-wait.arm-solver>,
-        <handler-wait.gripper-command-solver>
+        <handler-wait.arm-solver>
     }
 }
 

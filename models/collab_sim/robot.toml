@@ -11,5 +11,5 @@ position = [0.673671, 0.001345, 0.433689]
 orientation = [1.570860, 0.000005, 1.570789]
 
 [poses.look-wall-table]
-position = [-0.4, -0.6, 0.433689]
+position = [-0.4, -0.7, 0.433689]
 orientation = [1.570860, 0.000005, 0]
