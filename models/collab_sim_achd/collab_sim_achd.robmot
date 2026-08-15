@@ -61,6 +61,8 @@ context (ns=app) shared {
         pose look-wall-pose = [config.poses.look-wall-table] for <shared.world.pose-ee-base>,
         pose align-target = [config.poses.align-target] for <shared.world.pose-ee-base>,
         pose forward-target = [config.poses.forward-target] for <shared.world.pose-ee-base>,
+        length touchdown-z = 0.1 m,
+        length grasp-y = -0.795 m,
         length position-band = 0.01 m,
         angle angle-band = 0.01 rad,
         linear-velocity zero-linvel = 0.0 m/s,
@@ -133,8 +135,9 @@ guarded-motion (ns=app) look {
         hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
     }
 
-    until {
-        tcp-position: <shared.world.pose-ee-base>.position equal to <shared.spec.look-wall-pose>.position within <shared.spec.position-band>
+    until all {
+        tcp-position: <shared.world.pose-ee-base>.position equal to <shared.spec.look-wall-pose>.position within <shared.spec.position-band>,
+        tcp-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.look-wall-pose>.orientation within <shared.spec.angle-band>
     }
 }
 
@@ -182,7 +185,8 @@ guarded-motion (ns=app) touchdown {
         hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
     }
 
-    until {
+    until all {
+        below-touchdown-height: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>,
         contact-table: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
     }
 }
@@ -226,8 +230,7 @@ guarded-motion (ns=app) forward {
 
     context {
         spec {
-            pose forward-start = snapshot of <shared.world.pose-ee-base>,
-            length grasp-band = 0.005 m
+            pose forward-start = snapshot of <shared.world.pose-ee-base>
         }
     }
 
@@ -239,8 +242,9 @@ guarded-motion (ns=app) forward {
         hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
     }
 
-    until {
-        reached-position: <shared.world.pose-ee-base>.position equal to <shared.spec.forward-target>.position within <spec.grasp-band>
+    until all {
+        reached-handle: <shared.world.pose-ee-base>.position.y less than <shared.spec.grasp-y>,
+        on-table: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>
     }
 }
 
@@ -521,7 +525,7 @@ constraint-handler (ns=app) handler-slide {
     runs-in: <collab-coord.S_SLIDE>
     monitors {
         mon-forward-done: monitor <forward.until> {
-            satisfied for 0.5 s { trigger: event <collab-coord.E_OBJ_REACHED> },
+            satisfied { trigger: event <collab-coord.E_OBJ_REACHED> },
         }
     }
     controllers {
