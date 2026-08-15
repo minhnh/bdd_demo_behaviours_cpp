@@ -158,7 +158,17 @@ guarded-motion (ns=app) align {
 
     context {
         spec {
-            pose start-pose = snapshot of <shared.world.pose-ee-base>
+            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            // The motion enters on a step: 0.063 m in x and 0.53 rad in yaw. Unprofiled, the
+            // PIDs answer that step at 0.14 m/s and 0.96 rad/s.
+            linear-velocity max-align-velocity = 0.05 m/s,
+            linear-acceleration max-align-acceleration = 0.10 m/s^2,
+            velocity-profile align-x-profile = profile {
+                max-velocity: <spec.max-align-velocity>,
+                max-acceleration: <spec.max-align-acceleration>,
+                measured-velocity: <shared.world.twist-ee-base>.linvel.x,
+                shape: trapezoidal
+            }
         }
     }
 
@@ -609,12 +619,18 @@ constraint-handler (ns=app) handler-align {
         }
     }
     controllers {
-        pid ctrl-align-x { <align.align-x>, Kp: 30, Ki: 5, Kd: 40, decay: 0 },
+        pid ctrl-align-x {
+            constraint: <align.align-x>, profile: <align.spec.align-x-profile>,
+            Kp: 30, Ki: 5, Kd: 40, decay: 0
+        },
         pid ctrl-align-y { <align.hold-y>,  Kp: 80, Ki: 20, Kd: 25, decay: 0 },
         pid ctrl-align-z { <align.hold-z>,  Kp: 80, Ki: 20, Kd: 25, decay: 0 },
         pid ctrl-align-orientation {
-            <align.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
-            Kp: 60, Ki: 10, Kd: 50, decay: 0
+            constraint: <align.orientation>,
+            measured-derivative: <shared.world.twist-ee-base>.angvel,
+            // The derivative is measured angvel, so Kp/Kd sets the rate the yaw step slews at:
+            // 60/50 gave 0.96 rad/s. A profile would be the right knob, but they are linear-only.
+            Kp: 60, Ki: 10, Kd: 90, decay: 0
         },
         pid ctrl-align-elbow {
             constraint: <align.hold-elbow-angle>, output-saturation: saturation { max: <shared.spec.elbow-torque-limit> },
