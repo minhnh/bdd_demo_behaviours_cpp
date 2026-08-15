@@ -2,12 +2,15 @@ ns collab-coord='https://secorolab.github.io/models/demos/collab/coordination/'
 
 evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_STEP,
+    evt E_OBJ_LOCATED,
+    evt E_TABLE_TOUCHED,
+    evt E_OBJ_REACHED,
+    evt E_OBJ_GRASPED,
+    // Exported events
     evt E_PICK_START,
     evt E_PICK_END,
     evt E_PLACE_START,
-    evt E_PLACE_END,
-    evt E_GRIPPER_CLOSED,
-    evt E_GRIPPER_OPENED
+    evt E_PLACE_END
 }
 
 fsm (ns=collab-coord) collab_demo_fsm {
@@ -15,8 +18,10 @@ fsm (ns=collab-coord) collab_demo_fsm {
 
     states {
         S_START,
+        S_WAIT,
+        S_TOUCH,
+        S_SLIDE,
         S_CLOSE,
-        S_OPEN,
         S_DONE
     }
 
@@ -26,14 +31,35 @@ fsm (ns=collab-coord) collab_demo_fsm {
     end:   <S_DONE>
 
     transitions {
-        T_START_CLOSE { from: <S_START>, to: <S_CLOSE> },
-        T_CLOSE_OPEN  { from: <S_CLOSE>, to: <S_OPEN> },
-        T_OPEN_CLOSE  { from: <S_OPEN>,  to: <S_CLOSE> }
+        T_START_WAIT { from: <S_START>, to: <S_WAIT> },
+        T_WAIT_TOUCH { from: <S_WAIT>,  to: <S_TOUCH> },
+        T_TOUCH_SLIDE { from: <S_TOUCH>,  to: <S_SLIDE> },
+        T_SLIDE_CLOSE { from: <S_SLIDE>,    to: <S_CLOSE> },
+        T_CLOSE_DONE { from: <S_CLOSE>, to: <S_DONE> }
     }
 
     reactions {
-        R_STEP_START     { when: <collab_demo_fsm_events.E_STEP>,           do: <T_START_CLOSE> },
-        R_GRIPPER_CLOSED { when: <collab_demo_fsm_events.E_GRIPPER_CLOSED>, do: <T_CLOSE_OPEN> },
-        R_GRIPPER_OPENED { when: <collab_demo_fsm_events.E_GRIPPER_OPENED>, do: <T_OPEN_CLOSE> }
+        R_STEP_START {
+            when: <collab_demo_fsm_events.E_STEP>, 
+            do: <T_START_WAIT>
+        },
+        R_OBJ_LOCATED {
+            when: <collab_demo_fsm_events.E_OBJ_LOCATED>, 
+            do: <T_WAIT_TOUCH>,
+            fires { <collab_demo_fsm_events.E_PICK_START> }
+        },
+        R_TABLE_TOUCHED {
+            when: <collab_demo_fsm_events.E_TABLE_TOUCHED>, 
+            do: <T_TOUCH_SLIDE>
+        },
+        R_OBJ_REACHED {
+            when: <collab_demo_fsm_events.E_OBJ_REACHED>, 
+            do: <T_SLIDE_CLOSE>
+        },
+        R_OBJ_GRASPED {
+            when: <collab_demo_fsm_events.E_OBJ_GRASPED>, 
+            do: <T_CLOSE_DONE>,
+            fires { <collab_demo_fsm_events.E_PICK_END> }
+        }
     }
 }
