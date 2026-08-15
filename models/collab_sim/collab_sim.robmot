@@ -109,8 +109,6 @@ guarded-motion (ns=app) look {
                 max-acceleration: 0.01 m/s^2,
                 shape: trapezoidal
             },
-            length position-band = 0.005 m,
-            angle orientation-band = 0.15 rad,
             length elbow-support-lift = 0.008 m,
             length elbow-z = snapshot of <shared.world.pose-elbow-base>.position.z + <spec.elbow-support-lift>,
             direction plane-normal { as-seen-by: <kinova.base_link.base_link_origin> } = (0.0, 0.0, 1.0),
@@ -133,15 +131,8 @@ guarded-motion (ns=app) look {
         hold-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.elbow-z>
     }
 
-    until all {
-        tcp-position: <shared.world.pose-ee-base>.position equal to <shared.spec.look-wall-pose>.position within <spec.position-band>,
-        tcp-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.look-wall-pose>.orientation within <spec.orientation-band>,
-        stopped-x: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-y: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-z: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-rx: <shared.world.twist-ee-base>.angvel.x equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>,
-        stopped-ry: <shared.world.twist-ee-base>.angvel.y equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>,
-        stopped-rz: <shared.world.twist-ee-base>.angvel.z equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>
+    until {
+        tcp-position: <shared.world.pose-ee-base>.position equal to <shared.spec.look-wall-pose>.position within <shared.spec.position-band>
     }
 }
 
@@ -151,7 +142,8 @@ guarded-motion (ns=app) touchdown {
     context {
         spec {
             pose start-pose = snapshot of <shared.world.pose-ee-base>,
-            length touchdown-elbow-z = snapshot of <shared.world.pose-elbow-base>.position.z
+            length touchdown-elbow-drop = -0.32 m,
+            length touchdown-elbow-z = snapshot of <shared.world.pose-elbow-base>.position.z + <spec.touchdown-elbow-drop>
         }
     }
 
@@ -166,7 +158,7 @@ guarded-motion (ns=app) touchdown {
             within <shared.spec.position-band>,
         lower-z:  keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.descend-vel>,
         hold-ori: keeping <shared.world.pose-ee-base>.orientation equal to <spec.start-pose>.orientation,
-        hold-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.touchdown-elbow-z>
+        lower-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.touchdown-elbow-z>
     }
 
     until {
@@ -181,42 +173,20 @@ guarded-motion (ns=app) forward {
         spec {
             pose forward-start = snapshot of <shared.world.pose-ee-base>,
             pose forward-handle = snapshot of <shared.world.pose-handle-base>,
-            pose forward-target = {
-                position: (<spec.forward-handle>.position.x, <spec.forward-handle>.position.y, <spec.forward-handle>.position.z) m,
-                orientation: <spec.forward-start>.orientation rotated by euler { axes: xyz extrinsic, angles: (0.0, 0.0, 0.0) rad }
-            },
-            velocity-profile forward-profile = profile {
-                max-velocity: 0.05 m/s,
-                max-acceleration: 0.01 m/s^2,
-                shape: trapezoidal
-            },
-            length forward-elbow-offset = 0.008 m,
-            length forward-elbow-z = snapshot of <shared.world.pose-elbow-base>.position.z + <spec.forward-elbow-offset>,
-            path forward-path = lerp {
-                start: <spec.forward-start>,
-                goal: <spec.forward-target>
-            }
+            length forward-elbow-z = snapshot of <shared.world.pose-elbow-base>.position.z
         }
     }
 
     when {}
 
     while {
-        tangent: moving <shared.world.pose-ee-base> along <spec.forward-path> with <spec.forward-profile>,
-        position: keeping <shared.world.pose-ee-base>.position on <spec.forward-path>,
-        orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.forward-path>,
+        position: keeping <shared.world.pose-ee-base>.position equal to <spec.forward-handle>.position,
+        orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.forward-start>.orientation,
         hold-elbow-z: keeping <shared.world.pose-elbow-base>.position.z equal to <spec.forward-elbow-z>
     }
 
-    until all {
-        reached-position: <shared.world.pose-ee-base>.position equal to <spec.forward-target>.position within <shared.spec.position-band>,
-        reached-orientation: <shared.world.pose-ee-base>.orientation equal to <spec.forward-target>.orientation within <shared.spec.angle-band>,
-        stopped-x: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-y: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-z: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-rx: <shared.world.twist-ee-base>.angvel.x equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>,
-        stopped-ry: <shared.world.twist-ee-base>.angvel.y equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>,
-        stopped-rz: <shared.world.twist-ee-base>.angvel.z equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>
+    until {
+        reached-position: distance between <shared.world.pose-ee-base> and <spec.forward-handle> less than <shared.spec.position-band>
     }
 }
 
@@ -449,7 +419,7 @@ constraint-handler (ns=app) handler-touch {
         pid ctrl-touchdown-z   { <touchdown.lower-z>,  Kp: 200, Ki: 0,  Kd: 0,  decay: 0 },
         pid ctrl-touchdown-ori { <touchdown.hold-ori>, Kp: 120, Ki: 50, Kd: 80, decay: 0 },
         impedance ctrl-touchdown-elbow {
-            <touchdown.hold-elbow-z>, Ki: 0, stiffness: 200, damping: 80
+            <touchdown.lower-elbow-z>, Ki: 0, stiffness: 100, damping: 800
         }
         apply at <kinova.forearm_link>
     }
@@ -467,17 +437,16 @@ constraint-handler (ns=app) handler-slide {
         }
     }
     controllers {
-        pid ctrl-forward-tangent { <forward.tangent>, Kp: 20, Ki: 4, Kd: 0, decay: 0 },
         pid ctrl-forward-position {
             <forward.position>, measured-derivative: <shared.world.twist-ee-base>.linvel,
-            Kp: 200, Ki: 100, Kd: 40, decay: 0
+            Kp: 80, Ki: 20, Kd: 25, decay: 0
         },
         pid ctrl-forward-orientation {
             <forward.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
             Kp: 120, Ki: 50, Kd: 80, decay: 0
         },
         impedance ctrl-forward-elbow {
-            <forward.hold-elbow-z>, Ki: 0, stiffness: 2500, damping: 200
+            <forward.hold-elbow-z>, Ki: 0, stiffness: 800, damping: 80
         }
         apply at <kinova.forearm_link>
     }
