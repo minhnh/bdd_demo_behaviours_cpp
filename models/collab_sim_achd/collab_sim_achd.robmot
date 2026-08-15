@@ -1,4 +1,4 @@
-import "collab_achd.fsm"
+import "../collab/collab.fsm"
 import "../collab/collab.scenex"
 ns app = "https://secorolab.github.io/models/demos/collab/exec/"
 
@@ -61,6 +61,7 @@ context (ns=app) shared {
         pose look-wall-pose = [config.poses.look-wall-table] for <shared.world.pose-ee-base>,
         pose align-target = [config.poses.align-target] for <shared.world.pose-ee-base>,
         pose forward-target = [config.poses.forward-target] for <shared.world.pose-ee-base>,
+        length align-x = -0.445 m,
         length touchdown-z = 0.1 m,
         length grasp-y = -0.834 m,
         length position-band = 0.01 m,
@@ -153,12 +154,15 @@ guarded-motion (ns=app) align {
     when {}
 
     while {
-        position: keeping <shared.world.pose-ee-base>.position equal to <spec.start-pose>.position,
+        align-x: keeping <shared.world.pose-ee-base>.position.x equal to <shared.spec.align-x>,
+        hold-y: keeping <shared.world.pose-ee-base>.position.y equal to <spec.start-pose>.position.y,
+        hold-z: keeping <shared.world.pose-ee-base>.position.z equal to <spec.start-pose>.position.z,
         orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.align-target>.orientation,
         hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
     }
 
-    until {
+    until all {
+        aligned-x: <shared.world.pose-ee-base>.position.x equal to <shared.spec.align-x> within <shared.spec.position-band>,
         aligned-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.align-target>.orientation within <shared.spec.angle-band>
     }
 }
@@ -507,17 +511,16 @@ constraint-handler (ns=app) handler-look {
 
 constraint-handler (ns=app) handler-align {
     handles: <align>
-    runs-in: <collab-coord.S_ALIGN>
+    runs-in: <collab-coord.S_TOUCH_ALIGN>
     monitors {
         mon-aligned: monitor <align.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_ALIGNED> },
+            satisfied for 0.3 s { trigger: event <collab-coord.E_TABLE_TOUCH_REORIENTED> },
         }
     }
     controllers {
-        pid ctrl-align-position {
-            <align.position>, measured-derivative: <shared.world.twist-ee-base>.linvel,
-            Kp: 40, Ki: 10, Kd: 60, decay: 0
-        },
+        pid ctrl-align-x { <align.align-x>, Kp: 30, Ki: 5, Kd: 40, decay: 0 },
+        pid ctrl-align-y { <align.hold-y>,  Kp: 80, Ki: 20, Kd: 25, decay: 0 },
+        pid ctrl-align-z { <align.hold-z>,  Kp: 80, Ki: 20, Kd: 25, decay: 0 },
         pid ctrl-align-orientation {
             <align.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
             Kp: 60, Ki: 10, Kd: 50, decay: 0
