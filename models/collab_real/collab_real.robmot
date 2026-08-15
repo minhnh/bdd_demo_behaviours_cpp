@@ -67,7 +67,8 @@ context (ns=app) shared {
         force press-force           = -20.0 N,
         force press-band            = 0.5 N,
         length touchdown-z          = 0.1 m,
-        length slide-target-y       = -0.7 m,
+        length slide-target-y       = -0.75 m,
+        length lift-height-z        = 0.1 m,
         angle joint-3-target        = 3.14 rad,
         angle joint-7-target        = 1.57 rad,
         angle joint-4-upper-limit   = -45.0 deg,
@@ -160,8 +161,8 @@ guarded-motion (ns=app) go-look {
         <shared.spec>,
         spec {
             velocity-profile speed-profile = profile {
-                max-velocity: 0.05 m/s,
-                max-acceleration: 0.01 m/s^2,
+                max-velocity: 0.15 m/s,
+                max-acceleration: 0.03 m/s^2,
                 shape: trapezoidal
             },
             direction path-normal { as-seen-by: <kinova.base_link.base_link_origin> } = (0.0, 0.0, 1.0),
@@ -176,7 +177,10 @@ guarded-motion (ns=app) go-look {
                 end:          <shared.spec.look-table>,
                 amplitude:    <spec.arc-height>,
                 plane-normal: <spec.path-normal>
-            }
+            },
+
+            length satisfied-dist-band     = 0.03 m,
+            angle satisfied-orientation-band = 10 deg
         }
     }
 
@@ -195,8 +199,8 @@ guarded-motion (ns=app) go-look {
         settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
         settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
         settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
-        at-go-look-position: <shared.world.pose-ee-base>.position equal to <shared.spec.look-table>.position,
-        at-go-look-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.look-table>.orientation
+        at-go-look-position: <shared.world.pose-ee-base>.position equal to <shared.spec.look-table>.position within <spec.satisfied-dist-band>,
+        at-go-look-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.look-table>.orientation within <spec.satisfied-orientation-band>
     }
 }
 
@@ -205,13 +209,13 @@ constraint-handler (ns=app) handler-go-look {
     runs-in: <collab-coord.S_LOOK>
     monitors {
         mon-opened: monitor <go-look.until> {
-            satisfied for 100 s { trigger: event <collab-coord.E_OBJ_LOCATED> },
+            satisfied for 0.5 s { trigger: event <collab-coord.E_OBJ_LOCATED> },
         }
     }
     controllers {
-        pid ctrl-look-tangent { constraint: <go-look.tangent>, Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
-        pid ctrl-look-position { constraint: <go-look.follow-position>,           Kp: 150, Ki: 1, Kd: 0.1, decay: 0 },
-        impedance ctrl-look-ori { constraint: <go-look.follow-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-look-tangent { constraint: <go-look.tangent>, Kp: 200, Ki: 15, Kd: 0.1, decay: 0 },
+        pid ctrl-look-position { constraint: <go-look.follow-position>,           Kp: 200, Ki: 15, Kd: 0.1, decay: 0 },
+        impedance ctrl-look-ori { constraint: <go-look.follow-orientation>, stiffness: 25, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-look-joint-3 { constraint: <go-look.hold-elbow>,                    Kp: 200, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-look-joint-4-range { constraint: <go-look.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-look-joint-6-range { constraint: <go-look.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
@@ -221,7 +225,7 @@ constraint-handler (ns=app) handler-go-look {
 
 
 guarded-motion (ns=app) touch-align {
-    description: "Lower the TCP until it is near table surface with near-zero vertical velocity"
+    description: "Realign TCP orientation to match the table's surface normal"
 
     context {
         spec {
@@ -254,7 +258,7 @@ constraint-handler (ns=app) handler-touch-align {
     }
     controllers {
         pid ctrl-touch-align-orient-position { constraint: <touch-align-position>,              Kp: 500, Ki: 20, Kd: 100, decay: 0 },
-        impedance ctrl-touch-align-ori { constraint: <touch-align-orientation>, stiffness: 5, damping: 2 } apply at <gripper.g_base>,
+        impedance ctrl-touch-align-ori { constraint: <touch-align-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-touch-align-joint-3 { constraint: <touch-align.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-touch-align-joint-4-range { constraint: <touch-align.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-touch-align-joint-6-range { constraint: <touch-align.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
@@ -303,8 +307,8 @@ constraint-handler (ns=app) handler-touchdown {
     controllers {
         pid ctrl-touchdown-x { constraint: <touchdown.hold-x>,                              Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
         pid ctrl-touchdown-y { constraint: <touchdown.hold-y>,                              Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
-        pid ctrl-touchdown-z { constraint: <touchdown.lower-z>,                             Kp: 175, Ki: 5, Kd: 1, decay: 0 },
-        impedance ctrl-touchdown-ori { constraint: <touchdown.hold-orientation>, stiffness: 7, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-touchdown-z { constraint: <touchdown.lower-z>,                             Kp: 175, Ki: 5, Kd: 0.1, decay: 0 },
+        impedance ctrl-touchdown-ori { constraint: <touchdown.hold-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-touchdown-joint-3 { constraint: <touchdown.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-touchdown-joint-4-range { constraint: <touchdown.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-touchdown-joint-6-range { constraint: <touchdown.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
@@ -351,8 +355,8 @@ constraint-handler (ns=app) handler-forward {
         }
     }
     controllers {
-        pid ctrl-forward-neg-y { constraint: <forward_motion.move-forward-neg-y>,               Kp: 100, Ki: 5, Kd: 0.10, decay: 0 },
-        pid ctrl-forward-x { constraint: <forward_motion.hold-x>,                               Kp: 75, Ki: 5, Kd: 0.10, decay: 0 },
+        pid ctrl-forward-neg-y { constraint: <forward_motion.move-forward-neg-y>,               Kp: 100, Ki: 5, Kd: 0.1, decay: 0 },
+        pid ctrl-forward-x { constraint: <forward_motion.hold-x>,                               Kp: 75, Ki: 5, Kd: 0.1, decay: 0 },
         feed-forward ctrl-forward_motion-press-down { constraint: <forward_motion.press-down> }
             as force
             apply at <gripper.g_base>,
