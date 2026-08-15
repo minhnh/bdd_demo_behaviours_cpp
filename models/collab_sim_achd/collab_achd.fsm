@@ -13,6 +13,7 @@ evt loop (ns=collab-coord) collab_fsm_events {
     evt E_FORCE_GONE,
     evt E_DEST_REACHED,
     evt E_OBJ_RELEASED,
+    evt E_IDLE_REACHED,
     evt E_PICK_START,
     evt E_PICK_END,
     evt E_PLACE_START,
@@ -35,6 +36,7 @@ fsm (ns=collab-coord) collab_transport_fsm {
         S_COMPLIANT,
         S_LOWER,
         S_OPEN,
+        S_RETURN_IDLE,
         S_DONE
     }
 
@@ -57,7 +59,8 @@ fsm (ns=collab-coord) collab_transport_fsm {
         T_COMPLY_TRAJ   { from: <S_COMPLIANT>,      to: <S_FOLLOW_TRAJ> },
         T_COMPLY_LOWER  { from: <S_COMPLIANT>,      to: <S_LOWER> },
         T_LOWER_OPEN    { from: <S_LOWER>,          to: <S_OPEN> },
-        T_OPEN_WAIT     { from: <S_OPEN>,           to: <S_WAIT> }
+        T_OPEN_RETURN   { from: <S_OPEN>,           to: <S_RETURN_IDLE> },
+        T_RETURN_WAIT   { from: <S_RETURN_IDLE>,    to: <S_WAIT> }
     }
 
     reactions {
@@ -106,7 +109,10 @@ fsm (ns=collab-coord) collab_transport_fsm {
             fires { <collab_fsm_events.E_PLACE_END> }
         },
         R_OBJ_RELEASED {
-            when: <collab_fsm_events.E_OBJ_RELEASED>, do: <T_OPEN_WAIT>
+            when: <collab_fsm_events.E_OBJ_RELEASED>, do: <T_OPEN_RETURN>
+        },
+        R_IDLE_REACHED {
+            when: <collab_fsm_events.E_IDLE_REACHED>, do: <T_RETURN_WAIT>
         }
     }
 }

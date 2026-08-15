@@ -62,7 +62,7 @@ context (ns=app) shared {
         pose align-target = [config.poses.align-target] for <shared.world.pose-ee-base>,
         pose forward-target = [config.poses.forward-target] for <shared.world.pose-ee-base>,
         length touchdown-z = 0.1 m,
-        length grasp-y = -0.795 m,
+        length grasp-y = -0.834 m,
         length position-band = 0.01 m,
         angle angle-band = 0.01 rad,
         linear-velocity zero-linvel = 0.0 m/s,
@@ -142,22 +142,23 @@ guarded-motion (ns=app) look {
 }
 
 guarded-motion (ns=app) align {
-    description: "Align above the drawer handle before touchdown"
+    description: "Align the gripper orientation before touchdown"
 
     context {
-        <shared.spec>
+        spec {
+            pose start-pose = snapshot of <shared.world.pose-ee-base>
+        }
     }
 
     when {}
 
     while {
-        position: keeping <shared.world.pose-ee-base>.position equal to <shared.spec.align-target>.position,
+        position: keeping <shared.world.pose-ee-base>.position equal to <spec.start-pose>.position,
         orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.align-target>.orientation,
         hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
     }
 
-    until all {
-        aligned-position: <shared.world.pose-ee-base>.position equal to <shared.spec.align-target>.position within <shared.spec.position-band>,
+    until {
         aligned-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.align-target>.orientation within <shared.spec.angle-band>
     }
 }
@@ -415,6 +416,40 @@ guarded-motion (ns=app) hold-wait {
     until {}
 }
 
+guarded-motion (ns=app) return-idle {
+    description: "Return to the idle pose after placing"
+
+    context {
+        spec {
+            pose start = snapshot of <shared.world.pose-ee-base>,
+            velocity-profile speed-profile = profile {
+                max-velocity: 0.05 m/s,
+                max-acceleration: 0.05 m/s^2,
+                shape: trapezoidal
+            },
+            path trajectory = lerp {
+                start: <spec.start>,
+                goal: <shared.spec.start-pose>
+            }
+        }
+    }
+
+    when {}
+
+    while {
+        tangent: moving <shared.world.pose-ee-base> along <spec.trajectory> with <spec.speed-profile>,
+        position: keeping <shared.world.pose-ee-base>.position on <spec.trajectory>,
+        orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.trajectory>,
+        open-gripper: keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-open>,
+        hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
+    }
+
+    until all {
+        idle-position: <shared.world.pose-ee-base>.position equal to <shared.spec.start-pose>.position within <shared.spec.position-band>,
+        idle-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation within <shared.spec.angle-band>
+    }
+}
+
 constraint-handler (ns=app) handler-wait {
     handles: <hold-wait>
     runs-in: <collab-coord.S_WAIT>
@@ -485,7 +520,7 @@ constraint-handler (ns=app) handler-align {
         },
         pid ctrl-align-orientation {
             <align.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
-            Kp: 120, Ki: 50, Kd: 80, decay: 0
+            Kp: 60, Ki: 10, Kd: 50, decay: 0
         },
         pid ctrl-align-elbow {
             constraint: <align.hold-elbow-angle>, output-saturation: saturation { max: <shared.spec.elbow-torque-limit> },
@@ -706,6 +741,38 @@ constraint-handler (ns=app) handler-open {
         feed-forward ctrl-open-gripper { <hold-open.open-gripper> },
         pid ctrl-open-elbow {
             constraint: <hold-open.hold-elbow-angle>, output-saturation: saturation { max: <shared.spec.elbow-torque-limit> },
+            Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
+        } as torque
+    }
+    solvers {
+        <handler-wait.arm-solver>,
+        <handler-wait.gripper-command-solver>
+    }
+}
+
+constraint-handler (ns=app) handler-return-idle {
+    handles: <return-idle>
+    runs-in: <collab-coord.S_RETURN_IDLE>
+    monitors {
+        mon-idle: monitor <return-idle.until> {
+            satisfied for 0.2 s { trigger: event <collab-coord.E_IDLE_REACHED> }
+        }
+    }
+    controllers {
+        pid ctrl-idle-tangent { <return-idle.tangent>, Kp: 20, Ki: 4, Kd: 0, decay: 0 },
+        pid ctrl-idle-position {
+            <return-idle.position>, measured-derivative: <shared.world.twist-ee-base>.linvel,
+            Kp: 200, Ki: 100, Kd: 40, decay: 0
+        },
+        pid ctrl-idle-orientation {
+            <return-idle.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
+            Kp: 120, Ki: 50, Kd: 80, decay: 0
+        },
+        feed-forward ctrl-idle-gripper { <return-idle.open-gripper> },
+        pid ctrl-idle-elbow {
+            constraint: <return-idle.hold-elbow-angle>, output-saturation: saturation {
+                max: <shared.spec.elbow-torque-limit>
+            },
             Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
         } as torque
     }
