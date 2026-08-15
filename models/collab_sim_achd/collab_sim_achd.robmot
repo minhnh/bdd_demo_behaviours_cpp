@@ -187,6 +187,40 @@ guarded-motion (ns=app) touchdown {
     }
 }
 
+guarded-motion (ns=app) lower {
+    description: "Lower the grasped object until it contacts the table"
+
+    context {
+        spec {
+            pose start-pose = snapshot of <shared.world.pose-ee-base>
+        }
+    }
+
+    when {}
+
+    while {
+        hold-x:
+            keeping <shared.world.pose-ee-base>.position.x equal to <spec.start-pose>.position.x
+            within <shared.spec.position-band>,
+        hold-y:
+            keeping <shared.world.pose-ee-base>.position.y equal to <spec.start-pose>.position.y
+            within <shared.spec.position-band>,
+        lower-z:
+            keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.descend-vel>,
+        hold-ori:
+            keeping <shared.world.pose-ee-base>.orientation equal to <spec.start-pose>.orientation,
+        hold-elbow-angle:
+            keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>,
+        close-gripper:
+            keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>
+            within <shared.spec.angle-band>
+    }
+
+    until {
+        contact-table: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
 guarded-motion (ns=app) forward {
     description: "Follow a straight path to the drawer handle"
 
@@ -277,14 +311,30 @@ guarded-motion (ns=app) return-home {
     }
 
     until all {
-        reached-position: <shared.world.pose-ee-base>.position equal to <shared.spec.home-pose>.position within <shared.spec.position-band>,
-        reached-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.home-pose>.orientation within <shared.spec.angle-band>,
-        stopped-x: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-y: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-z: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-rx: <shared.world.twist-ee-base>.angvel.x equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>,
-        stopped-ry: <shared.world.twist-ee-base>.angvel.y equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>,
-        stopped-rz: <shared.world.twist-ee-base>.angvel.z equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>
+        reached-position:
+            <shared.world.pose-ee-base>.position equal to <shared.spec.home-pose>.position
+            within <shared.spec.position-band>,
+        reached-orientation:
+            <shared.world.pose-ee-base>.orientation equal to <shared.spec.home-pose>.orientation
+            within <shared.spec.angle-band>,
+        stopped-x:
+            <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>
+            within <shared.spec.settled-velocity-band>,
+        stopped-y:
+            <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>
+            within <shared.spec.settled-velocity-band>,
+        stopped-z:
+            <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+            within <shared.spec.settled-velocity-band>,
+        stopped-rx:
+            <shared.world.twist-ee-base>.angvel.x equal to <shared.spec.zero-angvel>
+            within <shared.spec.settled-angular-velocity-band>,
+        stopped-ry:
+            <shared.world.twist-ee-base>.angvel.y equal to <shared.spec.zero-angvel>
+            within <shared.spec.settled-angular-velocity-band>,
+        stopped-rz:
+            <shared.world.twist-ee-base>.angvel.z equal to <shared.spec.zero-angvel>
+            within <shared.spec.settled-angular-velocity-band>
     }
 }
 
@@ -609,10 +659,10 @@ constraint-handler (ns=app) handler-comply {
 }
 
 constraint-handler (ns=app) handler-lower {
-    handles: <hold-close>
+    handles: <lower>
     runs-in: <collab-coord.S_LOWER>
     monitors {
-        mon-opened: monitor <hold-close.until> {
+        mon-contact: monitor <lower.until> {
             satisfied for 0.3 s {
                 trigger: event <collab-coord.E_TABLE_TOUCHED>,
                 publish: events { <collab-coord.E_PLACE_END> } to <ros.publishers.bdd-events>
@@ -620,11 +670,15 @@ constraint-handler (ns=app) handler-lower {
         }
     }
     controllers {
-        pid ctrl-lower-position    { <hold-close.hold-position>,    Kp: 200, Ki: 100, Kd: 40, decay: 0 },
-        pid ctrl-lower-orientation { <hold-close.hold-orientation>, Kp: 120, Ki: 50, Kd: 80, decay: 0 },
-        feed-forward ctrl-lower-gripper { <hold-close.close-gripper> },
+        pid ctrl-lower-x   { <lower.hold-x>,   Kp: 80,  Ki: 20, Kd: 25, decay: 0 },
+        pid ctrl-lower-y   { <lower.hold-y>,   Kp: 80,  Ki: 20, Kd: 25, decay: 0 },
+        pid ctrl-lower-z   { <lower.lower-z>,  Kp: 200, Ki: 0,  Kd: 0,  decay: 0 },
+        pid ctrl-lower-ori { <lower.hold-ori>, Kp: 120, Ki: 50, Kd: 80, decay: 0 },
+        feed-forward ctrl-lower-gripper { <lower.close-gripper> },
         pid ctrl-lower-elbow {
-            constraint: <hold-close.hold-elbow-angle>, output-saturation: saturation { max: <shared.spec.elbow-torque-limit> },
+            constraint: <lower.hold-elbow-angle>, output-saturation: saturation {
+                max: <shared.spec.elbow-torque-limit>
+            },
             Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
         } as torque
     }
