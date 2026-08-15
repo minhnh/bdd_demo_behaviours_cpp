@@ -119,8 +119,8 @@ guarded-motion (ns=app) look {
         spec {
             pose start = snapshot of <shared.world.pose-ee-base>,
             velocity-profile speed-profile = profile {
-                max-velocity: 0.05 m/s,
-                max-acceleration: 0.01 m/s^2,
+                max-velocity: 0.20 m/s,
+                max-acceleration: 0.20 m/s^2,
                 shape: trapezoidal
             },
             direction plane-normal { as-seen-by: <kinova.base_link.base_link_origin> } = (0.0, 0.0, 1.0),
