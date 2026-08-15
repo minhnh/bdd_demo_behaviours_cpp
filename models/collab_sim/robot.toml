@@ -1,15 +1,20 @@
 # MuJoCo reset configurations, in each driven agent's joint order [rad].
 
 [collab-agents.kinova]
-home = [0.0, 0.2618, 3.1416, -2.2689, 0.0, 0.9599, 1.5708]
+home = [0.0, 0.6021, 3.1416, -2.077, 0.0, 1.104, 1.5708]
 
 [collab-agents.gripper]
 home = [0.0]
 
 [poses.home]
-position = [0.673671, 0.001345, 0.433689]
-orientation = [1.570860, 0.000005, 1.570789]
+position = [0.55, 0.0, 0.35]
+orientation = [1.57, 0.00000, 1.57]
 
-[poses.look-wall-table]
-position = [-0.375000, -0.655000, 0.433689]
-orientation = [1.570860, 0.000005, -0.523606]
+[poses.look-table]
+position = [-0.34, -0.7, 0.35]
+orientation = [2.0, 0.0, 0]
+
+
+[poses.touch-align]
+position = [-0.34, -0.7, 0.35]
+orientation = [1.57, 0.0, 0]

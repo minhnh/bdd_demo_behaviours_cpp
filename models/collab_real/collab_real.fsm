@@ -2,7 +2,9 @@ ns collab-coord='https://secorolab.github.io/models/demos/collab/coordination/'
 
 evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_STEP,
+    evt E_GOAL,
     evt E_OBJ_LOCATED,
+    evt E_TABLE_TOUCH_REORIENTED,
     evt E_TABLE_TOUCHED,
     evt E_OBJ_REACHED,
     evt E_OBJ_GRASPED,
@@ -19,6 +21,8 @@ fsm (ns=collab-coord) collab_demo_fsm {
     states {
         S_START,
         S_WAIT,
+        S_LOOK,
+        S_TOUCH_ALIGN,
         S_TOUCH,
         S_SLIDE,
         S_CLOSE,
@@ -32,7 +36,9 @@ fsm (ns=collab-coord) collab_demo_fsm {
 
     transitions {
         T_START_WAIT { from: <S_START>, to: <S_WAIT> },
-        T_WAIT_TOUCH { from: <S_WAIT>,  to: <S_TOUCH> },
+        T_WAIT_LOOK { from: <S_WAIT>,  to: <S_LOOK> },
+        T_LOOK_ALIGN { from: <S_LOOK>,  to: <S_TOUCH_ALIGN> },
+        T_ALIGN_TOUCH { from: <S_TOUCH_ALIGN>,  to: <S_TOUCH> },
         T_TOUCH_SLIDE { from: <S_TOUCH>,  to: <S_SLIDE> },
         T_SLIDE_CLOSE { from: <S_SLIDE>,    to: <S_CLOSE> },
         T_CLOSE_DONE { from: <S_CLOSE>, to: <S_DONE> }
@@ -43,10 +49,17 @@ fsm (ns=collab-coord) collab_demo_fsm {
             when: <collab_demo_fsm_events.E_STEP>, 
             do: <T_START_WAIT>
         },
+        R_GOAL {
+            when: <collab_demo_fsm_events.E_GOAL>, do: <T_WAIT_LOOK>
+        },
         R_OBJ_LOCATED {
             when: <collab_demo_fsm_events.E_OBJ_LOCATED>, 
-            do: <T_WAIT_TOUCH>,
+            do: <T_LOOK_ALIGN>,
             fires { <collab_demo_fsm_events.E_PICK_START> }
+        },
+        R_TABLE_TOUCH_REORIENTED {
+            when: <collab_demo_fsm_events.E_TABLE_TOUCH_REORIENTED>, 
+            do: <T_ALIGN_TOUCH>
         },
         R_TABLE_TOUCHED {
             when: <collab_demo_fsm_events.E_TABLE_TOUCHED>, 

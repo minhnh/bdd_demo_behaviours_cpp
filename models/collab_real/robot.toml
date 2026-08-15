@@ -33,3 +33,15 @@ bias_samples  = 100
 [ros.joint_states]
 topic = "/joint_states"
 rate  = 100.0
+
+#[poses.home]
+#position = [0.55, 0.0, 0.35]
+#orientation = [1.57, 0.00000, 1.57]
+
+[poses.look-table]
+position = [-0.34, -0.7, 0.35]
+orientation = [2.0, 0.0, 0]
+
+[poses.touch-align]
+position = [-0.34, -0.7, 0.35]
+orientation = [1.57, 0.0, 0]
