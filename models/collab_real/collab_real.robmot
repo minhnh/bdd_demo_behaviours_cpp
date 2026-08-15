@@ -71,7 +71,7 @@ context (ns=app) shared {
         length touchdown-z          = 0.1 m,
         length slide-target-y       = -0.8 m,
         length lift-height-z        = 0.2 m,
-        length pose-band            = 0.03 m,
+        length transport-position-band = 1.0 m,
         angle joint-3-target        = 3.14 rad,
         angle joint-7-target        = 1.57 rad,
         angle joint-4-upper-limit   = -45.0 deg,
@@ -188,7 +188,7 @@ guarded-motion (ns=app) go-look {
                 plane-normal: <spec.path-normal>
             },
 
-            length satisfied-dist-band     = 0.03 m,
+            length satisfied-dist-band     = 0.04 m,
             angle satisfied-orientation-band = 10 deg
         }
     }
@@ -223,8 +223,8 @@ constraint-handler (ns=app) handler-go-look {
     }
     controllers {
         pid ctrl-look-tangent { constraint: <go-look.tangent>, Kp: 200, Ki: 15, Kd: 0.1, decay: 0 },
-        pid ctrl-look-position { constraint: <go-look.follow-position>,           Kp: 200, Ki: 15, Kd: 0.1, decay: 0 },
-        impedance ctrl-look-ori { constraint: <go-look.follow-orientation>, stiffness: 25, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-look-position { constraint: <go-look.follow-position>,           Kp: 250, Ki: 15, Kd: 0.1, decay: 0 },
+        impedance ctrl-look-ori { constraint: <go-look.follow-orientation>, stiffness: 40, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-look-joint-3 { constraint: <go-look.hold-elbow>,                    Kp: 200, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-look-joint-4-range { constraint: <go-look.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-look-joint-6-range { constraint: <go-look.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
@@ -526,10 +526,9 @@ guarded-motion (ns=app) go-pre-place {
     }
 
     until all {
-        settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
-        at-go-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z
+        at-go-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z,
+        at-go-pre-place-position-x: <shared.world.pose-ee-base>.position.x equal to <shared.spec.pre-placement-pose>.position.x within <shared.spec.transport-position-band>,
+        at-go-pre-place-position-y: <shared.world.pose-ee-base>.position.y equal to <shared.spec.pre-placement-pose>.position.y within <shared.spec.transport-position-band>
     }
 }
 
@@ -544,12 +543,12 @@ constraint-handler (ns=app) handler-go-pre-place {
         //    satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
         //},
         mon-opened: monitor <go-pre-place.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT> },
+            satisfied for 0.1 s { trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT> },
         }
     }
     controllers {
         pid ctrl-go-pre-place-tangent { constraint: <go-pre-place.tangent>, Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
-        pid ctrl-go-pre-place-position { constraint: <go-pre-place.follow-position>,           Kp: 150, Ki: 1, Kd: 0.1, decay: 0 },
+        pid ctrl-go-pre-place-position { constraint: <go-pre-place.follow-position>,              Kp: 250, Ki: 1, Kd: 0.1, decay: 0 },
         impedance ctrl-go-pre-place-ori { constraint: <go-pre-place.follow-orientation>, stiffness: 25, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-go-pre-place-joint-3 { constraint: <go-pre-place.hold-elbow>,                    Kp: 200, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-go-pre-place-joint-4-range { constraint: <go-pre-place.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
