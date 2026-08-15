@@ -58,30 +58,39 @@ context (ns=app) shared {
         pose start-pose             = snapshot of <shared.world.pose-ee-base>,
         pose look-table             = [config.poses.look-table] for <shared.world.pose-ee-base>,
         pose touch_align_pose       = [config.poses.touch-align] for <shared.world.pose-ee-base>,
+        pose pre-placement-pose     = [config.poses.pre-placement-pose] for <shared.world.pose-ee-base>,
         angle gripper-closed        = 0.8 rad,
         angle gripper-open          = 0.0 rad,
         angle grasp-threshold       = 0.5 rad,
         linear-velocity zero-linvel = 0.0 m/s,
         linear-velocity descend-vel = -0.05 m/s,
+        linear-velocity lift-up-vel = 0.05 m/s,
         linear-velocity slide-vel   = -0.05 m/s,
         force press-force           = -20.0 N,
         force press-band            = 0.5 N,
         length touchdown-z          = 0.1 m,
-        length slide-target-y       = -0.75 m,
-        length lift-height-z        = 0.1 m,
+        length slide-target-y       = -0.8 m,
+        length lift-height-z        = 0.2 m,
+        length pose-band            = 0.03 m,
         angle joint-3-target        = 3.14 rad,
         angle joint-7-target        = 1.57 rad,
         angle joint-4-upper-limit   = -45.0 deg,
         angle joint-4-lower-limit   = -144.0 deg,
         angle joint-6-upper-limit   = 116.0 deg,
-        angle joint-6-lower-limit   = -117.0 deg
+        angle joint-6-lower-limit   = -117.0 deg,
+        linear-velocity compliance-velocity-band = 0.01 m/s,
+        force force-threshold = 10.0 N,
+        force neg-force-threshold = -10.0 N,
+        force release-threshold = 3.0 N,
+        force neg-release-threshold = -3.0 N,
+        length comply-int-max = 0.02 m,
+        length neg-comply-int-max = -0.02 m
     }
 }
 
 ros (ns=app) {
     publishers {
-        ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
-        bdd-events: topic "/bdd/events" message "bdd_ros2_interfaces/msg/Event",
+        ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped"
     },
     //action-servers {
     //    collab-bhv: action "/bdd/collab_bhv_server" type "bdd_ros2_interfaces/action/Behaviour" {
@@ -139,7 +148,7 @@ constraint-handler (ns=app) handler-hold-wait {
     }
     controllers {
         pid ctrl-home-position { constraint: <hold-wait.hold-position>,             Kp: 500, Ki: 20, Kd: 100, decay: 0 },
-        impedance ctrl-home-ori { constraint: <hold-wait.hold-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
+        impedance ctrl-home-ori { constraint: <hold-wait.hold-orientation>, stiffness: 20, damping: 2 } apply at <gripper.g_base>,
         feed-forward ctrl-home-gripper { constraint: <hold-wait.open-gripper> },
         pid ctrl-home-joint-3 { constraint: <hold-wait.hold-elbow>,                 Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-home-joint-4-range { constraint: <hold-wait.joint-4-range>,        Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
@@ -172,7 +181,7 @@ guarded-motion (ns=app) go-look {
 
             pose start-pose = snapshot of <shared.world.pose-ee-base>,
 
-            path arc-path = arc {
+            path go-look-arc-path = arc {
                 start:        <spec.start-pose>,
                 end:          <shared.spec.look-table>,
                 amplitude:    <spec.arc-height>,
@@ -187,9 +196,9 @@ guarded-motion (ns=app) go-look {
     when {}
 
     while {
-        tangent:            moving <shared.world.pose-ee-base> along <spec.arc-path> with <spec.speed-profile>,
-        follow-position:    keeping <shared.world.pose-ee-base>.position on <spec.arc-path>,
-        follow-orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.arc-path>,
+        tangent:            moving <shared.world.pose-ee-base> along <spec.go-look-arc-path> with <spec.speed-profile>,
+        follow-position:    keeping <shared.world.pose-ee-base>.position on <spec.go-look-arc-path>,
+        follow-orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.go-look-arc-path>,
         hold-elbow:         keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
         joint-4-range:      <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
         joint-6-range:      <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
@@ -209,7 +218,7 @@ constraint-handler (ns=app) handler-go-look {
     runs-in: <collab-coord.S_LOOK>
     monitors {
         mon-opened: monitor <go-look.until> {
-            satisfied for 0.5 s { trigger: event <collab-coord.E_OBJ_LOCATED> },
+            satisfied for 0.3 s { trigger: event <collab-coord.E_OBJ_LOCATED> },
         }
     }
     controllers {
@@ -258,7 +267,7 @@ constraint-handler (ns=app) handler-touch-align {
     }
     controllers {
         pid ctrl-touch-align-orient-position { constraint: <touch-align-position>,              Kp: 500, Ki: 20, Kd: 100, decay: 0 },
-        impedance ctrl-touch-align-ori { constraint: <touch-align-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
+        impedance ctrl-touch-align-ori { constraint: <touch-align-orientation>, stiffness: 35, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-touch-align-joint-3 { constraint: <touch-align.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-touch-align-joint-4-range { constraint: <touch-align.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-touch-align-joint-6-range { constraint: <touch-align.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
@@ -308,7 +317,7 @@ constraint-handler (ns=app) handler-touchdown {
         pid ctrl-touchdown-x { constraint: <touchdown.hold-x>,                              Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
         pid ctrl-touchdown-y { constraint: <touchdown.hold-y>,                              Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
         pid ctrl-touchdown-z { constraint: <touchdown.lower-z>,                             Kp: 175, Ki: 5, Kd: 0.1, decay: 0 },
-        impedance ctrl-touchdown-ori { constraint: <touchdown.hold-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
+        impedance ctrl-touchdown-ori { constraint: <touchdown.hold-orientation>, stiffness: 25, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-touchdown-joint-3 { constraint: <touchdown.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-touchdown-joint-4-range { constraint: <touchdown.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-touchdown-joint-6-range { constraint: <touchdown.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
@@ -360,7 +369,7 @@ constraint-handler (ns=app) handler-forward {
         feed-forward ctrl-forward_motion-press-down { constraint: <forward_motion.press-down> }
             as force
             apply at <gripper.g_base>,
-        impedance ctrl-forward-ori { constraint: <forward_motion.hold-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
+        impedance ctrl-forward-ori { constraint: <forward_motion.hold-orientation>, stiffness: 30, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-forward-joint-3 { constraint: <forward_motion.hold-elbow>,                     Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-forward-joint-4-range { constraint: <forward_motion.joint-4-range>,            Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-forward-joint-6-range { constraint: <forward_motion.joint-6-range>,            Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
@@ -394,7 +403,6 @@ guarded-motion (ns=app) hold-close {
         settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
         settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
         settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
-        at-target-position: <shared.world.pose-ee-base>.position equal to <spec.target-pose>.position,
         grasped: <shared.world.gripper-pos> greater than <shared.spec.grasp-threshold>
     }
 }
@@ -405,19 +413,353 @@ constraint-handler (ns=app) handler-hold-close {
     monitors {
         mon-closed: monitor <hold-close.until> {
             satisfied for 1 s { 
-                    trigger: event <collab-coord.E_OBJ_GRASPED>,
-                    publish: event to <ros.publishers.bdd-events>
-                    //, result: succeeded <ros.action-servers.collab-bhv> { result.trinary.value: TRUE }
+                    trigger: event <collab-coord.E_OBJ_GRASPED>
             }
         }
     }
     controllers {
         pid ctrl-hold-close-position { constraint: <hold-close.hold-position>,              Kp: 500, Ki: 20, Kd: 100, decay: 0 },
         feed-forward ctrl-hold-close-gripper { constraint: <hold-close.close-gripper> },
-        impedance ctrl-hold-close-ori { constraint: <hold-close.hold-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
+        impedance ctrl-hold-close-ori { constraint: <hold-close.hold-orientation>, stiffness: 25, damping: 2 } apply at <gripper.g_base>,
         pid ctrl-hold-close-joint-3 { constraint: <hold-close.hold-elbow>,                  Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-hold-close-joint-4-range { constraint: <hold-close.joint-4-range>,         Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-hold-close-joint-6-range { constraint: <hold-close.joint-6-range>,         Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
+    }
+    solvers {
+        <handler-hold-wait.arm-solver>,
+        <handler-hold-wait.gripper-command-solver>
+    }
+}
+
+
+
+guarded-motion (ns=app) lift-up {
+    description: "Lift the TCP until it crosses the lift-up threshold, with near-zero vertical velocity"
+
+    context {
+        spec {
+            pose lift-up-start-pose = snapshot of <shared.world.pose-ee-base>,
+            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x,
+            length hold-y = snapshot of <shared.world.pose-ee-base>.position.y
+        }
+    }
+
+    when {}
+
+    while {
+        hold-x: keeping <shared.world.pose-ee-base>.position.x equal to <spec.hold-x>,
+        hold-y: keeping <shared.world.pose-ee-base>.position.y equal to <spec.hold-y>,
+        lift-up-z: keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.lift-up-vel>,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.lift-up-start-pose>.orientation,
+        hold-elbow: keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range: <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range: <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
+    }
+
+    until all {
+        above-lift-up-z: <shared.world.pose-ee-base>.position.z greater than <shared.spec.lift-height-z>
+    }
+}
+
+constraint-handler (ns=app) handler-lift-up {
+    handles: <lift-up>
+    runs-in: <collab-coord.S_LIFT>
+    monitors {
+        mon-opened: monitor <lift-up.until> {
+            satisfied for 0.1 s { trigger: event <collab-coord.E_OBJECT_LIFTED> },
+        }
+    }
+    controllers {
+        pid ctrl-lift-up-x { constraint: <lift-up.hold-x>,                              Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
+        pid ctrl-lift-up-y { constraint: <lift-up.hold-y>,                              Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
+        pid ctrl-lift-up-z { constraint: <lift-up.lift-up-z>,                             Kp: 175, Ki: 5, Kd: 0.1, decay: 0 },
+        impedance ctrl-lift-up-ori { constraint: <lift-up.hold-orientation>, stiffness: 25, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-lift-up-joint-3 { constraint: <lift-up.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-lift-up-joint-4-range { constraint: <lift-up.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-lift-up-joint-6-range { constraint: <lift-up.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
+    }
+    solvers { <handler-hold-wait.arm-solver> }
+}
+
+
+
+guarded-motion (ns=app) go-pre-place {
+    description: "Follow the Cartesian arc trajectory to pre-placement pose above the table, with near-zero vertical velocity"
+
+    context {
+        <shared.spec>,
+        spec {
+            velocity-profile speed-profile = profile {
+                max-velocity: 0.15 m/s,
+                max-acceleration: 0.03 m/s^2,
+                shape: trapezoidal
+            },
+            direction path-normal { as-seen-by: <kinova.base_link.base_link_origin> } = (0.4450, -0.5406, -0.7140),
+
+            // Arc deviation from the straight chord
+            distance arc-height = 0.4 m,
+
+            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+
+            path pre-place-arc-path = arc {
+                start:        <spec.start-pose>,
+                end:          <shared.spec.pre-placement-pose>,
+                amplitude:    <spec.arc-height>,
+                plane-normal: <spec.path-normal>
+            }
+        }
+    }
+
+    when {}
+
+    while {
+        tangent:            moving <shared.world.pose-ee-base> along <spec.pre-place-arc-path> with <spec.speed-profile>,
+        follow-position:    keeping <shared.world.pose-ee-base>.position on <spec.pre-place-arc-path>,
+        follow-orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.pre-place-arc-path>,
+        hold-elbow:         keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range:      <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range:      <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>,
+        force-x: <shared.world.ext-force>.force.x
+            outside <shared.spec.neg-force-threshold> and <shared.spec.force-threshold>,
+        force-y: <shared.world.ext-force>.force.y
+            outside <shared.spec.neg-force-threshold> and <shared.spec.force-threshold>
+    }
+
+    until all {
+        settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
+        at-go-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z
+    }
+}
+
+constraint-handler (ns=app) handler-go-pre-place {
+    handles: <go-pre-place>
+    runs-in: <collab-coord.S_TRANSPORT>
+    monitors {
+        //mon-force-x: monitor <go-pre-place.force-x> {
+        //    satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
+        //},
+        //mon-force-y: monitor <go-pre-place.force-y> {
+        //    satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
+        //},
+        mon-opened: monitor <go-pre-place.until> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT> },
+        }
+    }
+    controllers {
+        pid ctrl-go-pre-place-tangent { constraint: <go-pre-place.tangent>, Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
+        pid ctrl-go-pre-place-position { constraint: <go-pre-place.follow-position>,           Kp: 150, Ki: 1, Kd: 0.1, decay: 0 },
+        impedance ctrl-go-pre-place-ori { constraint: <go-pre-place.follow-orientation>, stiffness: 25, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-go-pre-place-joint-3 { constraint: <go-pre-place.hold-elbow>,                    Kp: 200, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-go-pre-place-joint-4-range { constraint: <go-pre-place.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-go-pre-place-joint-6-range { constraint: <go-pre-place.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
+    }
+    solvers { <handler-hold-wait.arm-solver> }
+}
+
+
+
+guarded-motion (ns=app) compliance {
+    description: "Yield along the measured external force"
+
+    context {
+        spec {
+            pose hold-orientation = snapshot of <shared.world.pose-ee-base>,
+            admittance velocity-x = {
+                force: <shared.world.ext-force>.force.x,
+                mass: 2.0,
+                damping: 30.0,
+                stiffness: 0.0,
+                max-velocity: 0.30 m/s
+            },
+            admittance velocity-y = {
+                force: <shared.world.ext-force>.force.y,
+                mass: 2.0,
+                damping: 30.0,
+                stiffness: 0.0,
+                max-velocity: 0.30 m/s
+            },
+            admittance velocity-z = {
+                force: <shared.world.ext-force>.force.z,
+                mass: 2.0,
+                damping: 30.0,
+                stiffness: 0.0,
+                max-velocity: 0.30 m/s
+            }
+        }
+    }
+
+    when {}
+
+    while {
+        comply-x:
+            keeping <shared.world.twist-ee-base>.linvel.x equal to <spec.velocity-x>
+            within <shared.spec.compliance-velocity-band>,
+        comply-y:
+            keeping <shared.world.twist-ee-base>.linvel.y equal to <spec.velocity-y>
+            within <shared.spec.compliance-velocity-band>,
+        comply-z:
+            keeping <shared.world.twist-ee-base>.linvel.z equal to <spec.velocity-z>
+            within <shared.spec.compliance-velocity-band>,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation>.orientation,
+        hold-elbow:    keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range: <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range: <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>,
+        close-gripper: keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>
+    }
+
+    until all {
+        below-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z,
+        released-x: <shared.world.ext-force>.force.x
+            between <shared.spec.neg-release-threshold> and <shared.spec.release-threshold>,
+        released-y: <shared.world.ext-force>.force.y
+            between <shared.spec.neg-release-threshold> and <shared.spec.release-threshold>,
+        released-z: <shared.world.ext-force>.force.z
+            between <shared.spec.neg-release-threshold> and <shared.spec.release-threshold>
+    }
+}
+
+constraint-handler (ns=app) handler-compliance {
+    handles: <compliance>
+    runs-in: <collab-coord.S_COMPLIANCE>
+    monitors {
+        mon-released: monitor <compliance.until> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE> },
+        }
+    }
+    controllers {
+        pid ctrl-comply-x {
+            constraint: <compliance.comply-x>,
+            integral-saturation: saturation {
+                lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
+            },
+            Kp: 150, Ki: 800, Kd: 0, decay: 0
+        },
+        pid ctrl-comply-y {
+            constraint: <compliance.comply-y>,
+            integral-saturation: saturation {
+                lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
+            },
+            Kp: 150, Ki: 800, Kd: 0, decay: 0
+        },
+        pid ctrl-comply-z {
+            constraint: <compliance.comply-z>,
+            integral-saturation: saturation {
+                lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
+            },
+            Kp: 150, Ki: 800, Kd: 0, decay: 0
+        },
+        feed-forward ctrl-comply-gripper { <compliance.close-gripper> },
+
+        impedance ctrl-comply-ori { constraint: <compliance.hold-orientation>, stiffness: 25, damping: 5 } apply at <gripper.g_base>,
+        pid ctrl-comply-joint-3 { constraint: <compliance.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-comply-joint-4-range { constraint: <compliance.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-comply-joint-6-range { constraint: <compliance.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
+    }
+    solvers {
+        <handler-hold-wait.arm-solver>,
+        <handler-hold-wait.gripper-command-solver>
+    }
+}
+
+
+
+guarded-motion (ns=app) place-down {
+    description: "Lower the TCP until it is near table surface with near-zero vertical velocity"
+
+    context {
+        spec {
+            pose place-down-start-pose = snapshot of <shared.world.pose-ee-base>,
+            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x,
+            length hold-y = snapshot of <shared.world.pose-ee-base>.position.y
+        }
+    }
+
+    when {}
+
+    while {
+        hold-x: keeping <shared.world.pose-ee-base>.position.x equal to <spec.hold-x>,
+        hold-y: keeping <shared.world.pose-ee-base>.position.y equal to <spec.hold-y>,
+        lower-z: keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.descend-vel>,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.place-down-start-pose>.orientation,
+        hold-elbow: keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range: <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range: <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
+    }
+
+    until all {
+        place-down-z: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>,
+        place-down-z-velocity: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+    }
+}
+
+constraint-handler (ns=app) handler-place-down {
+    handles: <place-down>
+    runs-in: <collab-coord.S_PLACE_DOWN>
+    monitors {
+        mon-opened: monitor <place-down.until> {
+            satisfied for 0.5 s { trigger: event <collab-coord.E_REACHED_PLACEMENT_POSE> },
+        }
+    }
+    controllers {
+        pid ctrl-place-down-x { constraint: <place-down.hold-x>,                              Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
+        pid ctrl-place-down-y { constraint: <place-down.hold-y>,                              Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
+        pid ctrl-place-down-z { constraint: <place-down.lower-z>,                             Kp: 175, Ki: 5, Kd: 0.1, decay: 0 },
+        impedance ctrl-place-down-ori { constraint: <place-down.hold-orientation>, stiffness: 7, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-place-down-joint-3 { constraint: <place-down.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-place-down-joint-4-range { constraint: <place-down.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-place-down-joint-6-range { constraint: <place-down.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
+    }
+    solvers { <handler-hold-wait.arm-solver> }
+}
+
+
+guarded-motion (ns=app) hold-open {
+    description: "Hold the current pose until the arm is stable and the gripper is open"
+
+    context {
+        spec {
+            pose target-pose = snapshot of <shared.world.pose-ee-base>
+        }
+    }
+
+    when {}
+
+    while {
+        open-gripper:    keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-open>,
+        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <spec.target-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.target-pose>.orientation,
+        hold-elbow:       keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range:    <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range:    <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
+    }
+
+    until all {
+        settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+        settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+        settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
+        gripper-opened: <shared.world.gripper-pos> less than <shared.spec.grasp-threshold>
+    }
+}
+
+constraint-handler (ns=app) handler-hold-open {
+    handles: <hold-open>
+    runs-in: <collab-coord.S_OPEN>
+    monitors {
+        mon-closed: monitor <hold-open.until> {
+            satisfied for 1 s { 
+                    trigger: event <collab-coord.E_OBJ_RELEASED>
+            }
+        }
+    }
+    controllers {
+        pid ctrl-hold-open-position { constraint: <hold-open.hold-position>,              Kp: 500, Ki: 20, Kd: 100, decay: 0 },
+        feed-forward ctrl-hold-open-gripper { constraint: <hold-open.open-gripper> },
+        impedance ctrl-hold-open-ori { constraint: <hold-open.hold-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-hold-open-joint-3 { constraint: <hold-open.hold-elbow>,                  Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-hold-open-joint-4-range { constraint: <hold-open.joint-4-range>,         Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-hold-open-joint-6-range { constraint: <hold-open.joint-6-range>,         Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
     }
     solvers {
         <handler-hold-wait.arm-solver>,

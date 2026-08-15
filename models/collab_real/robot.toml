@@ -45,3 +45,7 @@ orientation = [2.0, 0.0, 0]
 [poses.touch-align]
 position = [-0.34, -0.7, 0.35]
 orientation = [1.57, 0.0, 0]
+
+[poses.pre-placement-pose]
+position = [0.8, 0.0, 0.20]
+orientation = [1.57, 0.0, 1.57]

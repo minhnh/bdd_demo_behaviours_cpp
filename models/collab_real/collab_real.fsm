@@ -8,6 +8,12 @@ evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_TABLE_TOUCHED,
     evt E_OBJ_REACHED,
     evt E_OBJ_GRASPED,
+    evt E_OBJECT_LIFTED,
+    evt E_INTERACTION_DETECTED,
+    evt E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT,
+    evt E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE,
+    evt E_REACHED_PLACEMENT_POSE,
+    evt E_OBJ_RELEASED,
     // Exported events
     evt E_PICK_START,
     evt E_PICK_END,
@@ -26,6 +32,11 @@ fsm (ns=collab-coord) collab_demo_fsm {
         S_TOUCH,
         S_SLIDE,
         S_CLOSE,
+        S_LIFT,
+        S_TRANSPORT,
+        S_COMPLIANCE,
+        S_PLACE_DOWN,
+        S_OPEN,
         S_DONE
     }
 
@@ -41,7 +52,13 @@ fsm (ns=collab-coord) collab_demo_fsm {
         T_ALIGN_TOUCH { from: <S_TOUCH_ALIGN>,  to: <S_TOUCH> },
         T_TOUCH_SLIDE { from: <S_TOUCH>,  to: <S_SLIDE> },
         T_SLIDE_CLOSE { from: <S_SLIDE>,    to: <S_CLOSE> },
-        T_CLOSE_DONE { from: <S_CLOSE>, to: <S_DONE> }
+        T_CLOSE_LIFT { from: <S_CLOSE>,    to: <S_LIFT> },
+        T_LIFT_TRANSPORT { from: <S_LIFT>,    to: <S_TRANSPORT> },
+        T_TRANSPORT_COMPLIANCE { from: <S_TRANSPORT>, to: <S_COMPLIANCE> },
+        T_TRANSPORT_PLACE_DOWN { from: <S_TRANSPORT>, to: <S_PLACE_DOWN> },
+        T_COMPLIANCE_PLACE_DOWN { from: <S_COMPLIANCE>, to: <S_PLACE_DOWN> },
+        T_PLACE_DOWN_OPEN { from: <S_PLACE_DOWN>, to: <S_OPEN> },
+        T_OPEN_DONE { from: <S_OPEN>, to: <S_DONE> }
     }
 
     reactions {
@@ -50,7 +67,8 @@ fsm (ns=collab-coord) collab_demo_fsm {
             do: <T_START_WAIT>
         },
         R_GOAL {
-            when: <collab_demo_fsm_events.E_GOAL>, do: <T_WAIT_LOOK>
+            when: <collab_demo_fsm_events.E_GOAL>,
+            do: <T_WAIT_LOOK>
         },
         R_OBJ_LOCATED {
             when: <collab_demo_fsm_events.E_OBJ_LOCATED>, 
@@ -71,8 +89,33 @@ fsm (ns=collab-coord) collab_demo_fsm {
         },
         R_OBJ_GRASPED {
             when: <collab_demo_fsm_events.E_OBJ_GRASPED>, 
-            do: <T_CLOSE_DONE>,
+            do: <T_CLOSE_LIFT>
+        },
+        R_OBJECT_LIFTED {
+            when: <collab_demo_fsm_events.E_OBJECT_LIFTED>, 
+            do: <T_LIFT_TRANSPORT>,
             fires { <collab_demo_fsm_events.E_PICK_END> }
+        },
+        R_INTERACTION_DETECTED {
+            when: <collab_demo_fsm_events.E_INTERACTION_DETECTED>, 
+            do: <T_TRANSPORT_COMPLIANCE>
+        },
+        R_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT {
+            when: <collab_demo_fsm_events.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT>, 
+            do: <T_TRANSPORT_PLACE_DOWN>
+        },
+        R_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE {
+            when: <collab_demo_fsm_events.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE>, 
+            do: <T_COMPLIANCE_PLACE_DOWN>
+        },
+        R_REACHED_PLACEMENT_POSE {
+            when: <collab_demo_fsm_events.E_REACHED_PLACEMENT_POSE>, 
+            do: <T_PLACE_DOWN_OPEN>
+        },
+        R_OBJ_RELEASED {
+            when: <collab_demo_fsm_events.E_OBJ_RELEASED>, 
+            do: <T_OPEN_DONE>,
+            fires { <collab_demo_fsm_events.E_PLACE_END> }
         }
     }
 }
