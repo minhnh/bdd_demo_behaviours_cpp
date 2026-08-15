@@ -85,7 +85,6 @@ ros (ns=app) {
     //action-servers {
     //    collab-bhv: action "/bdd/collab_bhv_server" type "bdd_ros2_interfaces/action/Behaviour" {
     //        on-goal: produce event <collab-coord.E_GOAL>,
-    //        on-end: { result.trinary.value: TRUE },
     //    },
     //},
     always {
@@ -404,6 +403,7 @@ constraint-handler (ns=app) handler-hold-close {
             satisfied for 1 s { 
                     trigger: event <collab-coord.E_OBJ_GRASPED>,
                     publish: event to <ros.publishers.bdd-events>
+                    //, result: succeeded <ros.action-servers.collab-bhv> { result.trinary.value: TRUE }
             }
         }
     }
