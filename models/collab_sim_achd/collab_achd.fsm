@@ -1,0 +1,112 @@
+ns collab-coord='https://secorolab.github.io/models/demos/collab/coordination/'
+
+evt loop (ns=collab-coord) collab_fsm_events {
+    evt E_STEP,
+    evt E_GOAL,
+    evt E_OBJ_LOCATED,
+    evt E_ALIGNED,
+    evt E_TABLE_TOUCHED,
+    evt E_OBJ_REACHED,
+    evt E_OBJ_GRASPED,
+    evt E_HEIGHT_REACHED,
+    evt E_FORCE_DETECTED,
+    evt E_FORCE_GONE,
+    evt E_DEST_REACHED,
+    evt E_OBJ_RELEASED,
+    evt E_PICK_START,
+    evt E_PICK_END,
+    evt E_PLACE_START,
+    evt E_PLACE_END
+}
+
+fsm (ns=collab-coord) collab_transport_fsm {
+    description: "Collaborative drawer transport"
+
+    states {
+        S_START,
+        S_WAIT,
+        S_LOOK,
+        S_ALIGN,
+        S_TOUCH,
+        S_SLIDE,
+        S_CLOSE,
+        S_LIFT,
+        S_FOLLOW_TRAJ,
+        S_COMPLIANT,
+        S_LOWER,
+        S_OPEN,
+        S_DONE
+    }
+
+    evt loop: <collab_fsm_events>
+
+    start: <S_START>
+    end:   <S_DONE>
+
+    transitions {
+        T_START_WAIT    { from: <S_START>,          to: <S_WAIT> },
+        T_WAIT_LOOK     { from: <S_WAIT>,           to: <S_LOOK> },
+        T_LOOK_ALIGN    { from: <S_LOOK>,           to: <S_ALIGN> },
+        T_ALIGN_TOUCH   { from: <S_ALIGN>,          to: <S_TOUCH> },
+        T_TOUCH_SLIDE   { from: <S_TOUCH>,          to: <S_SLIDE> },
+        T_SLIDE_CLOSE   { from: <S_SLIDE>,          to: <S_CLOSE> },
+        T_CLOSE_LIFT    { from: <S_CLOSE>,          to: <S_LIFT> },
+        T_LIFT_TRAJ     { from: <S_LIFT>,           to: <S_FOLLOW_TRAJ> },
+        T_TRAJ_COMPLY   { from: <S_FOLLOW_TRAJ>,    to: <S_COMPLIANT> },
+        T_TRAJ_LOWER    { from: <S_FOLLOW_TRAJ>,    to: <S_LOWER> },
+        T_COMPLY_TRAJ   { from: <S_COMPLIANT>,      to: <S_FOLLOW_TRAJ> },
+        T_COMPLY_LOWER  { from: <S_COMPLIANT>,      to: <S_LOWER> },
+        T_LOWER_OPEN    { from: <S_LOWER>,          to: <S_OPEN> },
+        T_OPEN_WAIT     { from: <S_OPEN>,           to: <S_WAIT> }
+    }
+
+    reactions {
+        R_STEP_START {
+            when: <collab_fsm_events.E_STEP>, do: <T_START_WAIT>
+        },
+        R_GOAL {
+            when: <collab_fsm_events.E_GOAL>, do: <T_WAIT_LOOK>
+        },
+        R_OBJ_LOCATED {
+            when: <collab_fsm_events.E_OBJ_LOCATED>, do: <T_LOOK_ALIGN>,
+            fires { <collab_fsm_events.E_PICK_START> }
+        },
+        R_ALIGNED {
+            when: <collab_fsm_events.E_ALIGNED>, do: <T_ALIGN_TOUCH>
+        },
+        R_TABLE_TOUCHED_PICK {
+            when: <collab_fsm_events.E_TABLE_TOUCHED>, do: <T_TOUCH_SLIDE>
+        },
+        R_OBJ_REACHED {
+            when: <collab_fsm_events.E_OBJ_REACHED>, do: <T_SLIDE_CLOSE>
+        },
+        R_OBJ_GRASPED {
+            when: <collab_fsm_events.E_OBJ_GRASPED>, do: <T_CLOSE_LIFT>,
+            fires { <collab_fsm_events.E_PICK_END> }
+        },
+        R_HEIGHT_REACHED_LIFT {
+            when: <collab_fsm_events.E_HEIGHT_REACHED>, do: <T_LIFT_TRAJ>
+        },
+        R_FORCE_DETECTED {
+            when: <collab_fsm_events.E_FORCE_DETECTED>, do: <T_TRAJ_COMPLY>
+        },
+        R_FORCE_GONE {
+            when: <collab_fsm_events.E_FORCE_GONE>, do: <T_COMPLY_TRAJ>
+        },
+        R_DEST_REACHED_TRAJ {
+            when: <collab_fsm_events.E_DEST_REACHED>, do: <T_TRAJ_LOWER>,
+            fires { <collab_fsm_events.E_PLACE_START> }
+        },
+        R_DEST_REACHED_COMPLY {
+            when: <collab_fsm_events.E_DEST_REACHED>, do: <T_COMPLY_LOWER>,
+            fires { <collab_fsm_events.E_PLACE_START> }
+        },
+        R_TABLE_TOUCHED_PLACE {
+            when: <collab_fsm_events.E_TABLE_TOUCHED>, do: <T_LOWER_OPEN>,
+            fires { <collab_fsm_events.E_PLACE_END> }
+        },
+        R_OBJ_RELEASED {
+            when: <collab_fsm_events.E_OBJ_RELEASED>, do: <T_OPEN_WAIT>
+        }
+    }
+}

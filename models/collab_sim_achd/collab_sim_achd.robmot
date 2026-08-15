@@ -1,4 +1,4 @@
-import "../collab/collab.fsm"
+import "collab_achd.fsm"
 import "../collab/collab.scenex"
 ns app = "https://secorolab.github.io/models/demos/collab/exec/"
 
@@ -59,6 +59,7 @@ context (ns=app) shared {
         torque elbow-torque-limit = 5.0 Nm,
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
         pose look-wall-pose = [config.poses.look-wall-table] for <shared.world.pose-ee-base>,
+        pose align-target = [config.poses.align-target] for <shared.world.pose-ee-base>,
         pose forward-target = [config.poses.forward-target] for <shared.world.pose-ee-base>,
         length position-band = 0.01 m,
         angle angle-band = 0.01 rad,
@@ -137,6 +138,27 @@ guarded-motion (ns=app) look {
     }
 }
 
+guarded-motion (ns=app) align {
+    description: "Align above the drawer handle before touchdown"
+
+    context {
+        <shared.spec>
+    }
+
+    when {}
+
+    while {
+        position: keeping <shared.world.pose-ee-base>.position equal to <shared.spec.align-target>.position,
+        orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.align-target>.orientation,
+        hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
+    }
+
+    until all {
+        aligned-position: <shared.world.pose-ee-base>.position equal to <shared.spec.align-target>.position within <shared.spec.position-band>,
+        aligned-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.align-target>.orientation within <shared.spec.angle-band>
+    }
+}
+
 guarded-motion (ns=app) touchdown {
     description: "Lower the TCP until it contacts the table"
 
@@ -195,8 +217,8 @@ guarded-motion (ns=app) lift {
         spec {
             pose lift-start = snapshot of <shared.world.pose-ee-base>,
             velocity-profile lift-profile = profile {
-                max-velocity: 0.05 m/s,
-                max-acceleration: 0.01 m/s^2,
+                max-velocity: 0.20 m/s,
+                max-acceleration: 0.20 m/s^2,
                 shape: trapezoidal
             },
             path lift-path = lerp {
@@ -218,13 +240,7 @@ guarded-motion (ns=app) lift {
 
     until all {
         reached-position: <shared.world.pose-ee-base>.position equal to <shared.spec.look-wall-pose>.position within <shared.spec.position-band>,
-        reached-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.look-wall-pose>.orientation within <shared.spec.angle-band>,
-        stopped-x: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-y: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-z: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>,
-        stopped-rx: <shared.world.twist-ee-base>.angvel.x equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>,
-        stopped-ry: <shared.world.twist-ee-base>.angvel.y equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>,
-        stopped-rz: <shared.world.twist-ee-base>.angvel.z equal to <shared.spec.zero-angvel> within <shared.spec.settled-angular-velocity-band>
+        reached-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.look-wall-pose>.orientation within <shared.spec.angle-band>
     }
 }
 
@@ -300,7 +316,7 @@ guarded-motion (ns=app) hold-close {
 
     until any {
         closed: <shared.world.gripper-pos> greater than <shared.spec.grasp-threshold>,
-        contact-stop: elapsed greater than 1.5 s
+        contact-stop: elapsed greater than 0.2 s
     }
 }
 
@@ -400,6 +416,33 @@ constraint-handler (ns=app) handler-look {
     }
 }
 
+constraint-handler (ns=app) handler-align {
+    handles: <align>
+    runs-in: <collab-coord.S_ALIGN>
+    monitors {
+        mon-aligned: monitor <align.until> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_ALIGNED> },
+        }
+    }
+    controllers {
+        pid ctrl-align-position {
+            <align.position>, measured-derivative: <shared.world.twist-ee-base>.linvel,
+            Kp: 40, Ki: 10, Kd: 60, decay: 0
+        },
+        pid ctrl-align-orientation {
+            <align.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
+            Kp: 120, Ki: 50, Kd: 80, decay: 0
+        },
+        pid ctrl-align-elbow {
+            constraint: <align.hold-elbow-angle>, output-saturation: saturation { max: <shared.spec.elbow-torque-limit> },
+            Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
+        } as torque
+    }
+    solvers {
+        <handler-wait.arm-solver>
+    }
+}
+
 constraint-handler (ns=app) handler-touch {
     handles: <touchdown>
     runs-in: <collab-coord.S_TOUCH>
@@ -455,7 +498,7 @@ constraint-handler (ns=app) handler-close {
     runs-in: <collab-coord.S_CLOSE>
     monitors {
         mon-opened: monitor <hold-close.until> {
-            satisfied for 0.3 s {
+            satisfied {
                 trigger: event <collab-coord.E_OBJ_GRASPED>,
                 publish: events { <collab-coord.E_PICK_END> } to <ros.publishers.bdd-events>
             },
