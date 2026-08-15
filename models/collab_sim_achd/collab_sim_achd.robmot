@@ -77,6 +77,7 @@ context (ns=app) shared {
         length grasp-y = snapshot of <shared.world.pose-handle-base>.position.y - <shared.spec.grasp-reach>,
         length touchdown-z = 0.1 m,
         length position-band = 0.01 m,
+        length held-distance = 0.12 m,
         angle angle-band = 0.01 rad,
         linear-velocity zero-linvel = 0.0 m/s,
         linear-velocity compliance-velocity-band = 0.01 m/s,
@@ -102,7 +103,10 @@ ros (ns=app) {
     publishers {
         ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
         bdd-events: topic "/bdd/events" message "bdd_ros2_interfaces/msg/Event",
-        scene-objects: topic "/scene_objects" message "vision_msgs/msg/Detection3DArray",
+        scene-objects: topic "/recognized_objects" message "vision_msgs/msg/Detection3DArray",
+        container-not-dropped:
+            topic "/obs_policy/container_not_dropped"
+            message "bdd_ros2_interfaces/msg/TrinaryStamped",
     },
     action-servers {
         collab-bhv: action "/bdd/collab_bhv_server" type "bdd_ros2_interfaces/action/Behaviour" {
@@ -111,8 +115,8 @@ ros (ns=app) {
         },
     },
     always {
-        publish at 20.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
-        publish at 20.0 Hz to <ros.publishers.scene-objects> with {
+        publish at 5.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
+        publish at 2.0 Hz to <ros.publishers.scene-objects> with {
             <ws-objects.table-robot>: <shared.world.pose-table-anchor-base>,
             <collab-objects.drawer>:  <shared.world.pose-drawer-base>,
         },
@@ -284,7 +288,12 @@ guarded-motion (ns=app) lift {
         position: keeping <shared.world.pose-ee-base>.position on <spec.lift-path>,
         orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.lift-path>,
         hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>,
-        close-gripper: keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed> within <shared.spec.angle-band>
+        close-gripper:
+            keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>
+            within <shared.spec.angle-band>,
+        object-held:
+            distance between <shared.world.pose-ee-base> and <shared.world.pose-handle-base>
+            less than <shared.spec.held-distance>
     }
 
     until all {
@@ -330,6 +339,9 @@ guarded-motion (ns=app) return-home {
         close-gripper:
             keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>
             within <shared.spec.angle-band>,
+        object-held:
+            distance between <shared.world.pose-ee-base> and <shared.world.pose-handle-base>
+            less than <shared.spec.held-distance>,
         force-x:
             <shared.world.ext-force>.force.x
             outside <shared.spec.neg-force-threshold> and <shared.spec.force-threshold>,
@@ -415,7 +427,10 @@ guarded-motion (ns=app) compliance {
             keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>,
         close-gripper:
             keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>
-            within <shared.spec.angle-band>
+            within <shared.spec.angle-band>,
+        object-held:
+            distance between <shared.world.pose-ee-base> and <shared.world.pose-handle-base>
+            less than <shared.spec.held-distance>
     }
 
     until {
@@ -674,6 +689,14 @@ constraint-handler (ns=app) handler-lift {
     monitors {
         mon-height-reached: monitor <lift.until> {
             satisfied { trigger: event <collab-coord.E_HEIGHT_REACHED> },
+        },
+        mon-object-held: monitor <lift.object-held> {
+            satisfied {
+                publish: to <ros.publishers.container-not-dropped> { trinary.value: TRUE } at 2.0 Hz
+            },
+            violated {
+                publish: to <ros.publishers.container-not-dropped> { trinary.value: FALSE } at 2.0 Hz
+            },
         }
     }
     controllers {
@@ -713,6 +736,14 @@ constraint-handler (ns=app) handler-traj {
         },
         mon-force-y: monitor <return-home.force-y> {
             satisfied for 0.1 s { trigger: event <collab-coord.E_FORCE_DETECTED> },
+        },
+        mon-object-held: monitor <return-home.object-held> {
+            satisfied {
+                publish: to <ros.publishers.container-not-dropped> { trinary.value: TRUE } at 2.0 Hz
+            },
+            violated {
+                publish: to <ros.publishers.container-not-dropped> { trinary.value: FALSE } at 2.0 Hz
+            },
         }
     }
     controllers {
@@ -743,6 +774,14 @@ constraint-handler (ns=app) handler-comply {
     monitors {
         mon-released: monitor <compliance.released> {
             satisfied for 0.3 s { trigger: event <collab-coord.E_FORCE_GONE> },
+        },
+        mon-object-held: monitor <compliance.object-held> {
+            satisfied {
+                publish: to <ros.publishers.container-not-dropped> { trinary.value: TRUE } at 2.0 Hz
+            },
+            violated {
+                publish: to <ros.publishers.container-not-dropped> { trinary.value: FALSE } at 2.0 Hz
+            },
         }
     }
     controllers {
