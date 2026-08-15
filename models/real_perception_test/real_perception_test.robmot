@@ -15,6 +15,7 @@ exec-context (ns=app) real-perception-test-exec {
 ros (ns=app) {
     publishers {
         table-anchor-pose: topic "/table_anchor_pose" message "geometry_msgs/msg/PoseStamped",
+        seen-objects: topic "/seen_objects" message "vision_msgs/msg/Detection3DArray",
     },
     subscribers {
         table-anchor: topic "/recognized_objects" message "vision_msgs/msg/Detection3DArray" {
@@ -24,6 +25,9 @@ ros (ns=app) {
     },
     always {
         publish at 10.0 Hz to <ros.publishers.table-anchor-pose> with <shared.world.pose-table-anchor-cam>,
+        publish at 10.0 Hz to <ros.publishers.seen-objects> with {
+            <world_tree.robot-table-body>: <shared.world.pose-table-anchor-cam>,
+        },
     },
 }
 
