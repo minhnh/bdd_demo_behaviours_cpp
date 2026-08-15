@@ -59,9 +59,8 @@ context (ns=app) shared {
         torque elbow-torque-limit = 5.0 Nm,
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
         pose look-wall-pose = [config.poses.look-wall-table] for <shared.world.pose-ee-base>,
-        pose align-target = [config.poses.align-target] for <shared.world.pose-ee-base>,
+        pose touch-approach = [config.poses.touch-approach] for <shared.world.pose-ee-base>,
         pose forward-target = [config.poses.forward-target] for <shared.world.pose-ee-base>,
-        length align-x = -0.445 m,
         length touchdown-z = 0.1 m,
         length grasp-y = -0.834 m,
         length position-band = 0.01 m,
@@ -112,7 +111,7 @@ tolerances {
 }
 
 guarded-motion (ns=app) look {
-    description: "Follow an arc to the configured wall-view pose"
+    description: "Follow an arc to the pre-touchdown pose, slewing the yaw along the way"
 
     context {
         <shared.spec>,
@@ -127,7 +126,7 @@ guarded-motion (ns=app) look {
             distance arc-height = 0.336836 m,
             path trajectory = arc {
                 start: <spec.start>,
-                end: <shared.spec.look-wall-pose>,
+                end: <shared.spec.touch-approach>,
                 amplitude: <spec.arc-height>,
                 plane-normal: <spec.plane-normal>
             }
@@ -145,46 +144,11 @@ guarded-motion (ns=app) look {
 
     until all {
         tcp-position:
-            <shared.world.pose-ee-base>.position equal to <shared.spec.look-wall-pose>.position
+            <shared.world.pose-ee-base>.position equal to <shared.spec.touch-approach>.position
             within <shared.spec.position-band>,
         tcp-orientation:
-            <shared.world.pose-ee-base>.orientation equal to <shared.spec.look-wall-pose>.orientation
+            <shared.world.pose-ee-base>.orientation equal to <shared.spec.touch-approach>.orientation
             within <shared.spec.angle-band>
-    }
-}
-
-guarded-motion (ns=app) align {
-    description: "Align the gripper orientation before touchdown"
-
-    context {
-        spec {
-            pose start-pose = snapshot of <shared.world.pose-ee-base>,
-            // The motion enters on a step: 0.063 m in x and 0.53 rad in yaw. Unprofiled, the
-            // PIDs answer that step at 0.14 m/s and 0.96 rad/s.
-            linear-velocity max-align-velocity = 0.05 m/s,
-            linear-acceleration max-align-acceleration = 0.10 m/s^2,
-            velocity-profile align-x-profile = profile {
-                max-velocity: <spec.max-align-velocity>,
-                max-acceleration: <spec.max-align-acceleration>,
-                measured-velocity: <shared.world.twist-ee-base>.linvel.x,
-                shape: trapezoidal
-            }
-        }
-    }
-
-    when {}
-
-    while {
-        align-x: keeping <shared.world.pose-ee-base>.position.x equal to <shared.spec.align-x>,
-        hold-y: keeping <shared.world.pose-ee-base>.position.y equal to <spec.start-pose>.position.y,
-        hold-z: keeping <shared.world.pose-ee-base>.position.z equal to <spec.start-pose>.position.z,
-        orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.align-target>.orientation,
-        hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
-    }
-
-    until all {
-        aligned-x: <shared.world.pose-ee-base>.position.x equal to <shared.spec.align-x> within <shared.spec.position-band>,
-        aligned-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.align-target>.orientation within <shared.spec.angle-band>
     }
 }
 
@@ -602,38 +566,6 @@ constraint-handler (ns=app) handler-look {
         },
         pid ctrl-look-elbow {
             constraint: <look.hold-elbow-angle>, output-saturation: saturation { max: <shared.spec.elbow-torque-limit> },
-            Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
-        } as torque
-    }
-    solvers {
-        <handler-wait.arm-solver>
-    }
-}
-
-constraint-handler (ns=app) handler-align {
-    handles: <align>
-    runs-in: <collab-coord.S_TOUCH_ALIGN>
-    monitors {
-        mon-aligned: monitor <align.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_TABLE_TOUCH_REORIENTED> },
-        }
-    }
-    controllers {
-        pid ctrl-align-x {
-            constraint: <align.align-x>, profile: <align.spec.align-x-profile>,
-            Kp: 30, Ki: 5, Kd: 40, decay: 0
-        },
-        pid ctrl-align-y { <align.hold-y>,  Kp: 80, Ki: 20, Kd: 25, decay: 0 },
-        pid ctrl-align-z { <align.hold-z>,  Kp: 80, Ki: 20, Kd: 25, decay: 0 },
-        pid ctrl-align-orientation {
-            constraint: <align.orientation>,
-            measured-derivative: <shared.world.twist-ee-base>.angvel,
-            // The derivative is measured angvel, so Kp/Kd sets the rate the yaw step slews at:
-            // 60/50 gave 0.96 rad/s. A profile would be the right knob, but they are linear-only.
-            Kp: 60, Ki: 10, Kd: 90, decay: 0
-        },
-        pid ctrl-align-elbow {
-            constraint: <align.hold-elbow-angle>, output-saturation: saturation { max: <shared.spec.elbow-torque-limit> },
             Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
         } as torque
     }
