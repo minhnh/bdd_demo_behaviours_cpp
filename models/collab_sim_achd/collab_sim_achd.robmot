@@ -32,8 +32,13 @@ context (ns=app) shared {
             as-seen-by: <kinova.base_link.base_link_origin>
         },
         // Reported, not controlled: where the run says the two things it works against are.
-        pose pose-table-anchor-base {
-            of:         <collab-kgraph.robot-table-body.table_anchor>,
+        pose pose-robot-table-center {
+            of:         <collab-kgraph.robot-table-body.table_top>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
+        pose pose-rk-table-center{
+            of:         <collab-kgraph.rk-table-body.work_surface>,
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
@@ -154,7 +159,8 @@ ros (ns=app) {
     always {
         publish at 5.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
         publish at 2.0 Hz to <ros.publishers.scene-objects> with {
-            <ws-objects.table-robot>: <shared.world.pose-table-anchor-base>,
+            <collab-workspaces.robot-ws>: <shared.world.pose-robot-table-center>,
+            <collab-workspaces.wall-ws>: <shared.world.pose-rk-table-center>,
             <collab-objects.drawer>:  <shared.world.pose-drawer-base>,
         },
     },

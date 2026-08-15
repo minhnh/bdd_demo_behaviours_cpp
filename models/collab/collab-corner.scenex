@@ -57,7 +57,7 @@ scene inst (ns=collab-scn) collab-scene-simreal {
         }
 
         body rk-table-body {
-            frame table_top {
+            frame leg_center {
                 pose in-world {
                     wrt: <world.root> xyz: (-0.75, 1.87, 0.02) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
@@ -66,13 +66,13 @@ scene inst (ns=collab-scn) collab-scene-simreal {
             // The height the tray stands at, measured from this table's own origin.
             frame work_surface {
                 pose surface_on_rk_table {
-                    wrt: <rk-table-body.table_top> xyz: (0.0, 0.0, 0.75) m
+                    wrt: <rk-table-body.leg_center> xyz: (0.0, 0.0, 0.75) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
             frame table-com {
                 pose com-in-table-top {
-                    wrt: <rk-table-body.table_top> xyz: (-0.0815, 0.0999, 0.7034) m
+                    wrt: <rk-table-body.leg_center> xyz: (-0.0815, 0.0999, 0.7034) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
@@ -131,7 +131,7 @@ scene inst (ns=collab-scn) collab-scene-simreal {
             }
             fixed rk_table_on_world {
                 parent: <world.root>
-                child: <rk-table-body.table_top>
+                child: <rk-table-body.leg_center>
             }
             fixed arm_on_table {
                 parent: <robot-table-body.arm-mount>
