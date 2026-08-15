@@ -69,12 +69,57 @@ context (ns=app) shared {
         angle elbow-angle-target = 3.14 rad,
         torque elbow-torque-limit = 5.0 Nm,
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
-        pose look-wall-pose = [config.poses.look-wall-table] for <shared.world.pose-ee-base>,
-        pose touch-approach = [config.poses.touch-approach] for <shared.world.pose-ee-base>,
-        pose forward-target = [config.poses.forward-target] for <shared.world.pose-ee-base>,
         // The grasp is reached 59 mm into the handle, so it is stated from the handle.
         length grasp-reach = 0.059 m,
         length grasp-y = snapshot of <shared.world.pose-handle-base>.position.y - <shared.spec.grasp-reach>,
+        // The stations are derived from the scene at startup: the handle says where in the
+        // plane, home says how high. The drawer does not move before the arc, so a startup
+        // sample is the right cadence.
+        length approach-standoff-y = 0.12 m,
+        length handle-x = snapshot of <shared.world.pose-handle-base>.position.x,
+        length handle-z = snapshot of <shared.world.pose-handle-base>.position.z,
+        length approach-y = snapshot of <shared.world.pose-handle-base>.position.y + <shared.spec.approach-standoff-y>,
+        pose handle-pose = snapshot of <shared.world.pose-handle-base>,
+        pose touch-approach {
+            of:         <gripper.g_base.g_pinch>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        } = {
+            position: (<shared.spec.handle-x>, <shared.spec.approach-y>, <shared.spec.home-pose>.position.z) m,
+            // Facing the handle: its own orientation flipped back at it.
+            orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by direction-cosine {
+                x: (-1.0, 0.0, 0.0),
+                y: ( 0.0, 0.0, 1.0),
+                z: ( 0.0, 1.0, 0.0)
+            }
+        },
+        // The push target: past the handle by the reach, at the handle's own height.
+        length forward-reach = 0.065 m,
+        length forward-y = snapshot of <shared.world.pose-handle-base>.position.y - <shared.spec.forward-reach>,
+        pose forward-target {
+            of:         <gripper.g_base.g_pinch>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        } = {
+            position: (<shared.spec.handle-x>, <shared.spec.forward-y>, <shared.spec.handle-z>) m,
+            orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by direction-cosine {
+                x: (-1.0, 0.0, 0.0),
+                y: ( 0.0, 0.0, 1.0),
+                z: ( 0.0, 1.0, 0.0)
+            }
+        },
+        // Wall-view station: inside the touchdown x by a standoff, at working height, yawed
+        // toward the wall. The yaw is a view direction on the room, not drawer state.
+        length wall-view-x-standoff = 0.07 m,
+        length wall-view-x = snapshot of <shared.world.pose-handle-base>.position.x + <shared.spec.wall-view-x-standoff>,
+        pose look-wall-pose {
+            of:         <gripper.g_base.g_pinch>,
+            wrt:        <kinova.base_link.base_link_origin>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        } = {
+            position: (<shared.spec.wall-view-x>, <shared.spec.approach-y>, <shared.spec.home-pose>.position.z) m,
+            orientation: euler { axes: xyz extrinsic, angles: (1.570860, 0.000005, -0.523606) rad }
+        },
         length touchdown-z = 0.1 m,
         length position-band = 0.01 m,
         length held-distance = 0.12 m,

@@ -10,20 +10,4 @@ home = [0.0]
 position = [0.673671, 0.001345, 0.433689]
 orientation = [1.570860, 0.000005, 1.570789]
 
-[poses.look-wall-table]
-position = [-0.375000, -0.655000, 0.433689]
-orientation = [1.570860, 0.000005, -0.523606]
 
-# Where the look arc now ends: the wall-view station moved to the touchdown x and already
-# carrying the touchdown orientation, so the arc slews the yaw instead of a separate motion.
-[poses.touch-approach]
-position = [-0.445000, -0.655000, 0.433689]
-orientation = [1.570860, 0.000005, 0.000000]
-
-[poses.align-target]
-position = [-0.435000, -0.758000, 0.433689]
-orientation = [1.570860, 0.000005, 0.000000]
-
-[poses.forward-target]
-position = [-0.445000, -0.840000, 0.089989]
-orientation = [1.570860, 0.000005, -0.523606]
