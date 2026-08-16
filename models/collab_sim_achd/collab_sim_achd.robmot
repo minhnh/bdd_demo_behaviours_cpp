@@ -71,7 +71,7 @@ context (ns=app) shared {
         // Shared, not per motion: the two states alternate, and a target re-captured on each
         // entry would follow the standing error and walk the hold away from where it began.
         pose start-pose       = snapshot of <shared.world.pose-ee-base>,
-        angle elbow-angle-target = 3.14 rad,
+        angle elbow-angle-target = pi rad,
         torque elbow-torque-limit = 5.0 Nm,
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
         // The drawer does not move before the arc, so a startup sample is the right cadence.
@@ -142,7 +142,7 @@ guarded-motion (ns=app) look {
             } = {
                 position: (<shared.spec.handle-x>, <spec.approach-y>, <shared.spec.home-pose>.position.z) m,
                 // Facing the handle: its own orientation flipped back at it.
-                orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (1.5707963267948966, 0.0, 3.141592653589793) rad }
+                orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (pi/2, 0.0, pi) rad }
             },
             // Path constraints do not pin where along the path a motion stops.
             length arrival-band = 0.02 m,
@@ -264,7 +264,7 @@ guarded-motion (ns=app) forward {
                 as-seen-by: <kinova.base_link.base_link_origin>
             } = {
                 position: (<shared.spec.handle-x>, <spec.forward-y>, <spec.handle-z>) m,
-                orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (1.5707963267948966, 0.0, 3.141592653589793) rad }
+                orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (pi/2, 0.0, pi) rad }
             },
             pose forward-start = snapshot of <shared.world.pose-ee-base>
         }
