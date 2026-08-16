@@ -530,37 +530,6 @@ guarded-motion (ns=app) hold-wait {
     until {}
 }
 
-guarded-motion (ns=app) return-idle {
-    description: "Return to the idle pose after placing"
-
-    context {
-        spec {
-            velocity-profile speed-profile = profile {
-                max-velocity: 0.05 m/s,
-                max-acceleration: 0.05 m/s^2,
-                shape: trapezoidal
-            }
-        }
-    }
-
-    when {}
-
-    // Setpoints, not a path: ends on the pose, not wherever a traversal stopped.
-    while {
-        idle-x: keeping <shared.world.pose-ee-base>.position.x equal to <shared.spec.start-pose>.position.x,
-        idle-y: keeping <shared.world.pose-ee-base>.position.y equal to <shared.spec.start-pose>.position.y,
-        idle-z: keeping <shared.world.pose-ee-base>.position.z equal to <shared.spec.start-pose>.position.z,
-        orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation,
-        open-gripper: keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-open>,
-        hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>
-    }
-
-    until all {
-        idle-position: <shared.world.pose-ee-base>.position equal to <shared.spec.start-pose>.position within <shared.spec.position-band>,
-        idle-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation within <shared.spec.angle-band>
-    }
-}
-
 constraint-handler (ns=app) handler-wait {
     handles: <hold-wait>
     runs-in: <collab-coord.S_WAIT>
@@ -698,7 +667,7 @@ constraint-handler (ns=app) handler-lift {
     runs-in: <collab-coord.S_LIFT>
     monitors {
         mon-height-reached: monitor <lift.until> {
-            satisfied { trigger: event <collab-coord.E_HEIGHT_REACHED> },
+            satisfied { trigger: event <collab-coord.E_OBJECT_LIFTED> },
         },
         mon-object-held: monitor <lift.object-held> {
             satisfied {
@@ -743,19 +712,19 @@ constraint-handler (ns=app) handler-lift {
 
 constraint-handler (ns=app) handler-traj {
     handles: <return-home>
-    runs-in: <collab-coord.S_FOLLOW_TRAJ>
+    runs-in: <collab-coord.S_TRANSPORT>
     monitors {
         mon-home: monitor <return-home.until> {
             satisfied for 0.3 s {
-                trigger: event <collab-coord.E_DEST_REACHED>,
+                trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT>,
                 publish: events { <collab-coord.E_PLACE_START> } to <ros.publishers.bdd-events>
             },
         },
         mon-force-x: monitor <return-home.force-x> {
-            satisfied for 0.1 s { trigger: event <collab-coord.E_FORCE_DETECTED> },
+            satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
         },
         mon-force-y: monitor <return-home.force-y> {
-            satisfied for 0.1 s { trigger: event <collab-coord.E_FORCE_DETECTED> },
+            satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
         },
         mon-object-held: monitor <return-home.object-held> {
             satisfied {
@@ -790,11 +759,11 @@ constraint-handler (ns=app) handler-traj {
 
 constraint-handler (ns=app) handler-comply {
     handles: <compliance>
-    runs-in: <collab-coord.S_COMPLIANT>
+    runs-in: <collab-coord.S_COMPLIANCE>
     monitors {
         mon-place-height: monitor <compliance.until> {
             satisfied for 0.3 s {
-                trigger: event <collab-coord.E_DEST_REACHED>,
+                trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE>,
                 publish: events { <collab-coord.E_PLACE_START> } to <ros.publishers.bdd-events>
             },
         },
@@ -845,11 +814,11 @@ constraint-handler (ns=app) handler-comply {
 
 constraint-handler (ns=app) handler-lower {
     handles: <lower>
-    runs-in: <collab-coord.S_LOWER>
+    runs-in: <collab-coord.S_PLACE_DOWN>
     monitors {
         mon-contact: monitor <lower.until> {
             satisfied for 0.3 s {
-                trigger: event <collab-coord.E_TABLE_TOUCHED>,
+                trigger: event <collab-coord.E_REACHED_PLACEMENT_POSE>,
                 publish: events { <collab-coord.E_PLACE_END> } to <ros.publishers.bdd-events>
             },
         }
@@ -896,45 +865,3 @@ constraint-handler (ns=app) handler-open {
     }
 }
 
-constraint-handler (ns=app) handler-return-idle {
-    handles: <return-idle>
-    runs-in: <collab-coord.S_RETURN_IDLE>
-    monitors {
-        mon-idle: monitor <return-idle.until> {
-            satisfied for 0.2 s { trigger: event <collab-coord.E_IDLE_REACHED> }
-        }
-    }
-    controllers {
-        // Ki 50 for the reason ctrl-lift-z carries.
-        pid ctrl-idle-x {
-            constraint: <return-idle.idle-x>, profile: <return-idle.spec.speed-profile>,
-            measured-derivative: <shared.world.twist-ee-base>.linvel.x,
-            Kp: 200, Ki: 50, Kd: 40, decay: 0
-        },
-        pid ctrl-idle-y {
-            constraint: <return-idle.idle-y>, profile: <return-idle.spec.speed-profile>,
-            measured-derivative: <shared.world.twist-ee-base>.linvel.y,
-            Kp: 200, Ki: 50, Kd: 40, decay: 0
-        },
-        pid ctrl-idle-z {
-            constraint: <return-idle.idle-z>, profile: <return-idle.spec.speed-profile>,
-            measured-derivative: <shared.world.twist-ee-base>.linvel.z,
-            Kp: 200, Ki: 50, Kd: 40, decay: 0
-        },
-        pid ctrl-idle-orientation {
-            <return-idle.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
-            Kp: 120, Ki: 50, Kd: 80, decay: 0
-        },
-        feed-forward ctrl-idle-gripper { <return-idle.open-gripper> },
-        pid ctrl-idle-elbow {
-            constraint: <return-idle.hold-elbow-angle>, output-saturation: saturation {
-                max: <shared.spec.elbow-torque-limit>
-            },
-            Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
-        } as torque
-    }
-    solvers {
-        <handler-wait.arm-solver>,
-        <handler-wait.gripper-command-solver>
-    }
-}
