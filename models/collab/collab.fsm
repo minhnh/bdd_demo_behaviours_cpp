@@ -91,15 +91,18 @@ fsm (ns=collab-coord) collab_demo_fsm {
         },
         R_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT {
             when: <collab_demo_fsm_events.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT>, 
-            do: <T_TRANSPORT_PLACE_DOWN>
+            do: <T_TRANSPORT_PLACE_DOWN>,
+            fires { <collab_demo_fsm_events.E_PLACE_START> }
         },
         R_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE {
             when: <collab_demo_fsm_events.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE>, 
-            do: <T_COMPLIANCE_PLACE_DOWN>
+            do: <T_COMPLIANCE_PLACE_DOWN>,
+            fires { <collab_demo_fsm_events.E_PLACE_START> }
         },
         R_REACHED_PLACEMENT_POSE {
             when: <collab_demo_fsm_events.E_REACHED_PLACEMENT_POSE>, 
-            do: <T_PLACE_DOWN_OPEN>
+            do: <T_PLACE_DOWN_OPEN>,
+            fires { <collab_demo_fsm_events.E_PLACE_END> }
         },
         R_OBJ_RELEASED {
             when: <collab_demo_fsm_events.E_OBJ_RELEASED>, 
