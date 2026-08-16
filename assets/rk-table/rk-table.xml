@@ -5,10 +5,12 @@
           scale="0.001 0.001 0.001"/>
   </asset>
   <worldbody>
-    <body name="root" euler="90 0 0">
-      <geom type="mesh" mesh="rk-table" contype="0" conaffinity="0"/>
-      <geom name="tabletop_collision" type="box" pos="0 0.739 0.002"
-            size="0.7 0.011 0.323" mass="0" contype="1" conaffinity="1"/>
+    <body name="root">
+      <body euler="90 0 0">
+        <geom type="mesh" mesh="rk-table" contype="0" conaffinity="0"/>
+        <geom name="tabletop_collision" type="box" pos="0 0.739 0.002"
+              size="0.7 0.011 0.323" mass="0" contype="1" conaffinity="1"/>
+      </body>
     </body>
   </worldbody>
 </mujoco>
