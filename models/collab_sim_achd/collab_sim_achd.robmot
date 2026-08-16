@@ -642,8 +642,7 @@ constraint-handler (ns=app) handler-close {
         mon-opened: monitor <hold-close.until> {
             satisfied {
                 trigger: event <collab-coord.E_OBJ_GRASPED>,
-                publish: events { <collab-coord.E_PICK_END> } to <ros.publishers.bdd-events>,
-                result: succeeded <ros.action-servers.collab-bhv> { result.trinary.value: TRUE }
+                publish: events { <collab-coord.E_PICK_END> } to <ros.publishers.bdd-events>
             },
         }
     }
@@ -847,7 +846,10 @@ constraint-handler (ns=app) handler-open {
     runs-in: <collab-coord.S_OPEN>
     monitors {
         mon-opened: monitor <hold-open.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_OBJ_RELEASED> }
+            satisfied for 0.3 s {
+                trigger: event <collab-coord.E_OBJ_RELEASED>,
+                result: succeeded <ros.action-servers.collab-bhv> { result.trinary.value: TRUE }
+            }
         }
     }
     controllers {
