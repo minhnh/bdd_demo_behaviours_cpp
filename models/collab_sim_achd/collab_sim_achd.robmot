@@ -74,80 +74,21 @@ context (ns=app) shared {
         angle elbow-angle-target = 3.14 rad,
         torque elbow-torque-limit = 5.0 Nm,
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
-        // The grasp is reached 59 mm into the handle, so it is stated from the handle.
-        length grasp-reach = 0.059 m,
-        length grasp-y = snapshot of <shared.world.pose-handle-base>.position.y - <shared.spec.grasp-reach>,
-        // The stations are derived from the scene at startup: the handle says where in the
-        // plane, home says how high. The drawer does not move before the arc, so a startup
-        // sample is the right cadence.
-        length approach-standoff-y = 0.12 m,
+        // The drawer does not move before the arc, so a startup sample is the right cadence.
         length handle-x = snapshot of <shared.world.pose-handle-base>.position.x,
-        length handle-z = snapshot of <shared.world.pose-handle-base>.position.z,
-        length approach-y = snapshot of <shared.world.pose-handle-base>.position.y + <shared.spec.approach-standoff-y>,
         pose handle-pose = snapshot of <shared.world.pose-handle-base>,
-        pose touch-approach {
-            of:         <gripper.g_base.g_pinch>,
-            wrt:        <kinova.base_link.base_link_origin>,
-            as-seen-by: <kinova.base_link.base_link_origin>
-        } = {
-            position: (<shared.spec.handle-x>, <shared.spec.approach-y>, <shared.spec.home-pose>.position.z) m,
-            // Facing the handle: its own orientation flipped back at it.
-            orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (1.5707963267948966, 0.0, 3.141592653589793) rad }
-        },
-        // The push target: past the handle by the reach, at the handle's own height.
-        length forward-reach = 0.065 m,
-        length forward-y = snapshot of <shared.world.pose-handle-base>.position.y - <shared.spec.forward-reach>,
-        pose forward-target {
-            of:         <gripper.g_base.g_pinch>,
-            wrt:        <kinova.base_link.base_link_origin>,
-            as-seen-by: <kinova.base_link.base_link_origin>
-        } = {
-            position: (<shared.spec.handle-x>, <shared.spec.forward-y>, <shared.spec.handle-z>) m,
-            orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (1.5707963267948966, 0.0, 3.141592653589793) rad }
-        },
-        // Wall-view station: inside the touchdown x by a standoff, at working height, yawed
-        // toward the wall. The yaw is a view direction on the room, not drawer state.
-        length wall-view-x-standoff = 0.07 m,
-        length wall-view-x = snapshot of <shared.world.pose-handle-base>.position.x + <shared.spec.wall-view-x-standoff>,
-        pose look-wall-pose {
-            of:         <gripper.g_base.g_pinch>,
-            wrt:        <kinova.base_link.base_link_origin>,
-            as-seen-by: <kinova.base_link.base_link_origin>
-        } = {
-            position: (<shared.spec.wall-view-x>, <shared.spec.approach-y>, <shared.spec.home-pose>.position.z) m,
-            orientation: euler { axes: xyz extrinsic, angles: (1.570860, 0.000005, -0.523606) rad }
-        },
         length touchdown-z = 0.1 m,
-        // No band on a height gate: the model's position tolerance would widen it both ways,
-        // so the gate would arrive early and un-satisfy again once the arm dropped below it.
+        // A gate stating no band inherits the position tolerance and turns two-sided.
         length zero-length = 0.0 m,
         length position-band = 0.01 m,
-        // Arrival at the end of a followed path. Wider than position-band because the path
-        // constraints regulate speed along the path and offset from it, not where along it the
-        // motion stops -- so the endpoint is approached, not landed on exactly.
-        length arrival-band = 0.02 m,
-        angle arrival-angle-band = 0.02 rad,
-        // How close to transport height the lift must settle before handing off. The return arc
-        // is planned from wherever the lift stopped, and its sweep cannot recover any height
-        // error, so this bounds the miss at the far end of that arc.
-        length transport-height-band = 0.005 m,
         length held-distance = 0.12 m,
         angle angle-band = 0.01 rad,
         linear-velocity zero-linvel = 0.0 m/s,
-        linear-velocity compliance-velocity-band = 0.01 m/s,
-        linear-velocity settled-velocity-band = 0.005 m/s,
-        angular-velocity zero-angvel = 0.0 rad/s,
-        angular-velocity settled-angular-velocity-band = 0.01 rad/s,
         linear-velocity descend-vel = -0.05 m/s,
         force press-force = -5.0 N,
         force press-band = 0.5 N,
-        force force-threshold = 10.0 N,
-        force neg-force-threshold = -10.0 N,
-        length comply-int-max = 0.02 m,
-        length neg-comply-int-max = -0.02 m,
         angle gripper-closed  = 0.8 rad,
-        angle gripper-open    = 0.0 rad,
-        angle grasp-threshold = 0.65 rad
+        angle gripper-open    = 0.0 rad
     }
 }
 
@@ -191,6 +132,21 @@ guarded-motion (ns=app) look {
         <shared.spec>,
         spec {
             pose start = snapshot of <shared.world.pose-ee-base>,
+            // The pre-touchdown station: the handle says where in the plane, home how high.
+            length approach-standoff-y = 0.12 m,
+            length approach-y = snapshot of <shared.world.pose-handle-base>.position.y + <spec.approach-standoff-y>,
+            pose touch-approach {
+                of:         <gripper.g_base.g_pinch>,
+                wrt:        <kinova.base_link.base_link_origin>,
+                as-seen-by: <kinova.base_link.base_link_origin>
+            } = {
+                position: (<shared.spec.handle-x>, <spec.approach-y>, <shared.spec.home-pose>.position.z) m,
+                // Facing the handle: its own orientation flipped back at it.
+                orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (1.5707963267948966, 0.0, 3.141592653589793) rad }
+            },
+            // Path constraints do not pin where along the path a motion stops.
+            length arrival-band = 0.02 m,
+            angle arrival-angle-band = 0.02 rad,
             velocity-profile speed-profile = profile {
                 max-velocity: 0.14 m/s,
                 max-acceleration: 0.20 m/s^2,
@@ -200,7 +156,7 @@ guarded-motion (ns=app) look {
             distance arc-height = 0.336836 m,
             path trajectory = arc {
                 start: <spec.start>,
-                end: <shared.spec.touch-approach>,
+                end: <spec.touch-approach>,
                 amplitude: <spec.arc-height>,
                 plane-normal: <spec.plane-normal>
             }
@@ -218,11 +174,11 @@ guarded-motion (ns=app) look {
 
     until all {
         tcp-position:
-            <shared.world.pose-ee-base>.position equal to <shared.spec.touch-approach>.position
-            within <shared.spec.arrival-band>,
+            <shared.world.pose-ee-base>.position equal to <spec.touch-approach>.position
+            within <spec.arrival-band>,
         tcp-orientation:
-            <shared.world.pose-ee-base>.orientation equal to <shared.spec.touch-approach>.orientation
-            within <shared.spec.arrival-angle-band>
+            <shared.world.pose-ee-base>.orientation equal to <spec.touch-approach>.orientation
+            within <spec.arrival-angle-band>
     }
 }
 
@@ -295,6 +251,21 @@ guarded-motion (ns=app) forward {
 
     context {
         spec {
+            // The grasp is reached 59 mm into the handle, so it is stated from the handle.
+            length grasp-reach = 0.059 m,
+            length grasp-y = snapshot of <shared.world.pose-handle-base>.position.y - <spec.grasp-reach>,
+            // The push target: past the handle by the reach, at the handle's own height.
+            length forward-reach = 0.065 m,
+            length forward-y = snapshot of <shared.world.pose-handle-base>.position.y - <spec.forward-reach>,
+            length handle-z = snapshot of <shared.world.pose-handle-base>.position.z,
+            pose forward-target {
+                of:         <gripper.g_base.g_pinch>,
+                wrt:        <kinova.base_link.base_link_origin>,
+                as-seen-by: <kinova.base_link.base_link_origin>
+            } = {
+                position: (<shared.spec.handle-x>, <spec.forward-y>, <spec.handle-z>) m,
+                orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (1.5707963267948966, 0.0, 3.141592653589793) rad }
+            },
             pose forward-start = snapshot of <shared.world.pose-ee-base>
         }
     }
@@ -303,7 +274,7 @@ guarded-motion (ns=app) forward {
 
     while {
         position:
-            keeping <shared.world.pose-ee-base>.position equal to <shared.spec.forward-target>.position,
+            keeping <shared.world.pose-ee-base>.position equal to <spec.forward-target>.position,
         orientation:
             keeping <shared.world.pose-ee-base>.orientation equal to <spec.forward-start>.orientation,
         hold-elbow-angle:
@@ -311,7 +282,7 @@ guarded-motion (ns=app) forward {
     }
 
     until all {
-        reached-handle: <shared.world.pose-ee-base>.position.y less than <shared.spec.grasp-y>,
+        reached-handle: <shared.world.pose-ee-base>.position.y less than <spec.grasp-y>,
         on-table: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>
     }
 }
@@ -322,8 +293,10 @@ guarded-motion (ns=app) lift {
     context {
         spec {
             pose lift-start = snapshot of <shared.world.pose-ee-base>,
-            // Held below what the z loop can track: at 0.20 m/s the setpoint ran ~45 mm ahead
-            // of the arm the whole ramp, so it arrived fast and overshot.
+            // The return arc cannot recover height error, so bound it at the handoff.
+            length transport-height-band = 0.005 m,
+            linear-velocity settled-velocity-band = 0.005 m/s,
+            // At 0.20 m/s the setpoint ran ~45 mm ahead of the arm and overshot.
             velocity-profile lift-profile = profile {
                 max-velocity: 0.10 m/s,
                 max-acceleration: 0.10 m/s^2,
@@ -337,10 +310,7 @@ guarded-motion (ns=app) lift {
     while {
         hold-x: keeping <shared.world.pose-ee-base>.position.x equal to <spec.lift-start>.position.x,
         hold-y: keeping <shared.world.pose-ee-base>.position.y equal to <spec.lift-start>.position.y,
-        // Transport height is home's height: the return arc sweeps about a vertical normal, so
-        // it can only stay exact while both its ends sit at the same z.
-        // The profile lives on this constraint's controller, so the setpoint ramps there under
-        // the velocity and acceleration limits instead of stepping to it.
+        // Transport at home's height: the return arc cannot move along its own plane-normal.
         lift-z: keeping <shared.world.pose-ee-base>.position.z equal to <shared.spec.home-pose>.position.z,
         orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.lift-start>.orientation,
         hold-elbow-angle: keeping <shared.world.elbow-angle> equal to <shared.spec.elbow-angle-target>,
@@ -352,11 +322,10 @@ guarded-motion (ns=app) lift {
             less than <shared.spec.held-distance>
     }
 
-    // At height and no longer rising. The orientation is held throughout by its own while
-    // constraint, so waiting for it to settle here only delays a lift that already finished.
+    // At height and no longer rising; orientation is held by its while constraint, not waited on.
     until all {
-        reached-height: <shared.world.pose-ee-base>.position.z equal to <shared.spec.home-pose>.position.z within <shared.spec.transport-height-band>,
-        stopped-z: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel> within <shared.spec.settled-velocity-band>
+        reached-height: <shared.world.pose-ee-base>.position.z equal to <shared.spec.home-pose>.position.z within <spec.transport-height-band>,
+        stopped-z: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel> within <spec.settled-velocity-band>
     }
 }
 
@@ -365,10 +334,9 @@ guarded-motion (ns=app) return-home {
 
     context {
         spec {
-            // The arc sweeps about return-plane-normal, so it only moves in the plane normal to
-            // it: any chord component along the normal is unreachable and lands as a miss at
-            // the far end. This chord stays horizontal because both ends sit at home's height
-            // -- the same invariant look's arc relies on for touch-approach.
+            force force-threshold = 10.0 N,
+            force neg-force-threshold = -10.0 N,
+            // Chord must stay perpendicular to plane-normal: the arc cannot move along it.
             pose return-start = snapshot of <shared.world.pose-ee-base>,
             velocity-profile return-profile = profile {
                 max-velocity: 0.055 m/s,
@@ -406,15 +374,13 @@ guarded-motion (ns=app) return-home {
             less than <shared.spec.held-distance>,
         force-x:
             <shared.world.ext-force>.force.x
-            outside <shared.spec.neg-force-threshold> and <shared.spec.force-threshold>,
+            outside <spec.neg-force-threshold> and <spec.force-threshold>,
         force-y:
             <shared.world.ext-force>.force.y
-            outside <shared.spec.neg-force-threshold> and <shared.spec.force-threshold>
+            outside <spec.neg-force-threshold> and <spec.force-threshold>
     }
 
-    // Arrival at the pose is the goal, and it is strictly the slowest thing here: the six
-    // per-axis settles were all satisfied before it, with the whole twist well inside its bands
-    // by the time the orientation converged. The monitor's 0.3 s hold covers the rest.
+    // Pose arrival is the slowest term; the per-axis settles all preceded it.
     until all {
         reached-position:
             <shared.world.pose-ee-base>.position equal to <shared.spec.home-pose>.position
@@ -431,6 +397,9 @@ guarded-motion (ns=app) compliance {
     context {
         spec {
             pose hold-orientation = snapshot of <shared.world.pose-ee-base>,
+            linear-velocity compliance-velocity-band = 0.01 m/s,
+            length comply-int-max = 0.02 m,
+            length neg-comply-int-max = -0.02 m,
             admittance velocity-x = {
                 force: <shared.world.ext-force>.force.x,
                 mass: 2.0,
@@ -460,13 +429,13 @@ guarded-motion (ns=app) compliance {
     while {
         comply-x:
             keeping <shared.world.twist-ee-base>.linvel.x equal to <spec.velocity-x>
-            within <shared.spec.compliance-velocity-band>,
+            within <spec.compliance-velocity-band>,
         comply-y:
             keeping <shared.world.twist-ee-base>.linvel.y equal to <spec.velocity-y>
-            within <shared.spec.compliance-velocity-band>,
+            within <spec.compliance-velocity-band>,
         comply-z:
             keeping <shared.world.twist-ee-base>.linvel.z equal to <spec.velocity-z>
-            within <shared.spec.compliance-velocity-band>,
+            within <spec.compliance-velocity-band>,
         comply-ori:
             keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation>.orientation
             within <shared.spec.angle-band>,
@@ -480,8 +449,7 @@ guarded-motion (ns=app) compliance {
             less than <shared.spec.held-distance>
     }
 
-    // The push does not end it: the height does. The human guides the arm down and the
-    // place takes over once the object is within reach of the table.
+    // The height ends it, not the push going away.
     until {
         at-place-height: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>
             within <shared.spec.zero-length>
@@ -493,7 +461,8 @@ guarded-motion (ns=app) hold-close {
 
     context {
         spec {
-            pose hold-close-target = snapshot of <shared.world.pose-ee-base>
+            pose hold-close-target = snapshot of <shared.world.pose-ee-base>,
+            angle grasp-threshold = 0.65 rad
         }
     }
 
@@ -515,7 +484,7 @@ guarded-motion (ns=app) hold-close {
     }
 
     until any {
-        closed: <shared.world.gripper-pos> greater than <shared.spec.grasp-threshold>,
+        closed: <shared.world.gripper-pos> greater than <spec.grasp-threshold>,
         contact-stop: elapsed greater than 0.2 s
     }
 }
@@ -576,9 +545,7 @@ guarded-motion (ns=app) return-idle {
 
     when {}
 
-    // Setpoints, not a path: each axis is driven straight at the idle pose with the profile on
-    // its controller regulating the rate, so the motion ends on the pose rather than wherever
-    // the traversal happened to stop.
+    // Setpoints, not a path: ends on the pose, not wherever a traversal stopped.
     while {
         idle-x: keeping <shared.world.pose-ee-base>.position.x equal to <shared.spec.start-pose>.position.x,
         idle-y: keeping <shared.world.pose-ee-base>.position.y equal to <shared.spec.start-pose>.position.y,
@@ -751,18 +718,13 @@ constraint-handler (ns=app) handler-lift {
             <lift.hold-y>, measured-derivative: <shared.world.twist-ee-base>.linvel.y,
             Kp: 200, Ki: 100, Kd: 40, decay: 0
         },
-        // The integral carries the object's weight, and the model cannot know that weight. What
-        // it can control is where the integral lands: the ramp accumulates ~0.07 of error-time,
-        // while holding needs 4.6/Ki. At Ki 100 that is 0.046, so the ramp winds 52% past the
-        // hold and the excess unwinds as position overshoot. Ki 50 puts the hold requirement
-        // above the ramp's accumulation, so it converges from below for any payload.
+        // Ki 50: at 100 the ramp winds past what the hold needs and the excess is overshoot.
         pid ctrl-lift-z {
             constraint: <lift.lift-z>, profile: <lift.spec.lift-profile>,
             measured-derivative: <shared.world.twist-ee-base>.linvel.z,
             Kp: 200, Ki: 50, Kd: 40, decay: 0
         },
-        // Ki 50 put the integral time at Kp/Ki = 2.4 s, the same order as the 3.7 s mode the
-        // orientation rang at; 12 moves it to ~10 s, clear of it.
+        // Ki 12: at 50 the integral time (Kp/Ki = 2.4 s) sat on the orientation's own 3.7 s mode.
         pid ctrl-lift-orientation {
             <lift.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
             Kp: 120, Ki: 12, Kd: 80, decay: 0
@@ -849,21 +811,21 @@ constraint-handler (ns=app) handler-comply {
         pid ctrl-comply-x {
             constraint: <compliance.comply-x>,
             integral-saturation: saturation {
-                lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
+                lower: <compliance.spec.neg-comply-int-max>, upper: <compliance.spec.comply-int-max>
             },
             Kp: 150, Ki: 800, Kd: 0, decay: 0
         },
         pid ctrl-comply-y {
             constraint: <compliance.comply-y>,
             integral-saturation: saturation {
-                lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
+                lower: <compliance.spec.neg-comply-int-max>, upper: <compliance.spec.comply-int-max>
             },
             Kp: 150, Ki: 800, Kd: 0, decay: 0
         },
         pid ctrl-comply-z {
             constraint: <compliance.comply-z>,
             integral-saturation: saturation {
-                lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
+                lower: <compliance.spec.neg-comply-int-max>, upper: <compliance.spec.comply-int-max>
             },
             Kp: 150, Ki: 800, Kd: 0, decay: 0
         },
@@ -943,8 +905,7 @@ constraint-handler (ns=app) handler-return-idle {
         }
     }
     controllers {
-        // Ki 50 rather than 100, for the reason ctrl-lift-z carries: the ramp accumulates more
-        // error-time than a Ki of 100 needs at rest, and the excess unwinds as overshoot.
+        // Ki 50 for the reason ctrl-lift-z carries.
         pid ctrl-idle-x {
             constraint: <return-idle.idle-x>, profile: <return-idle.spec.speed-profile>,
             measured-derivative: <shared.world.twist-ee-base>.linvel.x,
