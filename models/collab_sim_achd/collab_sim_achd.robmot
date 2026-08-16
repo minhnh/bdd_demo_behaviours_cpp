@@ -59,7 +59,10 @@ context (ns=app) shared {
         wrench ext-force {
             ref-point:  <ft_tree.wrist_ft_body.wrist_ft_site>,
             as-seen-by: <kinova.base_link.base_link_origin>,
-            ft-sensor:  <wrist_ft>
+            ft-sensor:  <wrist_ft>,
+            // The startup tare is taken with an empty gripper, so the carried object reads as a
+            // standing external push. Re-tare once it is held and the arm has stopped rising.
+            re-tare-on: { <collab-coord.E_OBJECT_LIFTED>, <collab-coord.E_OBJ_RELEASED> }
         },
         wrench press-wrench {
             of:         <gripper.g_base.g_pinch>,
@@ -73,6 +76,11 @@ context (ns=app) shared {
         pose start-pose       = snapshot of <shared.world.pose-ee-base>,
         angle elbow-angle-target = pi rad,
         torque elbow-torque-limit = 5.0 Nm,
+        // What the arm can actually deliver (Gen3 large-joint rating). The solve is a
+        // least-squares over the constraints, not a promise the plant can honour them: pushed
+        // toward a singularity it prices a direction it cannot move at whatever torque the
+        // truncated inverse asks for, and the backend writes that into qfrc_applied unclamped.
+        torque arm-torque-limit = 39.0 Nm,
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
         // The drawer does not move before the arc, so a startup sample is the right cadence.
         length handle-x = snapshot of <shared.world.pose-handle-base>.position.x,
@@ -217,7 +225,8 @@ guarded-motion (ns=app) lower {
 
     context {
         spec {
-            pose start-pose = snapshot of <shared.world.pose-ee-base>
+            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            angular-acceleration lower-angular-accel-max = 60.0 rad/s^2
         }
     }
 
@@ -400,26 +409,43 @@ guarded-motion (ns=app) compliance {
             linear-velocity compliance-velocity-band = 0.01 m/s,
             length comply-int-max = 0.02 m,
             length neg-comply-int-max = -0.02 m,
+            // Ceiling on what the tracking loops may ask the solver for. The admittance filter
+            // itself only ever ramps at max-velocity / (mass/damping) = 4.5 m/s^2, so this leaves
+            // the loop ample headroom while keeping a hard shove from demanding an acceleration
+            // no arm can produce -- the solver would price it as a torque the plant integrates
+            // into a diverging state.
+            linear-acceleration comply-accel-max = 20.0 m/s^2,
+            angular-acceleration comply-angular-accel-max = 60.0 rad/s^2,
+            linear-velocity settled-velocity-band = 0.005 m/s,
             admittance velocity-x = {
                 force: <shared.world.ext-force>.force.x,
                 mass: 2.0,
                 damping: 30.0,
                 stiffness: 0.0,
-                max-velocity: 0.30 m/s
+                max-velocity: 0.30 m/s,
+                // sideways nudge, not transport
+                max-excursion: 0.15 m,
+                deadband: 1.0 N
             },
             admittance velocity-y = {
                 force: <shared.world.ext-force>.force.y,
                 mass: 2.0,
                 damping: 30.0,
                 stiffness: 0.0,
-                max-velocity: 0.30 m/s
+                max-velocity: 0.30 m/s,
+                // sideways nudge, not transport
+                max-excursion: 0.15 m,
+                deadband: 1.0 N
             },
             admittance velocity-z = {
                 force: <shared.world.ext-force>.force.z,
                 mass: 2.0,
                 damping: 30.0,
                 stiffness: 0.0,
-                max-velocity: 0.30 m/s
+                max-velocity: 0.30 m/s,
+                // must reach touchdown-z from the transport height
+                max-excursion: 0.40 m,
+                deadband: 1.0 N
             }
         }
     }
@@ -449,10 +475,14 @@ guarded-motion (ns=app) compliance {
             less than <shared.spec.held-distance>
     }
 
-    // The height ends it, not the push going away.
-    until {
+    // The height ends it, not the push going away -- but only once the yield has stopped. The
+    // motion this hands over to holds a pose it snapshots on entry and reads contact off the
+    // vertical velocity; both are nonsense taken from an arm that is still travelling.
+    until all {
         at-place-height: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>
-            within <shared.spec.zero-length>
+            within <shared.spec.zero-length>,
+        settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+            within <spec.settled-velocity-band>
     }
 }
 
@@ -546,6 +576,7 @@ constraint-handler (ns=app) handler-wait {
         arm-solver: serial-chain {
             agent:     <collab-agents.kinova>,
             algorithm: achd,
+            limits     { torque: saturation { max: <shared.spec.arm-torque-limit> } },
             gravity:   (0.0, 0.0, 9.81) m/s^2
         },
         gripper-command-solver: command-forwarding {
@@ -778,6 +809,7 @@ constraint-handler (ns=app) handler-comply {
     controllers {
         pid ctrl-comply-x {
             constraint: <compliance.comply-x>,
+            output-saturation: saturation { max: <compliance.spec.comply-accel-max> },
             integral-saturation: saturation {
                 lower: <compliance.spec.neg-comply-int-max>, upper: <compliance.spec.comply-int-max>
             },
@@ -785,6 +817,7 @@ constraint-handler (ns=app) handler-comply {
         },
         pid ctrl-comply-y {
             constraint: <compliance.comply-y>,
+            output-saturation: saturation { max: <compliance.spec.comply-accel-max> },
             integral-saturation: saturation {
                 lower: <compliance.spec.neg-comply-int-max>, upper: <compliance.spec.comply-int-max>
             },
@@ -792,12 +825,30 @@ constraint-handler (ns=app) handler-comply {
         },
         pid ctrl-comply-z {
             constraint: <compliance.comply-z>,
+            output-saturation: saturation { max: <compliance.spec.comply-accel-max> },
             integral-saturation: saturation {
                 lower: <compliance.spec.neg-comply-int-max>, upper: <compliance.spec.comply-int-max>
             },
             Kp: 150, Ki: 800, Kd: 0, decay: 0
         },
-        pid ctrl-comply-ori { <compliance.comply-ori>, Kp: 120, Ki: 50, Kd: 80, decay: 0 },
+        // The one Cartesian hold that runs while something is actively pushing the arm, which is
+        // what the other two hold-orientation controllers never have to survive.
+        //
+        // Ki is 0 because a push is exactly the disturbance an integrator must not chase: the
+        // orientation sits off its snapshot for as long as the person is leaning on the arm, and
+        // Ki 50 against a 0.3 rad offset climbs past 180 rad/s^2 inside ten seconds with nothing
+        // in the law that ever stops it. Yielding and holding the yield is the motion.
+        //
+        // The D term reads the measured angular velocity rather than differencing its own error,
+        // which is the same derivative without the 1 kHz noise gain: encoder jitter of 1e-4 rad
+        // alone swings (e - e_last)/dt by 32 rad/s^2. Kp and Kd are the pair the standalone
+        // admittance model already runs this motion at.
+        pid ctrl-comply-ori {
+            constraint: <compliance.comply-ori>,
+            measured-derivative: <shared.world.twist-ee-base>.angvel,
+            output-saturation: saturation { max: <compliance.spec.comply-angular-accel-max> },
+            Kp: 240, Ki: 0, Kd: 160, decay: 0
+        },
         feed-forward ctrl-comply-gripper { <compliance.close-gripper> },
         pid ctrl-comply-elbow {
             constraint: <compliance.hold-elbow-angle>,
@@ -826,7 +877,15 @@ constraint-handler (ns=app) handler-lower {
         pid ctrl-lower-x   { <lower.hold-x>,   Kp: 80,  Ki: 20, Kd: 25, decay: 0 },
         pid ctrl-lower-y   { <lower.hold-y>,   Kp: 80,  Ki: 20, Kd: 25, decay: 0 },
         pid ctrl-lower-z   { <lower.lower-z>,  Kp: 200, Ki: 0,  Kd: 0,  decay: 0 },
-        pid ctrl-lower-ori { <lower.hold-ori>, Kp: 120, Ki: 50, Kd: 80, decay: 0 },
+        // Reached from compliance, so it can be entered with a person's hand still on the arm:
+        // same treatment as ctrl-comply-ori. Differencing a rotation vector at 1 kHz amplifies
+        // jitter, and Ki against an offset a hand is holding open climbs for as long as it lasts.
+        pid ctrl-lower-ori {
+            constraint: <lower.hold-ori>,
+            measured-derivative: <shared.world.twist-ee-base>.angvel,
+            output-saturation: saturation { max: <lower.spec.lower-angular-accel-max> },
+            Kp: 240, Ki: 0, Kd: 160, decay: 0
+        },
         feed-forward ctrl-lower-gripper { <lower.close-gripper> },
         pid ctrl-lower-elbow {
             constraint: <lower.hold-elbow-angle>, output-saturation: saturation {
