@@ -46,8 +46,7 @@ fsm (ns=collab-coord) collab_demo_fsm {
     transitions {
         T_START_WAIT { from: <S_START>, to: <S_WAIT> },
         T_WAIT_LOOK { from: <S_WAIT>,  to: <S_LOOK> },
-        T_LOOK_ALIGN { from: <S_LOOK>,  to: <S_TOUCH_ALIGN> },
-        T_ALIGN_TOUCH { from: <S_TOUCH_ALIGN>,  to: <S_TOUCH> },
+        T_LOOK_TOUCH { from: <S_LOOK>,  to: <S_TOUCH> },
         T_TOUCH_SLIDE { from: <S_TOUCH>,  to: <S_SLIDE> },
         T_SLIDE_CLOSE { from: <S_SLIDE>,    to: <S_CLOSE> },
         T_CLOSE_LIFT { from: <S_CLOSE>,    to: <S_LIFT> },
