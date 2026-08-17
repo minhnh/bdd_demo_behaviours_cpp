@@ -49,7 +49,8 @@ context (ns=app) shared {
         wrench ext-force {
             ref-point:  <ft_tree.wrist_ft_body.wrist_ft_site>,
             as-seen-by: <kinova.base_link.base_link_origin>,
-            ft-sensor:  <wrist_ft>
+            ft-sensor:  <wrist_ft>,
+            re-tare-on: { <collab-coord.E_OBJECT_LIFTED>, <collab-coord.E_OBJ_RELEASED> }
         }
     },
     spec {
@@ -71,7 +72,7 @@ context (ns=app) shared {
         length touchdown-z          = 0.1 m,
         length slide-target-y       = -0.8 m,
         length lift-height-z        = 0.2 m,
-        length transport-position-band = 1.0 m,
+        length transport-position-band = 0.3 m,
         angle joint-3-target        = 3.14 rad,
         angle joint-7-target        = 1.57 rad,
         angle joint-4-upper-limit   = -45.0 deg,
@@ -79,8 +80,8 @@ context (ns=app) shared {
         angle joint-6-upper-limit   = 116.0 deg,
         angle joint-6-lower-limit   = -117.0 deg,
         linear-velocity compliance-velocity-band = 0.01 m/s,
-        force force-threshold = 10.0 N,
-        force neg-force-threshold = -10.0 N,
+        force force-threshold = 75.0 N,
+        force neg-force-threshold = -75.0 N,
         force release-threshold = 3.0 N,
         force neg-release-threshold = -3.0 N,
         length comply-int-max = 0.02 m,
@@ -228,49 +229,6 @@ constraint-handler (ns=app) handler-go-look {
         pid ctrl-look-joint-3 { constraint: <go-look.hold-elbow>,                    Kp: 200, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-look-joint-4-range { constraint: <go-look.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-look-joint-6-range { constraint: <go-look.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
-    }
-    solvers { <handler-hold-wait.arm-solver> }
-}
-
-
-guarded-motion (ns=app) touch-align {
-    description: "Realign TCP orientation to match the table's surface normal"
-
-    context {
-        spec {
-            pose touchdown-start-pose = snapshot of <shared.world.pose-ee-base>
-        }
-    }
-
-    when {}
-
-    while {
-        touch-align-position: keeping <shared.world.pose-ee-base>.position equal to <spec.touchdown-start-pose>.position,
-        touch-align-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <shared.spec.touch_align_pose>.orientation,
-        hold-elbow: keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
-        joint-4-range: <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
-        joint-6-range: <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
-    }
-
-    until all {
-        at-touch-reorient-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.touch_align_pose>.orientation
-    }
-}
-
-constraint-handler (ns=app) handler-touch-align {
-    handles: <touch-align>
-    runs-in: <collab-coord.S_TOUCH_ALIGN>
-    monitors {
-        mon-opened: monitor <touch-align.until> {
-            satisfied for 0.5 s { trigger: event <collab-coord.E_TABLE_TOUCH_REORIENTED> },
-        }
-    }
-    controllers {
-        pid ctrl-touch-align-orient-position { constraint: <touch-align-position>,              Kp: 500, Ki: 20, Kd: 100, decay: 0 },
-        impedance ctrl-touch-align-ori { constraint: <touch-align-orientation>, stiffness: 35, damping: 2 } apply at <gripper.g_base>,
-        pid ctrl-touch-align-joint-3 { constraint: <touch-align.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
-        pid ctrl-touch-align-joint-4-range { constraint: <touch-align.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
-        pid ctrl-touch-align-joint-6-range { constraint: <touch-align.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
     }
     solvers { <handler-hold-wait.arm-solver> }
 }
@@ -506,7 +464,8 @@ guarded-motion (ns=app) go-pre-place {
                 end:          <shared.spec.pre-placement-pose>,
                 amplitude:    <spec.arc-height>,
                 plane-normal: <spec.path-normal>
-            }
+            },
+            length pos-z-band = 0.05 m
         }
     }
 
@@ -526,9 +485,9 @@ guarded-motion (ns=app) go-pre-place {
     }
 
     until all {
-        at-go-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z,
         at-go-pre-place-position-x: <shared.world.pose-ee-base>.position.x equal to <shared.spec.pre-placement-pose>.position.x within <shared.spec.transport-position-band>,
-        at-go-pre-place-position-y: <shared.world.pose-ee-base>.position.y equal to <shared.spec.pre-placement-pose>.position.y within <shared.spec.transport-position-band>
+        at-go-pre-place-position-y: <shared.world.pose-ee-base>.position.y equal to <shared.spec.pre-placement-pose>.position.y within <shared.spec.transport-position-band>,
+        at-go-pre-place-position-z: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z within <spec.pos-z-band>
     }
 }
 
@@ -536,12 +495,12 @@ constraint-handler (ns=app) handler-go-pre-place {
     handles: <go-pre-place>
     runs-in: <collab-coord.S_TRANSPORT>
     monitors {
-        //mon-force-x: monitor <go-pre-place.force-x> {
-        //    satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
-        //},
-        //mon-force-y: monitor <go-pre-place.force-y> {
-        //    satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
-        //},
+        mon-force-x: monitor <go-pre-place.force-x> {
+            satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
+        },
+        mon-force-y: monitor <go-pre-place.force-y> {
+            satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
+        },
         mon-opened: monitor <go-pre-place.until> {
             satisfied for 0.1 s { trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT> },
         }
@@ -564,27 +523,33 @@ guarded-motion (ns=app) compliance {
 
     context {
         spec {
-            pose hold-orientation = snapshot of <shared.world.pose-ee-base>,
+            pose compliance_start_pose = snapshot of <shared.world.pose-ee-base>,
             admittance velocity-x = {
                 force: <shared.world.ext-force>.force.x,
                 mass: 2.0,
-                damping: 30.0,
+                damping: 10.0,
                 stiffness: 0.0,
-                max-velocity: 0.30 m/s
+                max-velocity: 0.02 m/s,
+                max-excursion: 0.05 m,
+                deadband: 5.0 N
             },
             admittance velocity-y = {
                 force: <shared.world.ext-force>.force.y,
                 mass: 2.0,
-                damping: 30.0,
+                damping: 10.0,
                 stiffness: 0.0,
-                max-velocity: 0.30 m/s
+                max-velocity: 0.02 m/s,
+                max-excursion: 0.05 m,
+                deadband: 5.0 N
             },
             admittance velocity-z = {
                 force: <shared.world.ext-force>.force.z,
                 mass: 2.0,
-                damping: 30.0,
+                damping: 10.0,
                 stiffness: 0.0,
-                max-velocity: 0.30 m/s
+                max-velocity: 0.02 m/s,
+                max-excursion: 0.05 m,
+                deadband: 5.0 N
             }
         }
     }
@@ -601,7 +566,8 @@ guarded-motion (ns=app) compliance {
         comply-z:
             keeping <shared.world.twist-ee-base>.linvel.z equal to <spec.velocity-z>
             within <shared.spec.compliance-velocity-band>,
-        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.hold-orientation>.orientation,
+        hold-comply-ori-x: keeping <shared.world.pose-ee-base>.orientation.x equal to <spec.compliance_start_pose>.orientation.x,
+        hold-comply-ori-y: keeping <shared.world.pose-ee-base>.orientation.y equal to <spec.compliance_start_pose>.orientation.y,
         hold-elbow:    keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
         joint-4-range: <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
         joint-6-range: <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>,
@@ -609,13 +575,7 @@ guarded-motion (ns=app) compliance {
     }
 
     until all {
-        below-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z,
-        released-x: <shared.world.ext-force>.force.x
-            between <shared.spec.neg-release-threshold> and <shared.spec.release-threshold>,
-        released-y: <shared.world.ext-force>.force.y
-            between <shared.spec.neg-release-threshold> and <shared.spec.release-threshold>,
-        released-z: <shared.world.ext-force>.force.z
-            between <shared.spec.neg-release-threshold> and <shared.spec.release-threshold>
+        below-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z
     }
 }
 
@@ -633,25 +593,25 @@ constraint-handler (ns=app) handler-compliance {
             integral-saturation: saturation {
                 lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
             },
-            Kp: 150, Ki: 800, Kd: 0, decay: 0
+            Kp: 150, Ki: 10, Kd: 0, decay: 0
         },
         pid ctrl-comply-y {
             constraint: <compliance.comply-y>,
             integral-saturation: saturation {
                 lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
             },
-            Kp: 150, Ki: 800, Kd: 0, decay: 0
+            Kp: 150, Ki: 10, Kd: 0, decay: 0
         },
         pid ctrl-comply-z {
             constraint: <compliance.comply-z>,
             integral-saturation: saturation {
                 lower: <shared.spec.neg-comply-int-max>, upper: <shared.spec.comply-int-max>
             },
-            Kp: 150, Ki: 800, Kd: 0, decay: 0
+            Kp: 150, Ki: 10, Kd: 0, decay: 0
         },
         feed-forward ctrl-comply-gripper { <compliance.close-gripper> },
-
-        impedance ctrl-comply-ori { constraint: <compliance.hold-orientation>, stiffness: 25, damping: 5 } apply at <gripper.g_base>,
+        impedance ctrl-comply-ori-x { constraint: <compliance.hold-comply-ori-x>, stiffness: 25, damping: 5 } apply at <gripper.g_base>,
+        impedance ctrl-comply-ori-y { constraint: <compliance.hold-comply-ori-y>, stiffness: 25, damping: 5 } apply at <gripper.g_base>,
         pid ctrl-comply-joint-3 { constraint: <compliance.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-comply-joint-4-range { constraint: <compliance.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-comply-joint-6-range { constraint: <compliance.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
