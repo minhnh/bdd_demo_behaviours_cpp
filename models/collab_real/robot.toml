@@ -39,11 +39,7 @@ rate  = 100.0
 #orientation = [1.57, 0.00000, 1.57]
 
 [poses.look-table]
-position = [-0.34, -0.7, 0.35]
-orientation = [1.57, 0.0, 0]
-
-[poses.touch-align]
-position = [-0.34, -0.7, 0.35]
+position = [-0.34, -0.7, 0.4]
 orientation = [1.57, 0.0, 0]
 
 [poses.pre-placement-pose]
