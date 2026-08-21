@@ -46,13 +46,13 @@ context (ns=app) shared {
             ref-point:  <ft_tree.wrist_ft_body.wrist_ft_site>,
             as-seen-by: <kinova.base_link.base_link_origin>,
             ft-sensor:  <wrist_ft>,
-            re-tare-on: { <collab-coord.E_OBJECT_LIFTED>, <collab-coord.E_OBJ_RELEASED> }
+            re-tare-on: { <collab-coord.E_RUN_STARTED>, <collab-coord.E_OBJECT_LIFTED>, <collab-coord.E_OBJ_RELEASED> }
         }
     },
     spec {
         // Shared, not per motion: the two states alternate, and a target re-captured on each
         // entry would follow the standing error and walk the hold away from where it began.
-        pose start-pose             = snapshot of <shared.world.pose-ee-base>,
+        pose start-pose             = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_RUN_STARTED>,
         pose look-table             = [config.poses.look-table] for <shared.world.pose-ee-base>,
         pose touch_align_pose       = [config.poses.touch-align] for <shared.world.pose-ee-base>,
         pose pre-placement-pose     = [config.poses.pre-placement-pose] for <shared.world.pose-ee-base>,
@@ -177,7 +177,7 @@ guarded-motion (ns=app) go-look {
             // Arc deviation from the straight chord
             distance arc-height = 0.35 m,
 
-            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            pose start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_LOOK_ENTERED>,
 
             path go-look-arc-path = arc {
                 start:        <spec.start-pose>,
@@ -233,9 +233,9 @@ guarded-motion (ns=app) touchdown {
 
     context {
         spec {
-            pose touchdown-start-pose = snapshot of <shared.world.pose-ee-base>,
-            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x,
-            length hold-y = snapshot of <shared.world.pose-ee-base>.position.y
+            pose touchdown-start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_PICK_START>,
+            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x on event <collab-coord.E_PICK_START>,
+            length hold-y = snapshot of <shared.world.pose-ee-base>.position.y on event <collab-coord.E_PICK_START>
         }
     }
 
@@ -284,8 +284,8 @@ guarded-motion (ns=app) forward_motion {
 
     context {
         spec {
-            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x,
-            pose target-pose = snapshot of <shared.world.pose-ee-base>
+            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x on event <collab-coord.E_SLIDE_ENTERED>,
+            pose target-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_SLIDE_ENTERED>
         }
     }
 
@@ -336,7 +336,7 @@ guarded-motion (ns=app) hold-close {
 
     context {
         spec {
-            pose target-pose = snapshot of <shared.world.pose-ee-base>
+            pose target-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_CLOSE_ENTERED>
         }
     }
 
@@ -390,9 +390,9 @@ guarded-motion (ns=app) lift-up {
 
     context {
         spec {
-            pose lift-up-start-pose = snapshot of <shared.world.pose-ee-base>,
-            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x,
-            length hold-y = snapshot of <shared.world.pose-ee-base>.position.y
+            pose lift-up-start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_LIFT_ENTERED>,
+            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x on event <collab-coord.E_LIFT_ENTERED>,
+            length hold-y = snapshot of <shared.world.pose-ee-base>.position.y on event <collab-coord.E_LIFT_ENTERED>
         }
     }
 
@@ -451,7 +451,7 @@ guarded-motion (ns=app) go-pre-place {
             // Arc deviation from the straight chord
             distance arc-height = 0.4 m,
 
-            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            pose start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_PICK_END>,
 
             path pre-place-arc-path = arc {
                 start:        <spec.start-pose>,
@@ -517,7 +517,7 @@ guarded-motion (ns=app) compliance {
 
     context {
         spec {
-            pose compliance_start_pose = snapshot of <shared.world.pose-ee-base>,
+            pose compliance_start_pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_COMPLIANCE_ENTERED>,
             admittance velocity-x = {
                 force: <shared.world.ext-force>.force.x,
                 mass: 2.0,
@@ -623,9 +623,9 @@ guarded-motion (ns=app) place-down {
 
     context {
         spec {
-            pose place-down-start-pose = snapshot of <shared.world.pose-ee-base>,
-            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x,
-            length hold-y = snapshot of <shared.world.pose-ee-base>.position.y
+            pose place-down-start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_PLACE_START>,
+            length hold-x = snapshot of <shared.world.pose-ee-base>.position.x on event <collab-coord.E_PLACE_START>,
+            length hold-y = snapshot of <shared.world.pose-ee-base>.position.y on event <collab-coord.E_PLACE_START>
         }
     }
 
@@ -673,7 +673,7 @@ guarded-motion (ns=app) hold-open {
 
     context {
         spec {
-            pose target-pose = snapshot of <shared.world.pose-ee-base>
+            pose target-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_OPEN_ENTERED>
         }
     }
 

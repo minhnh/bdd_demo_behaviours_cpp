@@ -59,7 +59,7 @@ guarded-motion (ns=app) watch-anchor {
 
     context {
         spec {
-            pose anchor-ref = snapshot of <shared.world.pose-table-anchor-cam>
+            pose anchor-ref = snapshot of <shared.world.pose-table-anchor-cam> on event <rpt.E_HOLD_ENTERED>
         }
     }
 

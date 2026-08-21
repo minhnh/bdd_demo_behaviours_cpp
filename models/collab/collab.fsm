@@ -2,6 +2,13 @@ ns collab-coord='https://secorolab.github.io/models/demos/collab/coordination/'
 
 evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_STEP,
+    evt E_RUN_STARTED,
+    evt E_LOOK_ENTERED,
+    evt E_SLIDE_ENTERED,
+    evt E_CLOSE_ENTERED,
+    evt E_LIFT_ENTERED,
+    evt E_COMPLIANCE_ENTERED,
+    evt E_OPEN_ENTERED,
     evt E_GOAL,
     evt E_OBJ_LOCATED,
     evt E_TABLE_TOUCHED,
@@ -60,25 +67,30 @@ fsm (ns=collab-coord) collab_demo_fsm {
 
     reactions {
         R_STEP_START {
-            when: <collab_demo_fsm_events.E_STEP>, do: <T_START_WAIT>
+            when: <collab_demo_fsm_events.E_STEP>, do: <T_START_WAIT>,
+            fires { <collab_demo_fsm_events.E_RUN_STARTED> }
         },
         R_GOAL {
             when: <collab_demo_fsm_events.E_GOAL>,
-            do: <T_WAIT_LOOK>
+            do: <T_WAIT_LOOK>,
+            fires { <collab_demo_fsm_events.E_LOOK_ENTERED> }
         },
         R_OBJ_LOCATED {
             when: <collab_demo_fsm_events.E_OBJ_LOCATED>, do: <T_LOOK_TOUCH>,
             fires { <collab_demo_fsm_events.E_PICK_START> }
         },
         R_TABLE_TOUCHED_PICK {
-            when: <collab_demo_fsm_events.E_TABLE_TOUCHED>, do: <T_TOUCH_SLIDE>
+            when: <collab_demo_fsm_events.E_TABLE_TOUCHED>, do: <T_TOUCH_SLIDE>,
+            fires { <collab_demo_fsm_events.E_SLIDE_ENTERED> }
         },
         R_OBJ_REACHED {
-            when: <collab_demo_fsm_events.E_OBJ_REACHED>, do: <T_SLIDE_CLOSE>
+            when: <collab_demo_fsm_events.E_OBJ_REACHED>, do: <T_SLIDE_CLOSE>,
+            fires { <collab_demo_fsm_events.E_CLOSE_ENTERED> }
         },
         R_OBJ_GRASPED {
             when: <collab_demo_fsm_events.E_OBJ_GRASPED>, 
-            do: <T_CLOSE_LIFT>
+            do: <T_CLOSE_LIFT>,
+            fires { <collab_demo_fsm_events.E_LIFT_ENTERED> }
         },
         R_OBJECT_LIFTED {
             when: <collab_demo_fsm_events.E_OBJECT_LIFTED>, 
@@ -87,7 +99,8 @@ fsm (ns=collab-coord) collab_demo_fsm {
         },
         R_INTERACTION_DETECTED {
             when: <collab_demo_fsm_events.E_INTERACTION_DETECTED>, 
-            do: <T_TRANSPORT_COMPLIANCE>
+            do: <T_TRANSPORT_COMPLIANCE>,
+            fires { <collab_demo_fsm_events.E_COMPLIANCE_ENTERED> }
         },
         R_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT {
             when: <collab_demo_fsm_events.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT>, 
@@ -102,7 +115,7 @@ fsm (ns=collab-coord) collab_demo_fsm {
         R_REACHED_PLACEMENT_POSE {
             when: <collab_demo_fsm_events.E_REACHED_PLACEMENT_POSE>, 
             do: <T_PLACE_DOWN_OPEN>,
-            fires { <collab_demo_fsm_events.E_PLACE_END> }
+            fires { <collab_demo_fsm_events.E_PLACE_END>, <collab_demo_fsm_events.E_OPEN_ENTERED> }
         },
         R_OBJ_RELEASED {
             when: <collab_demo_fsm_events.E_OBJ_RELEASED>, 

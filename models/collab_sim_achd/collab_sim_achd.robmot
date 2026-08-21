@@ -62,7 +62,7 @@ context (ns=app) shared {
             ft-sensor:  <wrist_ft>,
             // The startup tare is taken with an empty gripper, so the carried object reads as a
             // standing external push. Re-tare once it is held and the arm has stopped rising.
-            re-tare-on: { <collab-coord.E_OBJECT_LIFTED>, <collab-coord.E_OBJ_RELEASED> }
+            re-tare-on: { <collab-coord.E_RUN_STARTED>, <collab-coord.E_OBJECT_LIFTED>, <collab-coord.E_OBJ_RELEASED> }
         },
         wrench press-wrench {
             of:         <gripper.g_base.g_pinch>,
@@ -73,7 +73,7 @@ context (ns=app) shared {
     spec {
         // Shared, not per motion: the two states alternate, and a target re-captured on each
         // entry would follow the standing error and walk the hold away from where it began.
-        pose start-pose       = snapshot of <shared.world.pose-ee-base>,
+        pose start-pose       = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_RUN_STARTED>,
         angle elbow-angle-target = pi rad,
         torque elbow-torque-limit = 5.0 Nm,
         // What the arm can actually deliver (Gen3 large-joint rating). The solve is a
@@ -83,8 +83,8 @@ context (ns=app) shared {
         torque arm-torque-limit = 39.0 Nm,
         pose home-pose = [config.poses.home] for <shared.world.pose-ee-base>,
         // The drawer does not move before the arc, so a startup sample is the right cadence.
-        length handle-x = snapshot of <shared.world.pose-handle-base>.position.x,
-        pose handle-pose = snapshot of <shared.world.pose-handle-base>,
+        length handle-x = snapshot of <shared.world.pose-handle-base>.position.x on event <collab-coord.E_RUN_STARTED>,
+        pose handle-pose = snapshot of <shared.world.pose-handle-base> on event <collab-coord.E_RUN_STARTED>,
         length touchdown-z = 0.1 m,
         // A gate stating no band inherits the position tolerance and turns two-sided.
         length zero-length = 0.0 m,
@@ -139,10 +139,10 @@ guarded-motion (ns=app) look {
     context {
         <shared.spec>,
         spec {
-            pose start = snapshot of <shared.world.pose-ee-base>,
+            pose start = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_LOOK_ENTERED>,
             // The pre-touchdown station: the handle says where in the plane, home how high.
             length approach-standoff-y = 0.12 m,
-            length approach-y = snapshot of <shared.world.pose-handle-base>.position.y + <spec.approach-standoff-y>,
+            length approach-y = snapshot of <shared.world.pose-handle-base>.position.y + <spec.approach-standoff-y> on event <collab-coord.E_LOOK_ENTERED>,
             pose touch-approach {
                 of:         <gripper.g_base.g_pinch>,
                 wrt:        <kinova.base_link.base_link_origin>,
@@ -195,7 +195,7 @@ guarded-motion (ns=app) touchdown {
 
     context {
         spec {
-            pose start-pose = snapshot of <shared.world.pose-ee-base>
+            pose start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_PICK_START>
         }
     }
 
@@ -225,7 +225,7 @@ guarded-motion (ns=app) lower {
 
     context {
         spec {
-            pose start-pose = snapshot of <shared.world.pose-ee-base>,
+            pose start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_PLACE_START>,
             angular-acceleration lower-angular-accel-max = 60.0 rad/s^2
         }
     }
@@ -262,11 +262,11 @@ guarded-motion (ns=app) forward {
         spec {
             // The grasp is reached 59 mm into the handle, so it is stated from the handle.
             length grasp-reach = 0.059 m,
-            length grasp-y = snapshot of <shared.world.pose-handle-base>.position.y - <spec.grasp-reach>,
+            length grasp-y = snapshot of <shared.world.pose-handle-base>.position.y - <spec.grasp-reach> on event <collab-coord.E_SLIDE_ENTERED>,
             // The push target: past the handle by the reach, at the handle's own height.
             length forward-reach = 0.065 m,
-            length forward-y = snapshot of <shared.world.pose-handle-base>.position.y - <spec.forward-reach>,
-            length handle-z = snapshot of <shared.world.pose-handle-base>.position.z,
+            length forward-y = snapshot of <shared.world.pose-handle-base>.position.y - <spec.forward-reach> on event <collab-coord.E_SLIDE_ENTERED>,
+            length handle-z = snapshot of <shared.world.pose-handle-base>.position.z on event <collab-coord.E_SLIDE_ENTERED>,
             pose forward-target {
                 of:         <gripper.g_base.g_pinch>,
                 wrt:        <kinova.base_link.base_link_origin>,
@@ -275,7 +275,7 @@ guarded-motion (ns=app) forward {
                 position: (<shared.spec.handle-x>, <spec.forward-y>, <spec.handle-z>) m,
                 orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (pi/2, 0.0, pi) rad }
             },
-            pose forward-start = snapshot of <shared.world.pose-ee-base>
+            pose forward-start = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_SLIDE_ENTERED>
         }
     }
 
@@ -301,7 +301,7 @@ guarded-motion (ns=app) lift {
 
     context {
         spec {
-            pose lift-start = snapshot of <shared.world.pose-ee-base>,
+            pose lift-start = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_LIFT_ENTERED>,
             // The return arc cannot recover height error, so bound it at the handoff.
             length transport-height-band = 0.005 m,
             linear-velocity settled-velocity-band = 0.005 m/s,
@@ -346,7 +346,7 @@ guarded-motion (ns=app) return-home {
             force force-threshold = 10.0 N,
             force neg-force-threshold = -10.0 N,
             // Chord must stay perpendicular to plane-normal: the arc cannot move along it.
-            pose return-start = snapshot of <shared.world.pose-ee-base>,
+            pose return-start = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_PICK_END>,
             velocity-profile return-profile = profile {
                 max-velocity: 0.055 m/s,
                 max-acceleration: 0.01 m/s^2,
@@ -405,7 +405,7 @@ guarded-motion (ns=app) compliance {
 
     context {
         spec {
-            pose hold-orientation = snapshot of <shared.world.pose-ee-base>,
+            pose hold-orientation = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_COMPLIANCE_ENTERED>,
             linear-velocity compliance-velocity-band = 0.01 m/s,
             length comply-int-max = 0.02 m,
             length neg-comply-int-max = -0.02 m,
@@ -491,7 +491,7 @@ guarded-motion (ns=app) hold-close {
 
     context {
         spec {
-            pose hold-close-target = snapshot of <shared.world.pose-ee-base>,
+            pose hold-close-target = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_CLOSE_ENTERED>,
             angle grasp-threshold = 0.65 rad
         }
     }
@@ -524,7 +524,7 @@ guarded-motion (ns=app) hold-open {
 
     context {
         spec {
-            pose hold-open-target = snapshot of <shared.world.pose-ee-base>
+            pose hold-open-target = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_OPEN_ENTERED>
         }
     }
 

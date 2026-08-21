@@ -2,6 +2,7 @@ ns rpt = "https://secorolab.github.io/models/real-perception-test/fsm/"
 
 evt loop (ns=rpt) real_perception_test_fsm_events {
     evt E_STEP,
+    evt E_HOLD_ENTERED,
     evt E_ANCHOR_SEEN
 }
 
@@ -26,6 +27,10 @@ fsm (ns=rpt) real_perception_test_fsm {
     }
 
     reactions {
-        R_STEP_START { when: <real_perception_test_fsm_events.E_STEP>, do: <T_START_HOLD> }
+        R_STEP_START {
+            when: <real_perception_test_fsm_events.E_STEP>,
+            do:   <T_START_HOLD>,
+            fires { <real_perception_test_fsm_events.E_HOLD_ENTERED> }
+        }
     }
 }
