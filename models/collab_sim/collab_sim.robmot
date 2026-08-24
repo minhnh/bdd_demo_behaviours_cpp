@@ -74,7 +74,7 @@ context (ns=app) shared {
         force press-band            = 0.5 N,
         length touchdown-z          = 0.1 m,
         length approach-standoff    = 0.12 m,
-        length grasp-reach          = 0.059 m,
+        length grasp-reach          = 0.011 m,
         length lift-height-z        = 0.2 m,
         // A gate stating no band inherits the quantity tolerance and fires a tolerance early.
         length zero-length          = 0.0 m,
@@ -525,8 +525,8 @@ constraint-handler (ns=app) handler-go-pre-place {
     }
     controllers {
         pid ctrl-go-pre-place-tangent { constraint: <go-pre-place.tangent>, Kp: 150, Ki: 5, Kd: 0.1, decay: 0 },
-        pid ctrl-go-pre-place-position { constraint: <go-pre-place.follow-position>,           Kp: 150, Ki: 1, Kd: 0.1, decay: 0 },
-        impedance ctrl-go-pre-place-ori { constraint: <go-pre-place.follow-orientation>, stiffness: 30, damping: 12 } apply at <gripper.g_base>,
+        pid ctrl-go-pre-place-position { constraint: <go-pre-place.follow-position>,           Kp: 150, Ki: 1, Kd: 17, decay: 0 },
+        impedance ctrl-go-pre-place-ori { constraint: <go-pre-place.follow-orientation>, Ki: 20, stiffness: 30, damping: 12 } apply at <gripper.g_base>,
         pid ctrl-go-pre-place-joint-3 { constraint: <go-pre-place.hold-elbow>,                    Kp: 200, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-go-pre-place-joint-4-range { constraint: <go-pre-place.joint-4-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
         pid ctrl-go-pre-place-joint-6-range { constraint: <go-pre-place.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
