@@ -88,13 +88,14 @@ context (ns=app) shared {
 
 ros (ns=app) {
     publishers {
-        ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped"
+        ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
+        bdd-events: topic "/bdd/events" message "bdd_ros2_interfaces/msg/Event",
     },
-    //action-servers {
-    //    collab-bhv: action "/bdd/collab_bhv_server" type "bdd_ros2_interfaces/action/Behaviour" {
-    //        on-goal: produce event <collab-coord.E_GOAL>,
-    //    },
-    //},
+    action-servers {
+        collab-bhv: action "/bdd/collab_bhv_server" type "bdd_ros2_interfaces/action/Behaviour" {
+            on-goal: produce event <collab-coord.E_GOAL>,
+        },
+    },
     always {
         publish at 100.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
     },
@@ -126,24 +127,25 @@ guarded-motion (ns=app) hold-wait {
         joint-6-range:    <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
     }
 
-    until all {
-        settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
-        at-start-position: <shared.world.pose-ee-base>.position equal to <shared.spec.start-pose>.position,
-        at-start-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation,
-        opened: <shared.world.gripper-pos> equal to <shared.spec.gripper-open>
-    }
+    until {}
+    //until all {
+    //    settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+    //    settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+    //    settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
+    //    at-start-position: <shared.world.pose-ee-base>.position equal to <shared.spec.start-pose>.position,
+    //    at-start-orientation: <shared.world.pose-ee-base>.orientation equal to <shared.spec.start-pose>.orientation,
+    //    opened: <shared.world.gripper-pos> equal to <shared.spec.gripper-open>
+    //}
 }
 
 constraint-handler (ns=app) handler-hold-wait {
     handles: <hold-wait>
     runs-in: <collab-coord.S_WAIT>
-    monitors {
-        mon-home-settled: monitor <hold-wait.until> {
-            satisfied for 0.5 s { trigger: event <collab-coord.E_GOAL> }
-        }
-    }
+    //monitors {
+    //    mon-home-settled: monitor <hold-wait.until> {
+    //        satisfied for 0.5 s { trigger: event <collab-coord.E_GOAL> }
+    //    }
+    //}
     controllers {
         pid ctrl-home-position { constraint: <hold-wait.hold-position>,             Kp: 500, Ki: 20, Kd: 100, decay: 0 },
         impedance ctrl-home-ori { constraint: <hold-wait.hold-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
@@ -213,7 +215,10 @@ constraint-handler (ns=app) handler-go-look {
     runs-in: <collab-coord.S_LOOK>
     monitors {
         mon-opened: monitor <go-look.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_OBJ_LOCATED> },
+            satisfied for 0.3 s {
+                trigger: event <collab-coord.E_OBJ_LOCATED>,
+                publish: events { <collab-coord.E_PICK_START> } to <ros.publishers.bdd-events>
+            },
         }
     }
     controllers {
@@ -364,8 +369,9 @@ constraint-handler (ns=app) handler-hold-close {
     runs-in: <collab-coord.S_CLOSE>
     monitors {
         mon-closed: monitor <hold-close.until> {
-            satisfied for 1 s { 
-                    trigger: event <collab-coord.E_OBJ_GRASPED>
+            satisfied for 1 s {
+                trigger: event <collab-coord.E_OBJ_GRASPED>,
+                publish: events { <collab-coord.E_PICK_END> } to <ros.publishers.bdd-events>
             }
         }
     }
@@ -496,7 +502,10 @@ constraint-handler (ns=app) handler-go-pre-place {
             satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
         },
         mon-opened: monitor <go-pre-place.until> {
-            satisfied for 0.1 s { trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT> },
+            satisfied for 0.1 s {
+                trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT>,
+                publish: events { <collab-coord.E_PLACE_START> } to <ros.publishers.bdd-events>
+            },
         }
     }
     controllers {
@@ -578,7 +587,10 @@ constraint-handler (ns=app) handler-compliance {
     runs-in: <collab-coord.S_COMPLIANCE>
     monitors {
         mon-released: monitor <compliance.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE> },
+            satisfied for 0.3 s {
+                trigger: event <collab-coord.E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_COMPLIANCE>,
+                publish: events { <collab-coord.E_PLACE_START> } to <ros.publishers.bdd-events>
+            },
         }
     }
     controllers {
@@ -652,7 +664,10 @@ constraint-handler (ns=app) handler-place-down {
     runs-in: <collab-coord.S_PLACE_DOWN>
     monitors {
         mon-opened: monitor <place-down.until> {
-            satisfied for 0.5 s { trigger: event <collab-coord.E_REACHED_PLACEMENT_POSE> },
+            satisfied for 0.5 s {
+                trigger: event <collab-coord.E_REACHED_PLACEMENT_POSE>,
+                publish: events { <collab-coord.E_PLACE_END> } to <ros.publishers.bdd-events>
+            },
         }
     }
     controllers {
@@ -701,8 +716,9 @@ constraint-handler (ns=app) handler-hold-open {
     runs-in: <collab-coord.S_OPEN>
     monitors {
         mon-closed: monitor <hold-open.until> {
-            satisfied for 1 s { 
-                    trigger: event <collab-coord.E_OBJ_RELEASED>
+            satisfied for 1 s {
+                trigger: event <collab-coord.E_OBJ_RELEASED>,
+                result: succeeded <ros.action-servers.collab-bhv> { result.trinary.value: TRUE }
             }
         }
     }
