@@ -80,7 +80,6 @@ context (ns=app) shared {
         length zero-length          = 0.0 m,
         angle zero-angle            = 0.0 rad,
         length transport-position-band = 0.3 m,
-        length pose-band            = 0.03 m,
         // Gen3 large-joint rating: the least-squares solve is unclamped, so contact can ask for anything.
         torque arm-torque-limit     = 39.0 Nm,
         angle joint-3-target        = 3.14 rad,
