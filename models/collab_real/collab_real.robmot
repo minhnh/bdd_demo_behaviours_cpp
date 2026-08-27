@@ -50,7 +50,7 @@ context (ns=app) shared {
             ref-point:  <ft_tree.wrist_ft_body.wrist_ft_site>,
             as-seen-by: <kinova.base_link.base_link_origin>,
             ft-sensor:  <wrist_ft>,
-            re-tare-on: { <collab-coord.E_RUN_STARTED>, <collab-coord.E_OBJECT_LIFTED>, <collab-coord.E_OBJ_RELEASED> }
+            re-tare-on: { <collab-coord.E_RUN_STARTED>, <collab-coord.E_TARE_ENTERED>, <collab-coord.E_OBJ_RELEASED> }
         }
     },
     spec {
@@ -81,10 +81,12 @@ context (ns=app) shared {
         angle joint-6-upper-limit   = 116.0 deg,
         angle joint-6-lower-limit   = -117.0 deg,
         linear-velocity compliance-velocity-band = 0.01 m/s,
-        force force-threshold = 38.0 N,
+        force force-threshold = 45.0 N,
         force neg-force-threshold = -10.0 N,
         force release-threshold = 3.0 N,
         force neg-release-threshold = -3.0 N,
+        length compliance-y-upper = 0.40 m,
+        length compliance-y-lower = -0.40 m,
         length comply-int-max = 0.02 m,
         length neg-comply-int-max = -0.02 m,
         angle align-cone-hold = 0.05 rad
@@ -449,6 +451,55 @@ constraint-handler (ns=app) handler-lift-up {
 
 
 
+guarded-motion (ns=app) tare-after-lift {
+    description: "Hold the lifted pose while the FT sensor establishes its loaded bias"
+
+    context {
+        spec {
+            pose target-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_TARE_ENTERED>
+        }
+    }
+
+    when {}
+
+    while {
+        close-gripper:    keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>,
+        hold-position:    keeping <shared.world.pose-ee-base>.position equal to <spec.target-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.target-pose>.orientation,
+        hold-elbow:       keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range:    <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range:    <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
+    }
+
+    until {
+        tare-window: elapsed greater than 1.0 s
+    }
+}
+
+constraint-handler (ns=app) handler-tare-after-lift {
+    handles: <tare-after-lift>
+    runs-in: <collab-coord.S_TARE_AFTER_LIFT>
+    monitors {
+        mon-tare-window: monitor <tare-after-lift.until> {
+            satisfied { trigger: event <collab-coord.E_TARE_COMPLETED> }
+        }
+    }
+    controllers {
+        pid ctrl-tare-position { constraint: <tare-after-lift.hold-position>, Kp: 500, Ki: 20, Kd: 100, decay: 0 },
+        feed-forward ctrl-tare-gripper { constraint: <tare-after-lift.close-gripper> },
+        impedance ctrl-tare-ori { constraint: <tare-after-lift.hold-orientation>, stiffness: 25, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-tare-joint-3 { constraint: <tare-after-lift.hold-elbow>, Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-tare-joint-4-range { constraint: <tare-after-lift.joint-4-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-tare-joint-6-range { constraint: <tare-after-lift.joint-6-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
+    }
+    solvers {
+        <handler-hold-wait.arm-solver>,
+        <handler-hold-wait.gripper-command-solver>
+    }
+}
+
+
+
 guarded-motion (ns=app) go-pre-place {
     description: "Follow the Cartesian arc trajectory to pre-placement pose above the table, with near-zero vertical velocity"
 
@@ -584,7 +635,9 @@ guarded-motion (ns=app) compliance {
     }
 
     until all {
-        below-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z
+        below-pre-place-position: <shared.world.pose-ee-base>.position.z less than <shared.spec.pre-placement-pose>.position.z,
+        within-y-range: <shared.world.pose-ee-base>.position.y
+            between <shared.spec.compliance-y-lower> and <shared.spec.compliance-y-upper>
     }
 }
 

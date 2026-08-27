@@ -7,6 +7,8 @@ evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_SLIDE_ENTERED,
     evt E_CLOSE_ENTERED,
     evt E_LIFT_ENTERED,
+    evt E_TARE_ENTERED,
+    evt E_TARE_COMPLETED,
     evt E_COMPLIANCE_ENTERED,
     evt E_OPEN_ENTERED,
     evt E_GOAL,
@@ -38,6 +40,7 @@ fsm (ns=collab-coord) collab_demo_fsm {
         S_SLIDE,
         S_CLOSE,
         S_LIFT,
+        S_TARE_AFTER_LIFT,
         S_TRANSPORT,
         S_COMPLIANCE,
         S_PLACE_DOWN,
@@ -57,7 +60,8 @@ fsm (ns=collab-coord) collab_demo_fsm {
         T_TOUCH_SLIDE { from: <S_TOUCH>,  to: <S_SLIDE> },
         T_SLIDE_CLOSE { from: <S_SLIDE>,    to: <S_CLOSE> },
         T_CLOSE_LIFT { from: <S_CLOSE>,    to: <S_LIFT> },
-        T_LIFT_TRANSPORT { from: <S_LIFT>,    to: <S_TRANSPORT> },
+        T_LIFT_TARE { from: <S_LIFT>, to: <S_TARE_AFTER_LIFT> },
+        T_TARE_TRANSPORT { from: <S_TARE_AFTER_LIFT>, to: <S_TRANSPORT> },
         T_TRANSPORT_COMPLIANCE { from: <S_TRANSPORT>, to: <S_COMPLIANCE> },
         T_TRANSPORT_PLACE_DOWN { from: <S_TRANSPORT>, to: <S_PLACE_DOWN> },
         T_COMPLIANCE_PLACE_DOWN { from: <S_COMPLIANCE>, to: <S_PLACE_DOWN> },
@@ -98,7 +102,12 @@ fsm (ns=collab-coord) collab_demo_fsm {
         },
         R_OBJECT_LIFTED {
             when: <collab_demo_fsm_events.E_OBJECT_LIFTED>, 
-            do: <T_LIFT_TRANSPORT>,
+            do: <T_LIFT_TARE>,
+            fires { <collab_demo_fsm_events.E_TARE_ENTERED> }
+        },
+        R_TARE_COMPLETED {
+            when: <collab_demo_fsm_events.E_TARE_COMPLETED>,
+            do: <T_TARE_TRANSPORT>,
             fires { <collab_demo_fsm_events.E_PICK_END> }
         },
         R_INTERACTION_DETECTED {
