@@ -35,7 +35,7 @@ Scenario Template (ns=collab-bdd) transport-tmpl {
             from <E_PICK_END> until <E_PLACE_START>
         )
         and
-        container-at-dest: holds(<container> is located at <pick-ws>, after <E_PLACE_END>)
+        container-at-dest: holds(<container> is located at <place-ws>, after <E_PLACE_END>)
     )
 }
 
