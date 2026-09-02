@@ -1,0 +1,30 @@
+# MuJoCo reset configurations, in each driven agent's joint order [rad].
+
+[collab-agents.kinova]
+home = [0.0, 0.6021, 3.1416, -2.077, 0.0, 1.104, 1.5708]
+
+[collab-agents.gripper]
+home = [0.0]
+
+[ros.joint_states]
+topic = "/joint_states"
+rate  = 100.0
+
+[ros.clock]
+topic = "/clock"
+rate  = 100.0
+
+# The run bags these to <run>/bag.
+[rosbag]
+topics = [
+    "/bdd/status",
+    "/bdd/events",
+    "/obs_policy/container_not_dropped",
+    "/ee_wrench",
+    "/sim/ground_truth/recognized_objects",
+    "/recognized_objects",
+    "/tf",
+    "/tf_static",
+    "/joint_states",
+    "/clock",
+]
