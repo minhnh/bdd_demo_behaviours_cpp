@@ -94,19 +94,19 @@ obs policy (ns=collab-icra) pick-distance-aruco-policy for <transport-tmpl.pick-
 }
 obs policy (ns=collab-icra) pick-center-gt-policy for <transport-tmpl.pick-center-gt> horizon: 2.0 seconds {
     observations: { <drawer-pose-gt>, <pick-pose-gt> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: wall_ws_center_inside }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: wall_ws_center_inside }
 }
 obs policy (ns=collab-icra) pick-center-aruco-policy for <transport-tmpl.pick-center-aruco> horizon: 2.0 seconds {
     observations: { <drawer-pose-aruco>, <pick-pose-aruco> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: wall_ws_center_inside }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: wall_ws_center_inside }
 }
 obs policy (ns=collab-icra) pick-footprint-gt-policy for <transport-tmpl.pick-footprint-gt> horizon: 2.0 seconds {
     observations: { <drawer-pose-gt>, <pick-pose-gt> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: wall_ws_footprint_inside }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: wall_ws_footprint_inside }
 }
 obs policy (ns=collab-icra) pick-footprint-aruco-policy for <transport-tmpl.pick-footprint-aruco> horizon: 2.0 seconds {
     observations: { <drawer-pose-aruco>, <pick-pose-aruco> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: wall_ws_footprint_inside }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: wall_ws_footprint_inside }
 }
 
 obs policy (ns=collab-icra) place-distance-gt-policy for <transport-tmpl.place-distance-gt> horizon: 2.0 seconds {
@@ -119,19 +119,19 @@ obs policy (ns=collab-icra) place-distance-aruco-policy for <transport-tmpl.plac
 }
 obs policy (ns=collab-icra) place-center-gt-policy for <transport-tmpl.place-center-gt> horizon: 2.0 seconds {
     observations: { <drawer-pose-gt>, <place-pose-gt> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: robot_ws_center_inside }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: robot_ws_center_inside }
 }
 obs policy (ns=collab-icra) place-center-aruco-policy for <transport-tmpl.place-center-aruco> horizon: 2.0 seconds {
     observations: { <drawer-pose-aruco>, <place-pose-aruco> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: robot_ws_center_inside }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: robot_ws_center_inside }
 }
 obs policy (ns=collab-icra) place-footprint-gt-policy for <transport-tmpl.place-footprint-gt> horizon: 2.0 seconds {
     observations: { <drawer-pose-gt>, <place-pose-gt> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: robot_ws_footprint_inside }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: robot_ws_footprint_inside }
 }
 obs policy (ns=collab-icra) place-footprint-aruco-policy for <transport-tmpl.place-footprint-aruco> horizon: 2.0 seconds {
     observations: { <drawer-pose-aruco>, <place-pose-aruco> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: robot_ws_footprint_inside }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: robot_ws_footprint_inside }
 }
 
 obs policy (ns=collab-icra) force-instantaneous-policy for <transport-tmpl.force-instantaneous> {
