@@ -12,8 +12,6 @@ port_real_time        = 10001
 session_timeout_ms    = 60000
 connection_timeout_ms = 2000
 
-# A full path, unlike the FT sensor below: this driver opens the port it is given, where the
-# sensor's resolves the name under /dev/ itself.
 [collab-agents.gripper]
 port          = "/dev/ttyUSB1"
 baudrate      = 115200
@@ -22,12 +20,14 @@ gripper_force_pct = 100
 gripper_speed_pct = 50
 
 [kinova.wrist_ft]
-port          = "ttyUSB0"
+port          = "/dev/ttyUSB0"
 baudrate      = 19200
-timeout_ms    = 1.0
+# The sensor streams every 10 ms; the USB converter's latency timer adds up to 16 ms.
+timeout_ms    = 50.0
+# Room for the driver's own port reopen (about a second) before the loop stops.
+invalid_after_ms = 1000.0
 slave_address = 0x09
 bias_samples  = 100
-invalid_after_ms = 1000.0
 
 # Publishing the driven joints is the deployment's call, not the model's: the section's presence
 # turns it on, and retuning the topic or the rate needs no regeneration.

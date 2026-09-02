@@ -50,16 +50,15 @@ context (ns=app) shared {
             ref-point:  <ft_tree.wrist_ft_body.wrist_ft_site>,
             as-seen-by: <kinova.base_link.base_link_origin>,
             ft-sensor:  <wrist_ft>,
-            re-tare-on: { <collab-coord.E_RUN_STARTED>, <collab-coord.E_OBJECT_LIFTED>, <collab-coord.E_OBJ_RELEASED> }
+            re-tare-on: { <collab-coord.E_RUN_STARTED>, <collab-coord.E_TARE_ENTERED>, <collab-coord.E_OBJ_RELEASED> }
         }
     },
     spec {
         // Shared, not per motion: re-capturing on each entry would walk the hold away.
         pose start-pose             = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_RUN_STARTED>,
         pose touch_align_pose       = [config.poses.touch-align] for <shared.world.pose-ee-base>,
-        pose handle-pose            = snapshot of <shared.world.pose-handle-base> on event <collab-coord.E_RUN_STARTED>,
-        length handle-x             = snapshot of <shared.world.pose-handle-base>.position.x on event <collab-coord.E_RUN_STARTED>,
-        length handle-y             = snapshot of <shared.world.pose-handle-base>.position.y on event <collab-coord.E_RUN_STARTED>,
+        // How old the last detection may be and still be what the look aims at; the detector reports at 2 Hz.
+        duration handle-validity    = 1.0 s,
         pose pre-placement-pose     = [config.poses.pre-placement-pose] for <shared.world.pose-ee-base>,
         angle gripper-closed        = 0.8 rad,
         angle gripper-open          = 0.0 rad,
@@ -102,6 +101,18 @@ ros (ns=app) {
     publishers {
         ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
         bdd-events: topic "/bdd/events" message "bdd_ros2_interfaces/msg/Event",
+    },
+    subscribers {
+        perception-images: topic "/perception/color" message "sensor_msgs/msg/Image" {
+            observes { <collab-scene-simreal.perception> }
+        },
+        rk-images: topic "/rk/color" message "sensor_msgs/msg/Image" {
+            observes { <collab-scene-simreal.rk> }
+        },
+        tray-detections: topic "/recognized_objects" message "vision_msgs/msg/Detection3DArray" {
+            observes { <shared.world.pose-handle-base> }
+            pose from results
+        },
     },
     action-servers {
         collab-bhv: action "/bdd/collab_bhv_server" type "bdd_ros2_interfaces/action/Behaviour" {
@@ -178,17 +189,19 @@ guarded-motion (ns=app) go-look {
 
             distance arc-height = 0.35 m,
 
-            pose start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_LOOK_ENTERED>,
+            pose start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_HANDLE_DETECTED>,
+            pose handle-pose = snapshot of <shared.world.pose-handle-base> on event <collab-coord.E_HANDLE_DETECTED>,
+            length handle-x = snapshot of <shared.world.pose-handle-base>.position.x on event <collab-coord.E_HANDLE_DETECTED>,
 
-            length approach-y = snapshot of <shared.world.pose-handle-base>.position.y + <shared.spec.approach-standoff> on event <collab-coord.E_LOOK_ENTERED>,
+            length approach-y = snapshot of <shared.world.pose-handle-base>.position.y + <shared.spec.approach-standoff> on event <collab-coord.E_HANDLE_DETECTED>,
             pose look-table {
                 of:         <gripper.g_base.g_pinch>,
                 wrt:        <kinova.base_link.base_link_origin>,
                 as-seen-by: <kinova.base_link.base_link_origin>
             } = {
-                position: (<shared.spec.handle-x>, <spec.approach-y>, <shared.spec.start-pose>.position.z) m,
+                position: (<spec.handle-x>, <spec.approach-y>, <shared.spec.start-pose>.position.z) m,
                 // Facing the handle: its own orientation flipped back at it.
-                orientation: <shared.spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (pi/2, 0.0, pi) rad }
+                orientation: <spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (pi/2, 0.0, pi) rad }
             },
 
             path go-look-arc-path = arc {
@@ -200,7 +213,9 @@ guarded-motion (ns=app) go-look {
         }
     }
 
-    when {}
+    when {
+        handle-detected: elapsed since <shared.world.pose-handle-base> observed less than <shared.spec.handle-validity>
+    }
 
     while {
         tangent:            moving <shared.world.pose-ee-base> along <spec.go-look-arc-path> with <spec.speed-profile>,
@@ -224,6 +239,10 @@ constraint-handler (ns=app) handler-go-look {
     handles: <go-look>
     runs-in: <collab-coord.S_LOOK>
     monitors {
+        mon-handle-detected: monitor <go-look.when> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_HANDLE_DETECTED> },
+            violated { hold: <hold-wait> }
+        },
         mon-opened: monitor <go-look.until> {
             satisfied for 0.3 s {
                 trigger: event <collab-coord.E_OBJ_LOCATED>,
@@ -452,6 +471,55 @@ constraint-handler (ns=app) handler-lift-up {
         pid ctrl-lift-up-joint-6-range { constraint: <lift-up.joint-6-range>,           Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
     }
     solvers { <handler-hold-wait.arm-solver> }
+}
+
+
+
+guarded-motion (ns=app) tare-after-lift {
+    description: "Hold the lifted pose while the FT sensor establishes its loaded bias"
+
+    context {
+        spec {
+            pose target-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_TARE_ENTERED>
+        }
+    }
+
+    when {}
+
+    while {
+        close-gripper:    keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>,
+        hold-position:    keeping <shared.world.pose-ee-base>.position equal to <spec.target-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.target-pose>.orientation,
+        hold-elbow:       keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range:    <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range:    <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
+    }
+
+    until {
+        tare-window: elapsed greater than 1.0 s
+    }
+}
+
+constraint-handler (ns=app) handler-tare-after-lift {
+    handles: <tare-after-lift>
+    runs-in: <collab-coord.S_TARE_AFTER_LIFT>
+    monitors {
+        mon-tare-window: monitor <tare-after-lift.until> {
+            satisfied { trigger: event <collab-coord.E_TARE_COMPLETED> }
+        }
+    }
+    controllers {
+        pid ctrl-tare-position { constraint: <tare-after-lift.hold-position>, Kp: 500, Ki: 20, Kd: 100, decay: 0 },
+        feed-forward ctrl-tare-gripper { constraint: <tare-after-lift.close-gripper> },
+        impedance ctrl-tare-ori { constraint: <tare-after-lift.hold-orientation>, stiffness: 30, damping: 12 } apply at <gripper.g_base>,
+        pid ctrl-tare-joint-3 { constraint: <tare-after-lift.hold-elbow>, Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-tare-joint-4-range { constraint: <tare-after-lift.joint-4-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-tare-joint-6-range { constraint: <tare-after-lift.joint-6-range>, Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
+    }
+    solvers {
+        <handler-hold-wait.arm-solver>,
+        <handler-hold-wait.gripper-command-solver>
+    }
 }
 
 

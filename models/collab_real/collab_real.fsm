@@ -12,6 +12,7 @@ evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_COMPLIANCE_ENTERED,
     evt E_OPEN_ENTERED,
     evt E_GOAL,
+    evt E_HANDLE_DETECTED,
     evt E_OBJ_LOCATED,
     evt E_TABLE_TOUCHED,
     evt E_OBJ_REACHED,

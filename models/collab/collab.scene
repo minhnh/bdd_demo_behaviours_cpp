@@ -1,7 +1,9 @@
 ns collab-scn='https://secorolab.github.io/models/demos/collab/scene/'
 
 obj set (ns=collab-scn) collab-objects {
-    object drawer
+    object drawer,
+    object marker-0,
+    object marker-10
 }
 
 obj set (ns=collab-scn) ws-objects {

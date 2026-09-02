@@ -42,6 +42,21 @@ context (ns=app) shared {
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
+        pose pose-place-target {
+            of:         <collab-kgraph.robot-table-body.place_spot>,
+            wrt:        <gripper.g_base.g_pinch>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
+        pose pose-ee-table {
+            of:         <gripper.g_base.g_pinch>,
+            wrt:        <collab-kgraph.robot-table-body.table_top>,
+            as-seen-by: <collab-kgraph.robot-table-body.table_top>
+        },
+        pose pose-tray-table {
+            of:         <collab-kgraph.drawer-body.drawer-root>,
+            wrt:        <collab-kgraph.robot-table-body.table_top>,
+            as-seen-by: <collab-kgraph.robot-table-body.table_top>
+        },
         pose pose-drawer-base {
             of:         <collab-kgraph.drawer-body.drawer-root>,
             wrt:        <kinova.base_link.base_link_origin>,
@@ -96,7 +111,13 @@ context (ns=app) shared {
         force press-force = -5.0 N,
         force press-band = 0.5 N,
         angle gripper-closed  = 0.8 rad,
-        angle gripper-open    = 0.0 rad
+        angle gripper-open    = 0.0 rad,
+        direction push-left { as-seen-by: <kinova.base_link.base_link_origin> } = (0.0, 1.0, 0.0),
+        force push-force = 12.0 N,
+        // Push gate drawn per trial, late in the return arc and clear of the transport-entry re-tare.
+        length place-near-y = sample <push-gate-y> m,
+        duration push-hold = sample <push-hold-secs> s,
+        force place-press-force = 6.0 N
     }
 }
 
@@ -416,15 +437,18 @@ guarded-motion (ns=app) compliance {
             // into a diverging state.
             linear-acceleration comply-accel-max = 20.0 m/s^2,
             angular-acceleration comply-angular-accel-max = 60.0 rad/s^2,
-            linear-velocity settled-velocity-band = 0.005 m/s,
+            length place-region-half-x = 0.80 m,
+            length place-region-half-y = 0.40 m,
+            // Carrying the tray, the pinch bottoms out about 0.13 m above the table.
+            length place-hand-over-z = 0.15 m,
+            direction toward-place { as-seen-by: <kinova.base_link.base_link_origin> }
+                = from <gripper.g_base.g_pinch> to <collab-kgraph.robot-table-body.place_spot>,
             admittance velocity-x = {
                 force: <shared.world.ext-force>.force.x,
                 mass: 2.0,
                 damping: 30.0,
                 stiffness: 0.0,
                 max-velocity: 0.30 m/s,
-                // sideways nudge, not transport
-                max-excursion: 0.15 m,
                 deadband: 1.0 N
             },
             admittance velocity-y = {
@@ -433,8 +457,6 @@ guarded-motion (ns=app) compliance {
                 damping: 30.0,
                 stiffness: 0.0,
                 max-velocity: 0.30 m/s,
-                // sideways nudge, not transport
-                max-excursion: 0.15 m,
                 deadband: 1.0 N
             },
             admittance velocity-z = {
@@ -443,8 +465,6 @@ guarded-motion (ns=app) compliance {
                 damping: 30.0,
                 stiffness: 0.0,
                 max-velocity: 0.30 m/s,
-                // must reach touchdown-z from the transport height
-                max-excursion: 0.40 m,
                 deadband: 1.0 N
             }
         }
@@ -475,14 +495,13 @@ guarded-motion (ns=app) compliance {
             less than <shared.spec.held-distance>
     }
 
-    // The height ends it, not the push going away -- but only once the yield has stopped. The
-    // motion this hands over to holds a pose it snapshots on entry and reads contact off the
-    // vertical velocity; both are nonsense taken from an arm that is still travelling.
     until all {
-        at-place-height: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>
-            within <shared.spec.zero-length>,
-        settled: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
-            within <spec.settled-velocity-band>
+        over-region-x: <shared.world.pose-tray-table>.position.x equal to <shared.spec.zero-length>
+            within <spec.place-region-half-x>,
+        over-region-y: <shared.world.pose-tray-table>.position.y equal to <shared.spec.zero-length>
+            within <spec.place-region-half-y>,
+        at-place-height: <shared.world.pose-ee-table>.position.z less than <spec.place-hand-over-z>
+            within <shared.spec.zero-length>
     }
 }
 
@@ -785,6 +804,12 @@ constraint-handler (ns=app) handler-traj {
         <handler-wait.arm-solver>,
         <handler-wait.gripper-command-solver>
     }
+    perturbations {
+        transit-push: on <gripper.g_base>
+            apply force <shared.spec.push-force> along <shared.spec.push-left>
+            when { near-place: <shared.world.pose-ee-base>.position.y greater than <shared.spec.place-near-y> }
+            for <shared.spec.push-hold>,
+    }
 }
 
 constraint-handler (ns=app) handler-comply {
@@ -859,6 +884,11 @@ constraint-handler (ns=app) handler-comply {
     solvers {
         <handler-wait.arm-solver>,
         <handler-wait.gripper-command-solver>
+    }
+    perturbations {
+        place-press: on <gripper.g_base>
+            apply force <shared.spec.place-press-force> along <compliance.spec.toward-place>
+            for 7.0 s,
     }
 }
 
