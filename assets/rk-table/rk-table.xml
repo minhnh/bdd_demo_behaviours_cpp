@@ -6,6 +6,7 @@
   </asset>
   <worldbody>
     <body name="root">
+      <site name="leg_center" pos="0 0 0" size="0.001 0.001 0.001" rgba="0 0 0 0"/>
       <body euler="90 0 0">
         <geom type="mesh" mesh="rk-table" contype="0" conaffinity="0"/>
         <geom name="tabletop_collision" type="box" pos="0 0.739 0.002"

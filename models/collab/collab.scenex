@@ -188,10 +188,9 @@ scene inst (ns=collab-scn) collab-scene-simreal {
         }
 
         body marker0-body {
-            // world_pose_node anchors its ref_frame on this frame.
             frame marker0_origin {
                 pose on-table-anchor {
-                    wrt: <robot-table-body.table_anchor> xyz: (-0.0383333, -0.0083333, 0.0) m
+                    wrt: <robot-table-body.table_anchor> xyz: (0.0, 0.0, 0.0) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
@@ -207,11 +206,10 @@ scene inst (ns=collab-scn) collab-scene-simreal {
         }
 
         body marker10-body {
-            // Not rk_anchor: there the sheet would hang over two edges. Yawed as the printed one is.
             frame marker10_origin {
-                pose on-work-surface {
-                    wrt: <rk-table-body.work_surface> xyz: (0.6333333, -0.2583333, 0.0) m
-                    orientation: euler {angles: (90.0, 0.0, 0.0) unit: deg}
+                pose on-rk-anchor {
+                    wrt: <rk-table-body.rk_anchor> xyz: (0.0, 0.0, 0.0) m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
             inertia {
@@ -224,7 +222,6 @@ scene inst (ns=collab-scn) collab-scene-simreal {
                 ) kg*m^2
             }
         }
-
 
         joints {
             fixed table_on_world {
@@ -239,13 +236,12 @@ scene inst (ns=collab-scn) collab-scene-simreal {
                 parent: <robot-table-body.arm-mount>
                 child: <kinova.base_link.base_link_origin>
             }
-            // Welded to the world like the tables: a weld onto another object's root names a site the scene never builds.
-            fixed marker0_on_world {
-                parent: <world.root>
+            fixed marker0_on_table {
+                parent: <robot-table-body.table_anchor>
                 child: <marker0-body.marker0_origin>
             }
-            fixed marker10_on_world {
-                parent: <world.root>
+            fixed marker10_on_rk {
+                parent: <rk-table-body.rk_anchor>
                 child: <marker10-body.marker10_origin>
             }
         }
