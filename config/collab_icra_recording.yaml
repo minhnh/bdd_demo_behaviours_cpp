@@ -1,4 +1,3 @@
-schema_version: 1
 trigger_topic: "/bdd/start"
 topic_sets:
   icra-sim:
