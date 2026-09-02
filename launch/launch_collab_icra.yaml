@@ -1,0 +1,39 @@
+%YAML 1.2
+---
+# The ICRA transport scenario, less the deployment: sim and real pass their own models and
+# perception config in. The controller is not launched here -- `motion-spec run` owns it.
+launch:
+  - arg:
+      name: "graph_models"
+      description: "Scenario models the coordinator evaluates"
+  - arg:
+      name: "perception_config"
+      description: "aruco_perception setup YAML naming the cameras, markers and frames"
+  - arg:
+      name: "launch_aruco"
+      default: "true"
+      description: "false when the detector is already running"
+  - arg:
+      name: "use_sim_time"
+      default: "False"
+      description: "Reaches the coordinator only; see the controller's /clock stamps"
+  - arg:
+      name: "publish_markers"
+      default: "false"
+
+  - include:
+      file: "$(find-pkg-share bdd_collab_bhv_cpp)/launch/launch_collab_bdd.yaml"
+      arg:
+        - name: "graph_models"
+          value: "$(var graph_models)"
+        - name: "use_sim_time"
+          value: "$(var use_sim_time)"
+
+  - include:
+      file: "$(find-pkg-share aruco_perception)/launch/collab_sim.launch.yaml"
+      if: "$(var launch_aruco)"
+      arg:
+        - name: "config_path"
+          value: "$(var perception_config)"
+        - name: "publish_markers"
+          value: "$(var publish_markers)"

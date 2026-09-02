@@ -1,8 +1,17 @@
 %YAML 1.2
 ---
 launch:
+  - arg:
+      name: "launch_aruco"
+      default: "true"
   - include:
-      file: "$(find-pkg-share bdd_collab_bhv_cpp)/launch/launch_collab_bdd.yaml"
+      file: "$(find-pkg-share bdd_collab_bhv_cpp)/launch/launch_collab_icra.yaml"
       arg:
         - name: "graph_models"
           value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab_icra/collab_icra_sim_models.yaml"
+        - name: "perception_config"
+          value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab/perception.yml"
+        - name: "launch_aruco"
+          value: "$(var launch_aruco)"
+        - name: "use_sim_time"
+          value: "true"

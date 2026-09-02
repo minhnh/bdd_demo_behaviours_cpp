@@ -128,14 +128,24 @@ scene inst (ns=collab-scn) collab-scene-simreal {
             }
             // Rear sensor at 33 deg elevation: the flattest look that still resolves a 0.05 m wall marker.
             frame rk_view {
-                pose view_on_world {
-                    wrt: <world.root>
-                    xyz: (0.80, 1.90, 1.80) m
+                // On the table it is bolted to, not on the world: a frame placed off the body
+                // it sits on is not a segment of it, so nothing can be read against it.
+                pose view_on_rk {
+                    wrt: <rk-table-body.leg_center>
+                    xyz: (1.55, 0.03, 1.78) m
                     orientation: direction-cosine {
                         x: (-0.020640762978, -0.545740028629, 0.837700292500)
                         y: (0.999786956758, -0.011266890914, 0.017294457652)
                         z: (0.0, 0.837878796916, 0.545856319629)
                     }
+                }
+            }
+            frame rk_optical {
+                // MuJoCo cameras look along -z with +y up; image poses use +z forward and +y down.
+                pose optical_on_view {
+                    wrt: <rk-table-body.rk_view>
+                    xyz: (0.0, 0.0, 0.0) m
+                    orientation: euler {axes: xyz extrinsic angles: (180.0, 0.0, 0.0) unit: deg}
                 }
             }
 
@@ -171,6 +181,20 @@ scene inst (ns=collab-scn) collab-scene-simreal {
                 pose handle-in-drawer {
                     wrt: <drawer-body.drawer-root> xyz: (0.0, -0.12, 0.04) m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            // Printed onto the tray's own MJCF, so they ride the body; frames, not welded bodies,
+            // because a weld onto an object frame loses its offset in lowering.
+            frame marker1_origin {
+                pose on-drawer {
+                    wrt: <drawer-body.drawer-root> xyz: (0.065, -0.100, 0.040) m
+                    orientation: euler {angles: (0.0, 0.0, 90.0) unit: deg}
+                }
+            }
+            frame marker2_origin {
+                pose on-drawer {
+                    wrt: <drawer-body.drawer-root> xyz: (0.0, 0.100, 0.040) m
+                    orientation: euler {angles: (180.0, 0.0, 90.0) unit: deg}
                 }
             }
             // COM is derived from the exact hollow meshes in tray.xml; inertia is calibrated to

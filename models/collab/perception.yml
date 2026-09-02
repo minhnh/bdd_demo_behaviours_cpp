@@ -1,0 +1,27 @@
+marker_dict: DICT_4X4_50
+
+cameras:
+  robot_table_camera:
+    image_topic: /perception/color
+    camera_info_topic: /perception/camera_info
+    frame: perception
+    markers: [0]
+  rk_table_camera:
+    image_topic: /rk/color
+    camera_info_topic: /rk/camera_info
+    frame: rk
+    markers: [10, 1, 2]
+
+markers:
+  - marker_id: 0
+    marker_size: 0.1
+    iri: https://secorolab.github.io/models/demos/collab/scene/collab-kgraph/robot-table-body/table_anchor
+  - marker_id: 10
+    marker_size: 0.1
+    iri: https://secorolab.github.io/models/demos/collab/scene/collab-kgraph/rk-table-body/rk_anchor
+  - marker_id: 1
+    marker_size: 0.05
+    iri: https://secorolab.github.io/models/demos/collab/scene/collab-kgraph/drawer-body/marker1_origin
+  - marker_id: 2
+    marker_size: 0.05
+    iri: https://secorolab.github.io/models/demos/collab/scene/collab-kgraph/drawer-body/marker2_origin
