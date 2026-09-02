@@ -1,29 +1,23 @@
 schema_version: 1
-output_root: "generation/collab_icra"
-executions:
-  "https://secorolab.github.io/models/demos/collab/icra/collab-transport-sim-exec":
-    platform: "simulation"
-    bag_path: "runs/{run_id}/bag"
-    topics:
-      - "/bdd/status"
-      - "/bdd/events"
-      - "/obs_policy/container_not_dropped"
-      - "/ee_wrench"
-      - "/sim/ground_truth/recognized_objects"
-      - "/recognized_objects"
-      - "/tf"
-      - "/tf_static"
-      - "/joint_states"
-      - "/clock"
-  "https://secorolab.github.io/models/demos/collab/icra/collab-transport-real-exec":
-    platform: "reality"
-    bag_path: "runs/{run_id}/bag"
-    topics:
-      - "/bdd/status"
-      - "/bdd/events"
-      - "/obs_policy/container_not_dropped"
-      - "/ee_wrench"
-      - "/recognized_objects"
-      - "/tf"
-      - "/tf_static"
-      - "/joint_states"
+trigger_topic: "/bdd/start"
+topic_sets:
+  icra-sim:
+    - "/bdd/status"
+    - "/bdd/events"
+    - "/obs_policy/container_not_dropped"
+    - "/ee_wrench"
+    - "/sim/ground_truth/recognized_objects"
+    - "/recognized_objects"
+    - "/tf"
+    - "/tf_static"
+    - "/joint_states"
+    - "/clock"
+  icra-real:
+    - "/bdd/status"
+    - "/bdd/events"
+    - "/obs_policy/container_not_dropped"
+    - "/ee_wrench"
+    - "/recognized_objects"
+    - "/tf"
+    - "/tf_static"
+    - "/joint_states"
