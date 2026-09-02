@@ -1,0 +1,167 @@
+import "collab_icra.bdd"
+import "../collab/collab.scenex"
+
+bhv impl (ns=collab-icra) collab-bhv-server {
+    bhv action: "/bdd/collab_bhv_server"
+}
+
+obs provider (ns=collab-icra) ground-truth {
+    ros topic: "/sim/ground_truth/recognized_objects" type: "vision_msgs/msg/Detection3DArray"
+}
+
+obs provider (ns=collab-icra) aruco {
+    ros topic: "/recognized_objects" type: "vision_msgs/msg/Detection3DArray"
+}
+
+obs provider (ns=collab-icra) ee-wrench {
+    ros topic: "/ee_wrench" type: "geometry_msgs/msg/WrenchStamped"
+}
+
+observation (ns=collab-icra) drawer-position-gt {
+    provider: <ground-truth> observes var <transport-tmpl.container>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+observation (ns=collab-icra) pick-position-gt {
+    provider: <ground-truth> observes var <transport-tmpl.pick-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+observation (ns=collab-icra) place-position-gt {
+    provider: <ground-truth> observes var <transport-tmpl.place-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+observation (ns=collab-icra) drawer-pose-gt {
+    provider: <ground-truth> observes var <transport-tmpl.container>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_pose_array_by_uri }
+}
+observation (ns=collab-icra) pick-pose-gt {
+    provider: <ground-truth> observes var <transport-tmpl.pick-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_pose_array_by_uri }
+}
+observation (ns=collab-icra) place-pose-gt {
+    provider: <ground-truth> observes var <transport-tmpl.place-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_pose_array_by_uri }
+}
+
+observation (ns=collab-icra) drawer-position-aruco {
+    provider: <aruco> observes var <transport-tmpl.container>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+observation (ns=collab-icra) pick-position-aruco {
+    provider: <aruco> observes var <transport-tmpl.pick-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+observation (ns=collab-icra) place-position-aruco {
+    provider: <aruco> observes var <transport-tmpl.place-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_array_by_uri }
+}
+observation (ns=collab-icra) drawer-pose-aruco {
+    provider: <aruco> observes var <transport-tmpl.container>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_pose_array_by_uri }
+}
+observation (ns=collab-icra) pick-pose-aruco {
+    provider: <aruco> observes var <transport-tmpl.pick-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_pose_array_by_uri }
+}
+observation (ns=collab-icra) place-pose-aruco {
+    provider: <aruco> observes var <transport-tmpl.place-ws>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+    entity mapper: py { module: bdd_exec_ros2.observation, attr: map_detection3d_pose_array_by_uri }
+}
+
+observation (ns=collab-icra) ee-wrench-obs {
+    provider: <ee-wrench>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+}
+
+obs policy (ns=collab-icra) pick-distance-gt-policy for <transport-tmpl.pick-distance-gt> horizon: 2.0 seconds {
+    observations: { <drawer-position-gt>, <pick-position-gt> }
+    evaluator: linear distance { less-than: 0.30 m }
+}
+obs policy (ns=collab-icra) pick-distance-aruco-policy for <transport-tmpl.pick-distance-aruco> horizon: 2.0 seconds {
+    observations: { <drawer-position-aruco>, <pick-position-aruco> }
+    evaluator: linear distance { less-than: 0.30 m }
+}
+obs policy (ns=collab-icra) pick-center-gt-policy for <transport-tmpl.pick-center-gt> horizon: 2.0 seconds {
+    observations: { <drawer-pose-gt>, <pick-pose-gt> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: wall_ws_center_inside }
+}
+obs policy (ns=collab-icra) pick-center-aruco-policy for <transport-tmpl.pick-center-aruco> horizon: 2.0 seconds {
+    observations: { <drawer-pose-aruco>, <pick-pose-aruco> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: wall_ws_center_inside }
+}
+obs policy (ns=collab-icra) pick-footprint-gt-policy for <transport-tmpl.pick-footprint-gt> horizon: 2.0 seconds {
+    observations: { <drawer-pose-gt>, <pick-pose-gt> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: wall_ws_footprint_inside }
+}
+obs policy (ns=collab-icra) pick-footprint-aruco-policy for <transport-tmpl.pick-footprint-aruco> horizon: 2.0 seconds {
+    observations: { <drawer-pose-aruco>, <pick-pose-aruco> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: wall_ws_footprint_inside }
+}
+
+obs policy (ns=collab-icra) place-distance-gt-policy for <transport-tmpl.place-distance-gt> horizon: 2.0 seconds {
+    observations: { <drawer-position-gt>, <place-position-gt> }
+    evaluator: linear distance { less-than: 0.30 m }
+}
+obs policy (ns=collab-icra) place-distance-aruco-policy for <transport-tmpl.place-distance-aruco> horizon: 2.0 seconds {
+    observations: { <drawer-position-aruco>, <place-position-aruco> }
+    evaluator: linear distance { less-than: 0.30 m }
+}
+obs policy (ns=collab-icra) place-center-gt-policy for <transport-tmpl.place-center-gt> horizon: 2.0 seconds {
+    observations: { <drawer-pose-gt>, <place-pose-gt> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: robot_ws_center_inside }
+}
+obs policy (ns=collab-icra) place-center-aruco-policy for <transport-tmpl.place-center-aruco> horizon: 2.0 seconds {
+    observations: { <drawer-pose-aruco>, <place-pose-aruco> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: robot_ws_center_inside }
+}
+obs policy (ns=collab-icra) place-footprint-gt-policy for <transport-tmpl.place-footprint-gt> horizon: 2.0 seconds {
+    observations: { <drawer-pose-gt>, <place-pose-gt> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: robot_ws_footprint_inside }
+}
+obs policy (ns=collab-icra) place-footprint-aruco-policy for <transport-tmpl.place-footprint-aruco> horizon: 2.0 seconds {
+    observations: { <drawer-pose-aruco>, <place-pose-aruco> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: robot_ws_footprint_inside }
+}
+
+obs policy (ns=collab-icra) force-instantaneous-policy for <transport-tmpl.force-instantaneous> {
+    observations: { <ee-wrench-obs> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: WrenchForceNormWithinLimitEvaluator }
+}
+obs policy (ns=collab-icra) force-peak-policy for <transport-tmpl.force-peak> {
+    observations: { <ee-wrench-obs> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: WrenchPeakForceNormWithinLimitEvaluator }
+}
+obs policy (ns=collab-icra) force-rms-policy for <transport-tmpl.force-rms> {
+    observations: { <ee-wrench-obs> }
+    evaluator: py { module: bdd_exec_ros2.observation, attr: WrenchRmsForceNormWithinLimitEvaluator }
+}
+obs policy (ns=collab-icra) container-not-dropped-policy for <transport-tmpl.container-not-dropped> {
+    trinary topic: "/obs_policy/container_not_dropped"
+}
+
+Scenario Exec (ns=collab-icra) collab-transport-sim-exec {
+    variant: <collab-transport-us.policy-comparison>
+    scene inst: <collab-scene-simreal>
+    bhv: <collab-bhv-server>
+    policies: {
+        <pick-distance-gt-policy>, <pick-distance-aruco-policy>,
+        <pick-center-gt-policy>, <pick-center-aruco-policy>,
+        <pick-footprint-gt-policy>, <pick-footprint-aruco-policy>,
+        <place-distance-gt-policy>, <place-distance-aruco-policy>,
+        <place-center-gt-policy>, <place-center-aruco-policy>,
+        <place-footprint-gt-policy>, <place-footprint-aruco-policy>,
+        <force-instantaneous-policy>, <force-peak-policy>, <force-rms-policy>,
+        <container-not-dropped-policy>
+    }
+}

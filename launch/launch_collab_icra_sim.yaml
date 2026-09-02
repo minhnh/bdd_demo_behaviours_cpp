@@ -1,0 +1,8 @@
+%YAML 1.2
+---
+launch:
+  - include:
+      file: "$(find-pkg-share bdd_collab_bhv_cpp)/launch/launch_collab_bdd.yaml"
+      arg:
+        - name: "graph_models"
+          value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab_icra/collab_icra_sim_models.yaml"

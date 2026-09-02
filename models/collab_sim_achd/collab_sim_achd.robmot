@@ -104,7 +104,7 @@ ros (ns=app) {
     publishers {
         ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
         bdd-events: topic "/bdd/events" message "bdd_ros2_interfaces/msg/Event",
-        scene-objects: topic "/recognized_objects" message "vision_msgs/msg/Detection3DArray",
+        scene-objects: topic "/sim/ground_truth/recognized_objects" message "vision_msgs/msg/Detection3DArray",
         container-not-dropped:
             topic "/obs_policy/container_not_dropped"
             message "bdd_ros2_interfaces/msg/TrinaryStamped",
@@ -115,7 +115,7 @@ ros (ns=app) {
         },
     },
     always {
-        publish at 5.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
+        publish at 100.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
         publish at 2.0 Hz to <ros.publishers.scene-objects> with {
             <collab-workspaces.robot-ws>: <shared.world.pose-robot-table-center>,
             <collab-workspaces.wall-ws>: <shared.world.pose-rk-table-center>,
@@ -925,4 +925,3 @@ constraint-handler (ns=app) handler-open {
         <handler-wait.gripper-command-solver>
     }
 }
-

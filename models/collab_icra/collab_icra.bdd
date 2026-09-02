@@ -1,0 +1,93 @@
+import "../collab/collab.scene"
+ns collab-icra="https://secorolab.github.io/models/demos/collab/icra/"
+ns collab-coord="https://secorolab.github.io/models/demos/collab/coordination/"
+
+Task (ns=collab-icra) collab-transport
+
+Event (ns=collab-icra) scenario-start
+Event (ns=collab-icra) scenario-end
+Event (ns=collab-coord) E_PICK_START
+Event (ns=collab-coord) E_PICK_END
+Event (ns=collab-coord) E_PLACE_START
+Event (ns=collab-coord) E_PLACE_END
+
+Scenario Template (ns=collab-icra) transport-tmpl {
+    duration: from <scenario-start> until <scenario-end>
+    task: <collab-transport>
+
+    var container
+    var robot
+    var pick-ws
+    var place-ws
+
+    Given:
+    (
+        pick-distance-gt: holds(<container> is located at <pick-ws>, before <E_PICK_START>)
+        and
+        pick-distance-aruco: holds(<container> is located at <pick-ws>, before <E_PICK_START>)
+        and
+        pick-center-gt: holds(<container> is located at <pick-ws>, before <E_PICK_START>)
+        and
+        pick-center-aruco: holds(<container> is located at <pick-ws>, before <E_PICK_START>)
+        and
+        pick-footprint-gt: holds(<container> is located at <pick-ws>, before <E_PICK_START>)
+        and
+        pick-footprint-aruco: holds(<container> is located at <pick-ws>, before <E_PICK_START>)
+    )
+    When:
+        Behaviour (ns=collab-icra) collab-transport-bhv {
+            duration: from <E_PICK_START> until <E_PLACE_END>
+            <robot> picks <container> and places at <place-ws>
+        }
+    Then:
+    (
+        container-not-dropped: holds(
+            pred("\"{robot}\" does not drop \"{container}\"", robot=<robot>, container=<container>),
+            from <E_PICK_END> until <E_PLACE_START>
+        )
+        and
+        place-distance-gt: holds(<container> is located at <place-ws>, after <E_PLACE_END>)
+        and
+        place-distance-aruco: holds(<container> is located at <place-ws>, after <E_PLACE_END>)
+        and
+        place-center-gt: holds(<container> is located at <place-ws>, after <E_PLACE_END>)
+        and
+        place-center-aruco: holds(<container> is located at <place-ws>, after <E_PLACE_END>)
+        and
+        place-footprint-gt: holds(<container> is located at <place-ws>, after <E_PLACE_END>)
+        and
+        place-footprint-aruco: holds(<container> is located at <place-ws>, after <E_PLACE_END>)
+        and
+        force-instantaneous: holds(
+            pred("\"{robot}\" instantaneous force norm is within limit", robot=<robot>),
+            from <E_PICK_END> until <E_PLACE_START>
+        )
+        and
+        force-peak: holds(
+            pred("\"{robot}\" peak force norm is within limit", robot=<robot>),
+            from <E_PICK_END> until <E_PLACE_START>
+        )
+        and
+        force-rms: holds(
+            pred("\"{robot}\" rolling RMS force norm is within limit", robot=<robot>),
+            from <E_PICK_END> until <E_PLACE_START>
+        )
+    )
+}
+
+User Story (ns=collab-icra) collab-transport-us {
+    As A ""
+    I Want ""
+    So That ""
+
+    Scenarios:
+        Scenario policy-comparison {
+            template: <transport-tmpl>
+            scene: <collab-scene>
+
+            variation:
+            | <transport-tmpl.container> | <transport-tmpl.pick-ws> | <transport-tmpl.place-ws> | <transport-tmpl.robot> |
+            |---|
+            | <collab-objects.drawer> | <collab-workspaces.wall-ws> | <collab-workspaces.robot-ws> | <collab-agents.kinova> |
+        }
+}
