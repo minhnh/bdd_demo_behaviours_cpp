@@ -5,8 +5,8 @@ import "../robots/kinova-ft-2f85.ktree"
 distrib (ns=collab-scn) place-xy {
     uniform {
         dimension: 3
-        lower: (0.674, -0.40, 0.050)
-        upper: (0.824, 0.40, 0.051)
+        lower: (-0.105, 0.50, 0.050)
+        upper: (0.695, 0.75, 0.051)
     }
 }
 // The place band quartered, measured from the table anchor: 0.50 m to 0.75 m out, split at
@@ -81,8 +81,8 @@ scene inst (ns=collab-scn) collab-scene-simreal {
                 }
             }
             frame place_spot {
-                pose spot_on_mount {
-                    wrt: <robot-table-body.arm-mount> xyz: sample <place-xy> m
+                pose spot_in_band {
+                    wrt: <robot-table-body.table_anchor> xyz: sample <place-xy> m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }

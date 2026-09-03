@@ -23,6 +23,7 @@ from motion_spec.rdf_parser.model import Model
 from motion_spec_dsl.rdf.sampling import draw_samples
 from motion_spec_dsl.rdf_parser.vocab import GEOM_COORD
 from rdf_utils.models.vocab import (
+    URI_DISTRIB_PRED_FROM_DISTRIB,
     URI_DISTRIB_PRED_LOWER,
     URI_DISTRIB_PRED_UPPER,
     URI_DISTRIB_TYPE_SAMPLED_QUANTITY,
@@ -44,9 +45,13 @@ _CACHE_MARKERS = (
 
 def scenex_graph(scenex_path: Path, seed: int | None = None):
     """The .scenex as RDF, with every sampled placement drawn."""
-    graph = create_scenex_model_graph(scenex_metamodel().model_from_file(str(scenex_path)))
+    graph = create_scenex_model_graph(
+        scenex_metamodel().model_from_file(str(scenex_path))
+    )
     # The reader resolves poses numerically, so a sampled placement must carry its draw first.
-    rng = random.Random(seed if seed is not None else random.SystemRandom().randrange(2**32))
+    rng = random.Random(
+        seed if seed is not None else random.SystemRandom().randrange(2**32)
+    )
     draw_samples(graph, rng)
     return graph
 
@@ -149,29 +154,21 @@ def region_objects(scene_graph, scene: MjcfSceneSpec) -> list:
     Placed in the frame the scene's sampled placements are seen by, so a cell no draw landed in
     is still shown where a run that drew from it would place.
     """
-    drawn = [
-        node
-        for node in scene_graph.subjects(RDF.type, URI_DISTRIB_TYPE_SAMPLED_QUANTITY)
-        if scene_graph.value(node, GEOM_COORD.x) is not None
-    ]
-    if not drawn:
-        return []
-    seen_by = str(scene_graph.value(drawn[0], GEOM_COORD["as-seen-by"])).rsplit("/", 1)[-1]
-    frame = next((f for f in scene.frames if f.name == seen_by), None)
-    if frame is None:
-        return []
-    body = next((o for o in scene.objects if o.body == frame.body), None)
-    if body is None:
-        return []
-
-    frame_pos = (frame.pos_x, frame.pos_y, frame.pos_z)
-    frame_quat = (frame.quat_x, frame.quat_y, frame.quat_z, frame.quat_w)
-    body_pos = (body.pos_x, body.pos_y, body.pos_z)
-    body_quat = (body.quat_x, body.quat_y, body.quat_z, body.quat_w)
-    world_quat = _quat_mul(body_quat, frame_quat)
+    # Each distribution is stated in the frame of the placement that draws from it, and the
+    # scene draws from several frames, so the frame is resolved per distribution.
+    seen_by_of = {}
+    for node in scene_graph.subjects(RDF.type, URI_DISTRIB_TYPE_SAMPLED_QUANTITY):
+        if scene_graph.value(node, GEOM_COORD.x) is None:
+            continue
+        distrib = scene_graph.value(node, URI_DISTRIB_PRED_FROM_DISTRIB)
+        seen_by = scene_graph.value(node, GEOM_COORD["as-seen-by"])
+        if distrib is not None and seen_by is not None:
+            seen_by_of.setdefault(distrib, str(seen_by).rsplit("/", 1)[-1])
 
     slabs = []
-    for node in sorted(scene_graph.subjects(RDF.type, URI_DISTRIB_TYPE_UNIFORM), key=str):
+    for node in sorted(
+        scene_graph.subjects(RDF.type, URI_DISTRIB_TYPE_UNIFORM), key=str
+    ):
         lower = scene_graph.value(node, URI_DISTRIB_PRED_LOWER)
         upper = scene_graph.value(node, URI_DISTRIB_PRED_UPPER)
         if lower is None or upper is None:
@@ -180,6 +177,17 @@ def region_objects(scene_graph, scene: MjcfSceneSpec) -> list:
         high = [float(v) for v in scene_graph.items(upper)]
         if len(low) != 3 or len(high) != 3:
             continue
+        frame = next((f for f in scene.frames if f.name == seen_by_of.get(node)), None)
+        if frame is None:
+            continue
+        body = next((o for o in scene.objects if o.body == frame.body), None)
+        if body is None:
+            continue
+        frame_pos = (frame.pos_x, frame.pos_y, frame.pos_z)
+        frame_quat = (frame.quat_x, frame.quat_y, frame.quat_z, frame.quat_w)
+        body_pos = (body.pos_x, body.pos_y, body.pos_z)
+        body_quat = (body.quat_x, body.quat_y, body.quat_z, body.quat_w)
+        world_quat = _quat_mul(body_quat, frame_quat)
         centre = [(a + b) / 2.0 for a, b in zip(low, high)]
         on_body = _quat_rot(frame_quat, centre)
         in_world = _quat_rot(body_quat, [a + b for a, b in zip(frame_pos, on_body)])
@@ -199,7 +207,9 @@ def region_objects(scene_graph, scene: MjcfSceneSpec) -> list:
     return slabs
 
 
-def build_spec(scene: MjcfSceneSpec, start: Path, regions: list | None = None) -> mjk.SceneSpec:
+def build_spec(
+    scene: MjcfSceneSpec, start: Path, regions: list | None = None
+) -> mjk.SceneSpec:
     """The scene as a wrapper SceneSpec, with every authored asset path resolved."""
     spec = mjk.SceneSpec()
     spec.timestep = scene.timestep_s
@@ -217,7 +227,9 @@ def build_spec(scene: MjcfSceneSpec, start: Path, regions: list | None = None) -
         for attachment in robot.attachments:
             attachment_spec = mjk.AttachmentSpec()
             attachment_spec.mjcf_path = find_asset(attachment.path, start)
-            attachment_spec.attach_to = _target(attachment.attach_kind, attachment.attach_to)
+            attachment_spec.attach_to = _target(
+                attachment.attach_kind, attachment.attach_to
+            )
             attachment_spec.prefix = attachment.prefix
             attachment_spec.pos = [attachment.pos_x, attachment.pos_y, attachment.pos_z]
             attachment_spec.quat = [
