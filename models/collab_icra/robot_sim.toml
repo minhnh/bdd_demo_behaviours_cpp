@@ -13,7 +13,6 @@ rate  = 100.0
 [ros.clock]
 topic = "/clock"
 rate  = 100.0
-linger = 3.0
 
 # The run bags these to <run>/bag.
 [rosbag]

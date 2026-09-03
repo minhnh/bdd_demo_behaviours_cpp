@@ -11,6 +11,7 @@ evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_TARE_COMPLETED,
     evt E_COMPLIANCE_ENTERED,
     evt E_OPEN_ENTERED,
+    evt E_DONE_ENTERED,
     evt E_GOAL,
     evt E_HANDLE_DETECTED,
     evt E_OBJ_LOCATED,
@@ -27,7 +28,9 @@ evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_PICK_START,
     evt E_PICK_END,
     evt E_PLACE_START,
-    evt E_PLACE_END
+    evt E_PLACE_END,
+    // The end state's hold is over; nothing reacts, the run leaves its loop on it.
+    evt E_RUN_ENDED
 }
 
 fsm (ns=collab-coord) collab_demo_fsm {
@@ -133,7 +136,8 @@ fsm (ns=collab-coord) collab_demo_fsm {
         },
         R_OBJ_RELEASED {
             when: <collab_demo_fsm_events.E_OBJ_RELEASED>,
-            do: <T_OPEN_DONE>
+            do: <T_OPEN_DONE>,
+            fires { <collab_demo_fsm_events.E_DONE_ENTERED> }
         }
     }
 }

@@ -921,3 +921,52 @@ constraint-handler (ns=app) handler-hold-open {
         <handler-hold-wait.gripper-command-solver>
     }
 }
+
+guarded-motion (ns=app) hold-done {
+    description: "Hold the pose the run ended in while the clock outlives the end state"
+
+    context {
+        spec {
+            pose target-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_DONE_ENTERED>,
+            // As long as [ros.clock] linger keeps the run alive past the end state.
+            duration linger = 3.0 s
+        }
+    }
+
+    when {}
+
+    while {
+        open-gripper:     keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-open>,
+        hold-position:    keeping <shared.world.pose-ee-base>.position    equal to <spec.target-pose>.position,
+        hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.target-pose>.orientation,
+        hold-elbow:       keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
+        joint-4-range:    <shared.world.joint-4-angle> between <shared.spec.joint-4-lower-limit> and <shared.spec.joint-4-upper-limit>,
+        joint-6-range:    <shared.world.joint-6-angle> between <shared.spec.joint-6-lower-limit> and <shared.spec.joint-6-upper-limit>
+    }
+
+    until all {
+        held: elapsed greater than <spec.linger>
+    }
+}
+
+constraint-handler (ns=app) handler-hold-done {
+    handles: <hold-done>
+    runs-in: <collab-coord.S_DONE>
+    monitors {
+        mon-held: monitor <hold-done.until> {
+            satisfied { trigger: event <collab-coord.E_RUN_ENDED> }
+        }
+    }
+    controllers {
+        pid ctrl-hold-done-position { constraint: <hold-done.hold-position>,              Kp: 500, Ki: 20, Kd: 100, decay: 0 },
+        feed-forward ctrl-hold-done-gripper { constraint: <hold-done.open-gripper> },
+        impedance ctrl-hold-done-ori { constraint: <hold-done.hold-orientation>, stiffness: 15, damping: 2 } apply at <gripper.g_base>,
+        pid ctrl-hold-done-joint-3 { constraint: <hold-done.hold-elbow>,                  Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-hold-done-joint-4-range { constraint: <hold-done.joint-4-range>,         Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque,
+        pid ctrl-hold-done-joint-6-range { constraint: <hold-done.joint-6-range>,         Kp: 200, Ki: 0, Kd: 0, decay: 0, error-normalization: (-pi, pi) rad } as torque
+    }
+    solvers {
+        <handler-hold-wait.arm-solver>,
+        <handler-hold-wait.gripper-command-solver>
+    }
+}
