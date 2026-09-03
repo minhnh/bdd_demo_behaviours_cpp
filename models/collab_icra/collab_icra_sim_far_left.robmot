@@ -114,6 +114,7 @@ context (ns=app) shared {
 ros (ns=app) {
     publishers {
         ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
+        ee-pose: topic "/ee_pose" message "geometry_msgs/msg/PoseStamped",
         bdd-events: topic "/bdd/events" message "bdd_ros2_interfaces/msg/Event",
         scene-objects: topic "/sim/ground_truth/recognized_objects" message "vision_msgs/msg/Detection3DArray",
         container-not-dropped:
@@ -142,6 +143,7 @@ ros (ns=app) {
     },
     always {
         publish at 100.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
+        publish at 100.0 Hz to <ros.publishers.ee-pose> with <shared.world.pose-ee-base>,
         // The aruco estimate of the same three is what the scenario scores this against.
         publish at 2.0 Hz to <ros.publishers.scene-objects> with {
             <collab-workspaces.robot-ws>: <shared.world.pose-robot-table-center>,

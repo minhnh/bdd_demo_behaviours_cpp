@@ -21,6 +21,7 @@ topics = [
     "/bdd/events",
     "/obs_policy/container_not_dropped",
     "/ee_wrench",
+    "/ee_pose",
     "/sim/ground_truth/recognized_objects",
     "/recognized_objects",
     "/tf",
