@@ -51,7 +51,7 @@ context (ns=app) shared {
         },
         // The press direction below is this pose normalized, so the DSL needs it declared here.
         pose pose-place-target {
-            of:         <collab-kgraph.robot-table-body.place_spot_q1>,
+            of:         <collab-kgraph.robot-table-body.place_spot_near_left>,
             wrt:        <gripper.g_base.g_pinch>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
@@ -710,7 +710,7 @@ guarded-motion (ns=app) compliance {
             // Carrying the tray, the pinch bottoms out about 0.13 m above the table.
             length place-hand-over-z = 0.15 m,
             direction toward-place { as-seen-by: <kinova.base_link.base_link_origin> }
-                = from <gripper.g_base.g_pinch> to <collab-kgraph.robot-table-body.place_spot_q1>
+                = from <gripper.g_base.g_pinch> to <collab-kgraph.robot-table-body.place_spot_near_left>
         }
     }
 
