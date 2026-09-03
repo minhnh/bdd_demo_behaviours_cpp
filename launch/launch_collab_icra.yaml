@@ -16,7 +16,7 @@ launch:
   - arg:
       name: "use_sim_time"
       default: "False"
-      description: "Reaches the coordinator only; see the controller's /clock stamps"
+      description: "Every node the scenario runs reads the controller's /clock when true"
   - arg:
       name: "publish_markers"
       default: "false"
@@ -37,3 +37,5 @@ launch:
           value: "$(var perception_config)"
         - name: "publish_markers"
           value: "$(var publish_markers)"
+        - name: "use_sim_time"
+          value: "$(var use_sim_time)"

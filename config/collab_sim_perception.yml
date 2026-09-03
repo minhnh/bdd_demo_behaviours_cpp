@@ -38,6 +38,8 @@ frames:
   iri: collab-scn:collab-kgraph/robot-table-body/arm-mount
 - frame: robot_table_top
   iri: collab-scn:collab-kgraph/robot-table-body/table_top
+- frame: rk_table_top
+  iri: collab-scn:collab-kgraph/rk-table-body/work_surface
 - frame: drawer_handle
   iri: collab-scn:collab-kgraph/drawer-body/drawer-handle
   fixed:
@@ -63,3 +65,9 @@ objects:
 - name: drawer_handle_obj
   frame: drawer_handle
   iri: collab-scn:collab-kgraph/drawer-body/drawer-handle
+- name: drawer_obj
+  frame: drawer_handle
+  iri: collab-scn:drawer
+- name: rk_table_obj
+  frame: rk_table_top
+  iri: collab-scn:wall-ws

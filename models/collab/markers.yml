@@ -62,6 +62,8 @@ frames:
     iri: collab-scn:collab-kgraph/robot-table-body/arm-mount
   - frame: robot_table_top
     iri: collab-scn:collab-kgraph/robot-table-body/table_top
+  - frame: rk_table_top
+    iri: collab-scn:collab-kgraph/rk-table-body/work_surface
   - frame: drawer_handle
     iri: collab-scn:collab-kgraph/drawer-body/drawer-handle
     # The markers sit on vertical walls: each offset turns the sheet's normal back onto the tray's axes.
@@ -89,3 +91,11 @@ objects:
   - name: drawer_handle_obj
     frame: drawer_handle
     iri: collab-scn:collab-kgraph/drawer-body/drawer-handle
+  # The same reading under the object's own IRI: `of:` takes a frame, the scenario takes an
+  # object, and the two match detections by different URIs.
+  - name: drawer_obj
+    frame: drawer_handle
+    iri: collab-scn:drawer
+  - name: rk_table_obj
+    frame: rk_table_top
+    iri: collab-scn:wall-ws
