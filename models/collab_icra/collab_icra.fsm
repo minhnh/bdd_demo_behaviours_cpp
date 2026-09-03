@@ -133,8 +133,7 @@ fsm (ns=collab-coord) collab_demo_fsm {
         },
         R_OBJ_RELEASED {
             when: <collab_demo_fsm_events.E_OBJ_RELEASED>,
-            do: <T_OPEN_DONE>,
-            fires { <collab_demo_fsm_events.E_PLACE_END> }
+            do: <T_OPEN_DONE>
         }
     }
 }
