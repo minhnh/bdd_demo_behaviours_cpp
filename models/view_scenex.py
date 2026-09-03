@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import random
 from pathlib import Path
 
 import mj_kdl_wrapper as mjk
@@ -19,6 +20,15 @@ import rdflib
 from motion_spec.classes.scene import MjcfSceneSpec
 from motion_spec.rdf_parser import resources
 from motion_spec.rdf_parser.model import Model
+from motion_spec_dsl.rdf.sampling import draw_samples
+from motion_spec_dsl.rdf_parser.vocab import GEOM_COORD
+from rdf_utils.models.vocab import (
+    URI_DISTRIB_PRED_LOWER,
+    URI_DISTRIB_PRED_UPPER,
+    URI_DISTRIB_TYPE_SAMPLED_QUANTITY,
+    URI_DISTRIB_TYPE_UNIFORM,
+)
+from rdflib.namespace import RDF
 from scene_dsl.langs import scenex_metamodel
 from scene_dsl.rdf.scenex import create_scenex_model_graph
 
@@ -32,12 +42,24 @@ _CACHE_MARKERS = (
 )
 
 
-def read_scenex(scenex_path: Path) -> MjcfSceneSpec:
+def scenex_graph(scenex_path: Path, seed: int | None = None):
+    """The .scenex as RDF, with every sampled placement drawn."""
+    graph = create_scenex_model_graph(scenex_metamodel().model_from_file(str(scenex_path)))
+    # The reader resolves poses numerically, so a sampled placement must carry its draw first.
+    rng = random.Random(seed if seed is not None else random.SystemRandom().randrange(2**32))
+    draw_samples(graph, rng)
+    return graph
+
+
+def read_scenex(scenex_path: Path, seed: int | None = None) -> MjcfSceneSpec:
     """The scene a .scenex describes, read straight from its RDF with no app manifest."""
+    return read_graph(scenex_graph(scenex_path, seed), scenex_path)
+
+
+def read_graph(scene_graph, scenex_path: Path) -> MjcfSceneSpec:
+    """The scene a drawn scenex graph describes."""
     graph = rdflib.Dataset(default_union=True)
-    graph.default_graph += create_scenex_model_graph(
-        scenex_metamodel().model_from_file(str(scenex_path))
-    )
+    graph.default_graph += scene_graph
     model = Model(
         graph=graph,
         app_path=scenex_path.resolve(),
@@ -90,7 +112,94 @@ def _target(kind: str, name: str) -> mjk.AttachTarget:
     return mjk.AttachTarget(getattr(mjk.AttachKind, kind), name)
 
 
-def build_spec(scene: MjcfSceneSpec, start: Path) -> mjk.SceneSpec:
+_REGION_RGBA = (
+    (0.90, 0.25, 0.25, 0.35),
+    (0.25, 0.65, 0.90, 0.35),
+    (0.35, 0.80, 0.40, 0.35),
+    (0.95, 0.75, 0.20, 0.35),
+)
+
+
+def _quat_mul(a, b):
+    ax, ay, az, aw = a
+    bx, by, bz, bw = b
+    return (
+        aw * bx + ax * bw + ay * bz - az * by,
+        aw * by - ax * bz + ay * bw + az * bx,
+        aw * bz + ax * by - ay * bx + az * bw,
+        aw * bw - ax * bx - ay * by - az * bz,
+    )
+
+
+def _quat_rot(q, v):
+    x, y, z, w = q
+    tx = 2.0 * (y * v[2] - z * v[1])
+    ty = 2.0 * (z * v[0] - x * v[2])
+    tz = 2.0 * (x * v[1] - y * v[0])
+    return (
+        v[0] + w * tx + y * tz - z * ty,
+        v[1] + w * ty + z * tx - x * tz,
+        v[2] + w * tz + x * ty - y * tx,
+    )
+
+
+def region_objects(scene_graph, scene: MjcfSceneSpec) -> list:
+    """Every 3-D uniform region of the scenex as a thin translucent slab.
+
+    Placed in the frame the scene's sampled placements are seen by, so a cell no draw landed in
+    is still shown where a run that drew from it would place.
+    """
+    drawn = [
+        node
+        for node in scene_graph.subjects(RDF.type, URI_DISTRIB_TYPE_SAMPLED_QUANTITY)
+        if scene_graph.value(node, GEOM_COORD.x) is not None
+    ]
+    if not drawn:
+        return []
+    seen_by = str(scene_graph.value(drawn[0], GEOM_COORD["as-seen-by"])).rsplit("/", 1)[-1]
+    frame = next((f for f in scene.frames if f.name == seen_by), None)
+    if frame is None:
+        return []
+    body = next((o for o in scene.objects if o.body == frame.body), None)
+    if body is None:
+        return []
+
+    frame_pos = (frame.pos_x, frame.pos_y, frame.pos_z)
+    frame_quat = (frame.quat_x, frame.quat_y, frame.quat_z, frame.quat_w)
+    body_pos = (body.pos_x, body.pos_y, body.pos_z)
+    body_quat = (body.quat_x, body.quat_y, body.quat_z, body.quat_w)
+    world_quat = _quat_mul(body_quat, frame_quat)
+
+    slabs = []
+    for node in sorted(scene_graph.subjects(RDF.type, URI_DISTRIB_TYPE_UNIFORM), key=str):
+        lower = scene_graph.value(node, URI_DISTRIB_PRED_LOWER)
+        upper = scene_graph.value(node, URI_DISTRIB_PRED_UPPER)
+        if lower is None or upper is None:
+            continue
+        low = [float(v) for v in scene_graph.items(lower)]
+        high = [float(v) for v in scene_graph.items(upper)]
+        if len(low) != 3 or len(high) != 3:
+            continue
+        centre = [(a + b) / 2.0 for a, b in zip(low, high)]
+        on_body = _quat_rot(frame_quat, centre)
+        in_world = _quat_rot(body_quat, [a + b for a, b in zip(frame_pos, on_body)])
+        slab = mjk.SceneObject()
+        slab.name = f"region_{str(node).rsplit('/', 1)[-1]}"
+        slab.shape = mjk.Shape.BOX
+        # A hairline z band would z-fight with the table, so the slab is given a visible thickness.
+        slab.size = [max((b - a) / 2.0, 0.002) for a, b in zip(low, high)]
+        slab.pos = [a + b for a, b in zip(body_pos, in_world)]
+        slab.quat = list(world_quat)
+        slab.rgba = list(_REGION_RGBA[len(slabs) % len(_REGION_RGBA)])
+        slab.fixed = True
+        slab.mass = 0.001
+        slab.condim = mjk.Condim.Tangential
+        slab.friction = [1.0, 0.005, 0.0001]
+        slabs.append(slab)
+    return slabs
+
+
+def build_spec(scene: MjcfSceneSpec, start: Path, regions: list | None = None) -> mjk.SceneSpec:
     """The scene as a wrapper SceneSpec, with every authored asset path resolved."""
     spec = mjk.SceneSpec()
     spec.timestep = scene.timestep_s
@@ -140,7 +249,7 @@ def build_spec(scene: MjcfSceneSpec, start: Path) -> mjk.SceneSpec:
             object_spec.condim = mjk.Condim.Rolling
             object_spec.friction = obj.friction
         objects.append(object_spec)
-    spec.objects = objects
+    spec.objects = objects + list(regions or [])
 
     sites = []
     for frame in scene.frames:
@@ -156,9 +265,9 @@ def build_spec(scene: MjcfSceneSpec, start: Path) -> mjk.SceneSpec:
     return spec
 
 
-def build_scene(scenex_path: Path) -> mjk.Scene:
+def build_scene(scenex_path: Path, seed: int | None = None) -> mjk.Scene:
     """Compile the scene a .scenex describes."""
-    return mjk.Scene.build(build_spec(read_scenex(scenex_path), scenex_path))
+    return mjk.Scene.build(build_spec(read_scenex(scenex_path, seed), scenex_path))
 
 
 def describe(spec: mjk.SceneSpec, scene: mjk.Scene) -> None:
@@ -184,9 +293,22 @@ def main() -> int:
         help="Compile and describe the scene without opening the viewer",
     )
     parser.add_argument("--save-xml", type=Path, help="Write the composed MJCF here")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Seed the draws of any sampled placement, as 'motion-spec gen --seed' does",
+    )
+    parser.add_argument(
+        "--show-regions",
+        action="store_true",
+        help="Draw every 3-D uniform distribution the scenex declares as a translucent slab",
+    )
     args = parser.parse_args()
 
-    spec = build_spec(read_scenex(args.scenex_path), args.scenex_path)
+    graph = scenex_graph(args.scenex_path, args.seed)
+    scene = read_graph(graph, args.scenex_path)
+    regions = region_objects(graph, scene) if args.show_regions else []
+    spec = build_spec(scene, args.scenex_path, regions)
     scene = mjk.Scene.build(spec)
     try:
         describe(spec, scene)

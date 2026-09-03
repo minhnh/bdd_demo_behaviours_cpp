@@ -10,7 +10,7 @@ launch:
         - name: "graph_models"
           value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab_icra/collab_icra_sim_models.yaml"
         - name: "perception_config"
-          value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab/perception.yml"
+          value: "$(find-pkg-share bdd_collab_bhv_cpp)/config/collab_sim_perception.yml"
         - name: "launch_aruco"
           value: "$(var launch_aruco)"
         - name: "use_sim_time"

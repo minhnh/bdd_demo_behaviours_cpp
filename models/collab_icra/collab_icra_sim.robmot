@@ -49,6 +49,12 @@ context (ns=app) shared {
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
+        // The press direction below is this pose normalized, so the DSL needs it declared here.
+        pose pose-place-target {
+            of:         <collab-kgraph.robot-table-body.place_spot_region>,
+            wrt:        <gripper.g_base.g_pinch>,
+            as-seen-by: <kinova.base_link.base_link_origin>
+        },
         joint-position gripper-pos {
             joint: <gripper.g_left_driver_joint>
         },
@@ -98,7 +104,15 @@ context (ns=app) shared {
         force force-threshold = 10.0 N,
         force neg-force-threshold = -10.0 N,
         length comply-int-max = 0.02 m,
-        length neg-comply-int-max = -0.02 m
+        length neg-comply-int-max = -0.02 m,
+        direction toward-place { as-seen-by: <kinova.base_link.base_link_origin> }
+            = from <gripper.g_base.g_pinch> to <collab-kgraph.robot-table-body.place_spot_region>,
+        // Stands in for the operator's shove: lateral, so it clears the 10 N force-y guard.
+        direction push-left { as-seen-by: <kinova.base_link.base_link_origin> } = (0.0, 1.0, 0.0),
+        force push-force = 12.0 N,
+        length place-near-y = sample <push-gate-y> m,
+        duration push-hold = sample <push-hold-secs> s,
+        force place-press-force = 6.0 N
     }
 }
 
@@ -121,8 +135,8 @@ ros (ns=app) {
         tray-detections: topic "/recognized_objects" message "vision_msgs/msg/Detection3DArray" {
             observes { <shared.world.pose-handle-base> }
             pose from results {
-                of:  <collab-kgraph.drawer-body.marker1_origin>,
-                wrt: <collab-kgraph.rk-table-body.rk_optical>
+                of:  <collab-kgraph.drawer-body.drawer-handle>,
+                wrt: <collab-kgraph.robot-table-body.arm-mount>
             }
         },
     },
@@ -767,6 +781,11 @@ constraint-handler (ns=app) handler-compliance {
     solvers {
         <handler-hold-wait.arm-solver>,
         <handler-hold-wait.gripper-command-solver>
+    }
+    perturbations {
+        place-press: on <gripper.g_base>
+            apply force <shared.spec.place-press-force> along <shared.spec.toward-place>
+            for 7.0 s,
     }
 }
 
