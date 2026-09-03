@@ -94,10 +94,28 @@ scene inst (ns=collab-scn) collab-scene-simreal {
                     orientation: euler {angles: (-90.0, 0.0, 0.0) unit: deg}
                 }
             }
-            // The run's place point: swap the distribution to move it to another quadrant.
-            frame place_spot_region {
-                pose spot_in_region {
+            // One place point per quadrant; a model names the quadrant its set runs in.
+            frame place_spot_q1 {
+                pose spot_in_q1 {
                     wrt: <robot-table-body.place_datum> xyz: sample <place-xy-q1> m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            frame place_spot_q2 {
+                pose spot_in_q2 {
+                    wrt: <robot-table-body.place_datum> xyz: sample <place-xy-q2> m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            frame place_spot_q3 {
+                pose spot_in_q3 {
+                    wrt: <robot-table-body.place_datum> xyz: sample <place-xy-q3> m
+                    orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
+                }
+            }
+            frame place_spot_q4 {
+                pose spot_in_q4 {
+                    wrt: <robot-table-body.place_datum> xyz: sample <place-xy-q4> m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
