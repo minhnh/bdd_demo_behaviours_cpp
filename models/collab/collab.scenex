@@ -81,41 +81,33 @@ scene inst (ns=collab-scn) collab-scene-simreal {
                 }
             }
             frame place_spot {
-                pose spot_in_band {
+                pose spot_on_anchor {
                     wrt: <robot-table-body.table_anchor> xyz: sample <place-xy> m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
-            // The anchor's pose carried on the table top, so a placement measured from the anchor
-            // resolves onto the body; the anchor itself is a joint frame and hosts nothing.
-            frame place_datum {
-                pose datum_on_table_top {
-                    wrt: <robot-table-body.table_top> xyz: (-0.725, 0.295, 0.0) m
-                    orientation: euler {angles: (-90.0, 0.0, 0.0) unit: deg}
-                }
-            }
             // One place point per quadrant; a model names the quadrant its set runs in.
             frame place_spot_near_right {
-                pose spot_near_right {
-                    wrt: <robot-table-body.place_datum> xyz: sample <place-xy-near-right> m
+                pose near_right_on_anchor {
+                    wrt: <robot-table-body.table_anchor> xyz: sample <place-xy-near-right> m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
             frame place_spot_far_right {
-                pose spot_far_right {
-                    wrt: <robot-table-body.place_datum> xyz: sample <place-xy-far-right> m
+                pose far_right_on_anchor {
+                    wrt: <robot-table-body.table_anchor> xyz: sample <place-xy-far-right> m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
             frame place_spot_far_left {
-                pose spot_far_left {
-                    wrt: <robot-table-body.place_datum> xyz: sample <place-xy-far-left> m
+                pose far_left_on_anchor {
+                    wrt: <robot-table-body.table_anchor> xyz: sample <place-xy-far-left> m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
             frame place_spot_near_left {
-                pose spot_near_left {
-                    wrt: <robot-table-body.place_datum> xyz: sample <place-xy-near-left> m
+                pose near_left_on_anchor {
+                    wrt: <robot-table-body.table_anchor> xyz: sample <place-xy-near-left> m
                     orientation: euler {angles: (0.0, 0.0, 0.0) unit: deg}
                 }
             }
