@@ -20,12 +20,16 @@ context (ns=app) shared {
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
+        pose pose-pinch-table {
+            of:         <gripper.g_base.g_pinch>,
+            wrt:        <collab-kgraph.robot-table-body.table_anchor>,
+            as-seen-by: <collab-kgraph.robot-table-body.table_anchor>
+        },
         pose pose-handle-base {
             of:         <collab-kgraph.drawer-body.drawer-handle>,
             wrt:        <kinova.base_link.base_link_origin>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
-        // Reported, not controlled: the ground truth the scenario's location criteria are scored against.
         pose pose-drawer-base {
             of:         <collab-kgraph.drawer-body.drawer-root>,
             wrt:        <kinova.base_link.base_link_origin>,
@@ -47,12 +51,6 @@ context (ns=app) shared {
             wrt:        <gripper.g_base.g_pinch>,
             as-seen-by: <kinova.base_link.base_link_origin>
         },
-        // Place height is measured off the table top.
-        pose pose-ee-table {
-            of:         <gripper.g_base.g_pinch>,
-            wrt:        <collab-kgraph.robot-table-body.table_top>,
-            as-seen-by: <collab-kgraph.robot-table-body.table_top>
-        },
         joint-position gripper-pos {
             joint: <gripper.g_left_driver_joint>
         },
@@ -66,46 +64,41 @@ context (ns=app) shared {
             as-seen-by: <kinova.base_link.base_link_origin>,
             ft-sensor:  <wrist_ft>,
             re-tare-on: { <collab-coord.E_RUN_STARTED>, <collab-coord.E_TARE_ENTERED>, <collab-coord.E_OBJ_RELEASED> }
-        },
-        wrench press-wrench {
-            of:         <gripper.g_base.g_pinch>, ref-point: <gripper.g_base.g_pinch>, as-seen-by: <kinova.base_link.base_link_origin>
         }
     },
     spec {
-        // Shared, not per motion: re-capturing on each entry would walk the hold away.
         pose start-pose             = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_RUN_STARTED>,
-        // How old the last detection may be and still be what the look aims at; the detector reports at 2 Hz.
         duration handle-validity    = 1.0 s,
         angle gripper-closed        = 0.8 rad,
         angle gripper-open          = 0.0 rad,
         angle grasp-threshold       = 0.5 rad,
-        // Fingers on the 20 mm fin sit near 0.61 rad; closing on nothing reaches 0.786.
         angle grasp-max             = 0.72 rad,
         linear-velocity zero-linvel = 0.0 m/s,
         linear-velocity descend-vel = -0.05 m/s,
+        linear-acceleration touchdown-accel-limit = 0.25 m/s^2,
         linear-velocity lift-up-vel = 0.05 m/s,
+        linear-velocity slide-vel   = -0.05 m/s,
+        linear-velocity press-vel   = -0.01 m/s,
         length touchdown-z          = 0.1 m,
-        length approach-standoff    = 0.12 m,
+        length place-clearance      = 0.1 m,
+        length approach-standoff    = 0.06 m,
+        length grasp-reach          = 0.005 m,
         length lift-height-z        = 0.2 m,
         length transport-position-band = 0.3 m,
-        // Pinch-to-handle reach of a closed grasp; beyond it the container is no longer on the gripper.
         length held-distance        = 0.12 m,
-        // Gen3 large-joint rating: the least-squares solve is unclamped, so contact can ask for anything.
         torque arm-torque-limit     = 39.0 Nm,
         torque elbow-torque-limit   = 5.0 Nm,
         angle joint-3-target        = 3.14 rad,
         linear-velocity compliance-velocity-band = 0.01 m/s,
         force force-threshold = 10.0 N,
-        force neg-force-threshold = -10.0 N,
         length comply-int-max = 0.02 m,
         length neg-comply-int-max = -0.02 m,
-        // Stands in for the operator's shove: lateral, so it clears the 10 N force-y guard.
+        // Stands in for the operator's shove: lateral, so it clears the 10 N interaction guard.
         direction push-left { as-seen-by: <kinova.base_link.base_link_origin> } = (0.0, 1.0, 0.0),
         force push-force = 12.0 N,
         length place-near-y = sample <push-gate-y> m,
         duration push-hold = sample <push-hold-secs> s,
         force place-press-force = 6.0 N,
-        force press-force = -4.0 N, force press-band = 0.5 N,
         angular-acceleration forward-orientation-accel-limit = 50.0 rad/s^2,
         angular-acceleration forward-orientation-integral-limit = 0.5 rad/s^2
     }
@@ -214,6 +207,8 @@ guarded-motion (ns=app) go-look {
 
             distance arc-height = 0.35 m,
 
+            length arrive-band = 0.03 m,
+
             pose start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_HANDLE_DETECTED>,
             pose handle-pose = snapshot of <shared.world.pose-handle-base> on event <collab-coord.E_HANDLE_DETECTED>,
             length handle-x = snapshot of <shared.world.pose-handle-base>.position.x on event <collab-coord.E_HANDLE_DETECTED>,
@@ -225,7 +220,6 @@ guarded-motion (ns=app) go-look {
                 as-seen-by: <kinova.base_link.base_link_origin>
             } = {
                 position: (<spec.handle-x>, <spec.approach-y>, <shared.spec.start-pose>.position.z) m,
-                // Facing the handle with the pads across the fin: pinch along the handle's x, not its z.
                 orientation: <spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (-pi/2, pi/2, 0.0) rad }
             },
 
@@ -253,7 +247,7 @@ guarded-motion (ns=app) go-look {
         settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
         settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
         settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
-        at-go-look-position: <shared.world.pose-ee-base>.position equal to <spec.look-table>.position,
+        at-go-look-position: <shared.world.pose-ee-base>.position equal to <spec.look-table>.position within <spec.arrive-band>,
         at-go-look-orientation: <shared.world.pose-ee-base>.orientation equal to <spec.look-table>.orientation
     }
 }
@@ -313,7 +307,7 @@ constraint-handler (ns=app) handler-touchdown {
     runs-in: <collab-coord.S_TOUCH>
     monitors {
         mon-opened: monitor <touchdown.until> {
-            satisfied for 0.3 s { trigger: event <collab-coord.E_TABLE_TOUCHED> },
+            satisfied for 0.5 s { trigger: event <collab-coord.E_TABLE_TOUCHED> },
         }
     }
     controllers {
@@ -326,14 +320,7 @@ constraint-handler (ns=app) handler-touchdown {
             Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
         } as torque
     }
-    solvers {
-        achd-arm-solver: serial-chain {
-            agent:     <collab-agents.kinova>,
-            algorithm: achd,
-            limits     { torque: saturation { max: <shared.spec.arm-torque-limit> } },
-            gravity:   (0.0, 0.0, 9.81) m/s^2
-        }
-    }
+    solvers { <handler-hold-wait.arm-solver> }
 }
 
 
@@ -343,35 +330,29 @@ guarded-motion (ns=app) forward_motion {
 
     context {
         spec {
-            // The grasp is reached 59 mm into the handle, so it is stated from the handle.
-            length grasp-reach = 0.010 m,
-            length grasp-y = snapshot of <shared.world.pose-handle-base>.position.y - <spec.grasp-reach> on event <collab-coord.E_SLIDE_ENTERED>,
-            // The push target: past the handle by the reach, at the handle's own height.
-            length forward-reach = 0.015 m,
-            length forward-y = snapshot of <shared.world.pose-handle-base>.position.y - <spec.forward-reach> on event <collab-coord.E_SLIDE_ENTERED>,
-            length handle-x = snapshot of <shared.world.pose-handle-base>.position.x on event <collab-coord.E_SLIDE_ENTERED>,
-            pose forward-start = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_SLIDE_ENTERED>,
-            velocity-profile slide-profile = profile { max-velocity: 0.10 m/s, max-acceleration: 0.5 m/s^2, shape: trapezoidal }
+            pose target-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_SLIDE_ENTERED>
         }
     }
 
     when {}
 
     while {
+        move-forward-neg-y:
+            keeping <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.slide-vel>,
         hold-x:
-            keeping <shared.world.pose-ee-base>.position.x equal to <spec.handle-x>,
-        advance-y:
-            keeping <shared.world.pose-ee-base>.position.y equal to <spec.forward-y>,
-        press-down:
-            keeping <shared.world.press-wrench>.force.z equal to <shared.spec.press-force> within <shared.spec.press-band>,
+            keeping <shared.world.pose-ee-base>.position.x equal to <go-look.spec.handle-x>,
+        press-z:
+            keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.press-vel>,
         orientation:
-            keeping <shared.world.pose-ee-base>.orientation equal to <spec.forward-start>.orientation,
+            keeping <shared.world.pose-ee-base>.orientation equal to <spec.target-pose>.orientation,
         hold-elbow:
             keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>
     }
 
     until all {
-        reached-handle: <shared.world.pose-ee-base>.position.y less than <spec.grasp-y>,
+        // The handle as observed when the approach was planned: once the gripper is over the
+        // tray it hides the front marker and a fresh estimate jumps.
+        reached-handle: <shared.world.pose-ee-base>.position.y less than (<go-look.spec.handle-pose>.position.y + <shared.spec.grasp-reach>),
         on-table: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>
     }
 }
@@ -381,30 +362,25 @@ constraint-handler (ns=app) handler-forward {
     runs-in: <collab-coord.S_SLIDE>
     monitors {
         mon-forward-done: monitor <forward_motion.until> {
-            satisfied { trigger: event <collab-coord.E_OBJ_REACHED> },
+            satisfied for 0.1 s { trigger: event <collab-coord.E_OBJ_REACHED> },
         }
     }
     controllers {
-        pid ctrl-forward-x {
-            constraint: <forward_motion.hold-x>, profile: <forward_motion.spec.slide-profile>, measured-derivative: <shared.world.twist-ee-base>.linvel.x,
-            Kp: 200, Ki: 20, Kd: 30, decay: 0
-        },
-        pid ctrl-forward-y {
-            constraint: <forward_motion.advance-y>, profile: <forward_motion.spec.slide-profile>, measured-derivative: <shared.world.twist-ee-base>.linvel.y,
-            Kp: 120, Ki: 20, Kd: 30, decay: 0
-        },
-        feed-forward ctrl-forward-press-down { constraint: <forward_motion.press-down> } as force apply at <gripper.g_base>,
-        // Ki 0: sliding on the table is a standing push, the disturbance an integrator must not chase.
+        pid ctrl-forward-neg-y { constraint: <forward_motion.move-forward-neg-y>, Kp: 100, Ki: 5, Kd: 0.1, decay: 0 },
+        pid ctrl-forward-x { constraint: <forward_motion.hold-x>, Kp: 200, Ki: 15, Kd: 0.1, decay: 0 },
+        pid ctrl-forward-z { constraint: <forward_motion.press-z>, Kp: 175, Ki: 0, Kd: 0.1, decay: 0 },
         pid ctrl-forward-orientation {
             constraint: <forward_motion.orientation>, measured-derivative: <shared.world.twist-ee-base>.angvel,
-            output-saturation: saturation { max: <shared.spec.forward-orientation-accel-limit> }, integral-saturation: saturation { max: <shared.spec.forward-orientation-integral-limit> }, Kp: 200, Ki: 15, Kd: 45, decay: 0
+            output-saturation: saturation { max: <shared.spec.forward-orientation-accel-limit> },
+            integral-saturation: saturation { max: <shared.spec.forward-orientation-integral-limit> },
+            Kp: 200, Ki: 15, Kd: 45, decay: 0
         },
         pid ctrl-forward-elbow {
             constraint: <forward_motion.hold-elbow>, output-saturation: saturation { max: <shared.spec.elbow-torque-limit> },
             Kp: 20, Ki: 0, Kd: 8, decay: 0, error-normalization: (-pi, pi) rad
         } as torque
     }
-    solvers { <handler-touchdown.achd-arm-solver> }
+    solvers { <handler-hold-wait.arm-solver> }
 }
 
 
@@ -431,7 +407,6 @@ guarded-motion (ns=app) hold-close {
         settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
         settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
         settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
-        // Pinned: the default 5 deg Angle band would let a closed empty gripper back through.
         grasped: <shared.world.gripper-pos>
             between <shared.spec.grasp-threshold> and <shared.spec.grasp-max>
     }
@@ -494,7 +469,6 @@ constraint-handler (ns=app) handler-lift-up {
         }
     }
     controllers {
-        // D reads the measured linear velocity; a differenced error at Kd 0.1 left these rows undamped.
         pid ctrl-lift-up-x {
             constraint: <lift-up.hold-x>, measured-derivative: <shared.world.twist-ee-base>.linvel.x,
             Kp: 150, Ki: 5, Kd: 25, decay: 0
@@ -503,7 +477,6 @@ constraint-handler (ns=app) handler-lift-up {
             constraint: <lift-up.hold-y>, measured-derivative: <shared.world.twist-ee-base>.linvel.y,
             Kp: 150, Ki: 5, Kd: 25, decay: 0
         },
-        // Kd 0: the constraint is already a velocity, so a derivative term feeds back acceleration.
         pid ctrl-lift-up-z { constraint: <lift-up.lift-up-z>,                             Kp: 175, Ki: 5, Kd: 0, decay: 0 },
         impedance ctrl-lift-up-ori { constraint: <lift-up.hold-orientation>, stiffness: 30, damping: 12 } apply at <gripper.g_base>,
         pid ctrl-lift-up-joint-3 { constraint: <lift-up.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque
@@ -573,6 +546,7 @@ guarded-motion (ns=app) go-pre-place {
                 shape: trapezoidal
             },
             direction path-normal { as-seen-by: <kinova.base_link.base_link_origin> } = (0.4450, -0.5406, -0.7140),
+            direction up { as-seen-by: <kinova.base_link.base_link_origin> } = (0.0, 0.0, 1.0),
 
             distance arc-height = 0.4 m,
 
@@ -595,10 +569,8 @@ guarded-motion (ns=app) go-pre-place {
         follow-position:    keeping <shared.world.pose-ee-base>.position on <spec.pre-place-arc-path>,
         follow-orientation: keeping <shared.world.pose-ee-base>.orientation on <spec.pre-place-arc-path>,
         hold-elbow:         keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
-        force-x: <shared.world.ext-force>.force.x
-            outside <shared.spec.neg-force-threshold> and <shared.spec.force-threshold>,
-        force-y: <shared.world.ext-force>.force.y
-            outside <shared.spec.neg-force-threshold> and <shared.spec.force-threshold>,
+        interaction: norm of <shared.world.ext-force>.force across <spec.up>
+            greater than <shared.spec.force-threshold>,
         // Not controlled: read by the drop monitor, which is what the scenario scores.
         object-held:
             distance between <shared.world.pose-ee-base> and <shared.world.pose-handle-base>
@@ -616,10 +588,7 @@ constraint-handler (ns=app) handler-go-pre-place {
     handles: <go-pre-place>
     runs-in: <collab-coord.S_TRANSPORT>
     monitors {
-        mon-force-x: monitor <go-pre-place.force-x> {
-            satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
-        },
-        mon-force-y: monitor <go-pre-place.force-y> {
+        mon-interaction: monitor <go-pre-place.interaction> {
             satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
         },
         mon-object-held: monitor <go-pre-place.object-held> {
@@ -659,7 +628,7 @@ guarded-motion (ns=app) compliance {
 
     context {
         spec {
-            pose compliance_start_pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_COMPLIANCE_ENTERED>,
+            pose compliance-start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_COMPLIANCE_ENTERED>,
             admittance velocity-x = {
                 force: <shared.world.ext-force>.force.x,
                 mass: 2.0,
@@ -684,9 +653,7 @@ guarded-motion (ns=app) compliance {
                 max-velocity: 0.05 m/s,
                 deadband: 1.0 N
             },
-            angle angle-band = 0.01 rad,
             angular-acceleration comply-angular-accel-max = 60.0 rad/s^2,
-            // Carrying the tray, the pinch bottoms out about 0.13 m above the table.
             length place-hand-over-z = 0.15 m,
             direction toward-place { as-seen-by: <kinova.base_link.base_link_origin> }
                 = from <gripper.g_base.g_pinch> to <collab-kgraph.robot-table-body.place_spot_far_right>
@@ -706,8 +673,7 @@ guarded-motion (ns=app) compliance {
             keeping <shared.world.twist-ee-base>.linvel.z equal to <spec.velocity-z>
             within <shared.spec.compliance-velocity-band>,
         comply-ori:
-            keeping <shared.world.pose-ee-base>.orientation equal to <spec.compliance_start_pose>.orientation
-            within <spec.angle-band>,
+            keeping <shared.world.pose-ee-base>.orientation equal to <spec.compliance-start-pose>.orientation,
         hold-elbow:    keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>,
         close-gripper: keeping <shared.world.gripper-pos> equal to <shared.spec.gripper-closed>,
         // Not controlled: read by the drop monitor, which is what the scenario scores.
@@ -717,7 +683,7 @@ guarded-motion (ns=app) compliance {
     }
 
     until all {
-        at-place-height: <shared.world.pose-ee-table>.position.z less than <spec.place-hand-over-z>
+        at-place-clearance: <shared.world.pose-pinch-table>.position.z less than <spec.place-hand-over-z>
     }
 }
 
@@ -763,8 +729,6 @@ constraint-handler (ns=app) handler-compliance {
             Kp: 150, Ki: 800, Kd: 0, decay: 0
         },
         feed-forward ctrl-comply-gripper { <compliance.close-gripper> },
-        // Ki 0: a push is the disturbance an integrator must not chase. D reads the measured
-        // angular velocity, the same derivative without the 1 kHz noise gain of a differenced error.
         pid ctrl-comply-ori {
             constraint: <compliance.comply-ori>,
             measured-derivative: <shared.world.twist-ee-base>.angvel,
@@ -787,11 +751,10 @@ constraint-handler (ns=app) handler-compliance {
 
 
 guarded-motion (ns=app) place-down {
-    description: "Lower the TCP until it is near table surface with near-zero vertical velocity"
+    description: "Lower the TCP slowly from the handover height to the placement height"
 
     context {
         spec {
-            // "Stopped on the table", not the free-motion tolerance the 0.3 s dwell kept restarting on.
             linear-velocity settled-velocity-band = 0.02 m/s,
             pose place-down-start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_PLACE_START>,
             length hold-x = snapshot of <shared.world.pose-ee-base>.position.x on event <collab-coord.E_PLACE_START>,
@@ -804,12 +767,13 @@ guarded-motion (ns=app) place-down {
     while {
         hold-x: keeping <shared.world.pose-ee-base>.position.x equal to <spec.hold-x>,
         hold-y: keeping <shared.world.pose-ee-base>.position.y equal to <spec.hold-y>,
-        lower-z: keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.descend-vel>,
+        lower-z: keeping <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.press-vel>,
         hold-orientation: keeping <shared.world.pose-ee-base>.orientation equal to <spec.place-down-start-pose>.orientation,
         hold-elbow: keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>
     }
 
-    until {
+    until all {
+        below-placement-clearance: <shared.world.pose-pinch-table>.position.z less than <shared.spec.place-clearance>,
         place-down-z-velocity: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
             within <spec.settled-velocity-band>
     }
@@ -829,9 +793,7 @@ constraint-handler (ns=app) handler-place-down {
     controllers {
         pid ctrl-place-down-x { constraint: <place-down.hold-x>,                              Kp: 80,  Ki: 20, Kd: 25, decay: 0 },
         pid ctrl-place-down-y { constraint: <place-down.hold-y>,                              Kp: 80,  Ki: 20, Kd: 25, decay: 0 },
-        // Kp is the press the table absorbs: 200 struck at 80 N and limit-cycled, 40 lands at 13 N.
         pid ctrl-place-down-z { constraint: <place-down.lower-z>,                             Kp: 40,  Ki: 0,  Kd: 0,  decay: 0 },
-        // 30/12, not the bare-gripper 7/2: 0.35 kg of tray on the wrist rings from motion entry.
         impedance ctrl-place-down-ori { constraint: <place-down.hold-orientation>, stiffness: 30, damping: 12 } apply at <gripper.g_base>,
         pid ctrl-place-down-joint-3 { constraint: <place-down.hold-elbow>,                    Kp: 70, Ki: 0, Kd: 15, decay: 0, error-normalization: (-pi, pi) rad } as torque
     }
@@ -898,7 +860,7 @@ constraint-handler (ns=app) handler-hold-open {
         } as torque
     }
     solvers {
-        <handler-touchdown.achd-arm-solver>,
+        <handler-hold-wait.arm-solver>,
         <handler-hold-wait.gripper-command-solver>
     }
 }
@@ -909,7 +871,6 @@ guarded-motion (ns=app) hold-done {
     context {
         spec {
             pose target-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_DONE_ENTERED>,
-            // As long as [ros.clock] linger keeps the run alive past the end state.
             duration linger = 3.0 s
         }
     }
@@ -958,7 +919,7 @@ constraint-handler (ns=app) handler-hold-done {
         } as torque
     }
     solvers {
-        <handler-touchdown.achd-arm-solver>,
+        <handler-hold-wait.arm-solver>,
         <handler-hold-wait.gripper-command-solver>
     }
 }
