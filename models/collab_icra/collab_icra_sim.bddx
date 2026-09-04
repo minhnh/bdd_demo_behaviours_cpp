@@ -136,15 +136,15 @@ obs policy (ns=collab-icra) place-footprint-aruco-policy for <transport-tmpl.pla
 
 obs policy (ns=collab-icra) force-instantaneous-policy for <transport-tmpl.force-instantaneous> {
     observations: { <ee-wrench-obs> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: WrenchForceNormWithinLimitEvaluator }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: sim_force_instantaneous_within_limit }
 }
 obs policy (ns=collab-icra) force-peak-policy for <transport-tmpl.force-peak> {
     observations: { <ee-wrench-obs> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: WrenchPeakForceNormWithinLimitEvaluator }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: sim_force_peak_within_limit }
 }
 obs policy (ns=collab-icra) force-rms-policy for <transport-tmpl.force-rms> {
     observations: { <ee-wrench-obs> }
-    evaluator: py { module: bdd_exec_ros2.observation, attr: WrenchRmsForceNormWithinLimitEvaluator }
+    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: sim_force_rms_within_limit }
 }
 obs policy (ns=collab-icra) container-not-dropped-policy for <transport-tmpl.container-not-dropped> {
     trinary topic: "/obs_policy/container_not_dropped"
