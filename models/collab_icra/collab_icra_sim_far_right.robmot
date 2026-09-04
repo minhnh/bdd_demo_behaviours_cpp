@@ -210,8 +210,19 @@ guarded-motion (ns=app) go-look {
             length arrive-band = 0.03 m,
 
             pose start-pose = snapshot of <shared.world.pose-ee-base> on event <collab-coord.E_HANDLE_DETECTED>,
-            pose handle-pose = snapshot of <shared.world.pose-handle-base> on event <collab-coord.E_HANDLE_DETECTED>,
             length handle-x = snapshot of <shared.world.pose-handle-base>.position.x on event <collab-coord.E_HANDLE_DETECTED>,
+            length handle-y = snapshot of <shared.world.pose-handle-base>.position.y on event <collab-coord.E_HANDLE_DETECTED>,
+            length handle-z = snapshot of <shared.world.pose-handle-base>.position.z on event <collab-coord.E_HANDLE_DETECTED>,
+            angle handle-yaw = snapshot of <shared.world.pose-handle-base>.orientation.z on event <collab-coord.E_HANDLE_DETECTED>,
+            // Only the handle's yaw is trusted: a standing drawer has no roll or pitch to follow.
+            pose handle-upright {
+                of:         <collab-kgraph.drawer-body.drawer-handle>,
+                wrt:        <kinova.base_link.base_link_origin>,
+                as-seen-by: <kinova.base_link.base_link_origin>
+            } = {
+                position: (<spec.handle-x>, <spec.handle-y>, <spec.handle-z>) m,
+                orientation: euler { axes: xyz extrinsic, angles: (0.0, 0.0, <spec.handle-yaw>) rad }
+            },
 
             length approach-y = snapshot of <shared.world.pose-handle-base>.position.y + <shared.spec.approach-standoff> on event <collab-coord.E_HANDLE_DETECTED>,
             pose look-table {
@@ -220,7 +231,7 @@ guarded-motion (ns=app) go-look {
                 as-seen-by: <kinova.base_link.base_link_origin>
             } = {
                 position: (<spec.handle-x>, <spec.approach-y>, <shared.spec.start-pose>.position.z) m,
-                orientation: <spec.handle-pose> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (-pi/2, pi/2, 0.0) rad }
+                orientation: <spec.handle-upright> rotated in <collab-kgraph.drawer-body.drawer-handle> by euler { axes: xyz extrinsic, angles: (-pi/2, pi/2, 0.0) rad }
             },
 
             path go-look-arc-path = arc {
@@ -352,7 +363,7 @@ guarded-motion (ns=app) forward_motion {
     until all {
         // The handle as observed when the approach was planned: once the gripper is over the
         // tray it hides the front marker and a fresh estimate jumps.
-        reached-handle: <shared.world.pose-ee-base>.position.y less than (<go-look.spec.handle-pose>.position.y + <shared.spec.grasp-reach>),
+        reached-handle: <shared.world.pose-ee-base>.position.y less than (<go-look.spec.handle-y> + <shared.spec.grasp-reach>),
         on-table: <shared.world.pose-ee-base>.position.z less than <shared.spec.touchdown-z>
     }
 }
