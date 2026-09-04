@@ -18,6 +18,7 @@ evt loop (ns=collab-coord) collab_demo_fsm_events {
     evt E_TABLE_TOUCHED,
     evt E_OBJ_REACHED,
     evt E_OBJ_GRASPED,
+    evt E_GRASP_FAILED,
     evt E_OBJECT_LIFTED,
     evt E_INTERACTION_DETECTED,
     evt E_REACHED_PRE_PLACEMENT_HEIGHT_FROM_TRANSPORT,
@@ -64,6 +65,7 @@ fsm (ns=collab-coord) collab_demo_fsm {
         T_TOUCH_SLIDE { from: <S_TOUCH>,  to: <S_SLIDE> },
         T_SLIDE_CLOSE { from: <S_SLIDE>,    to: <S_CLOSE> },
         T_CLOSE_LIFT { from: <S_CLOSE>,    to: <S_LIFT> },
+        T_CLOSE_DONE { from: <S_CLOSE>,    to: <S_DONE> },
         T_LIFT_TARE { from: <S_LIFT>, to: <S_TARE_AFTER_LIFT> },
         T_TARE_TRANSPORT { from: <S_TARE_AFTER_LIFT>, to: <S_TRANSPORT> },
         T_TRANSPORT_COMPLIANCE { from: <S_TRANSPORT>, to: <S_COMPLIANCE> },
@@ -103,6 +105,11 @@ fsm (ns=collab-coord) collab_demo_fsm {
             when: <collab_demo_fsm_events.E_OBJ_GRASPED>,
             do: <T_CLOSE_LIFT>,
             fires { <collab_demo_fsm_events.E_LIFT_ENTERED> }
+        },
+        R_GRASP_FAILED {
+            when: <collab_demo_fsm_events.E_GRASP_FAILED>,
+            do: <T_CLOSE_DONE>,
+            fires { <collab_demo_fsm_events.E_DONE_ENTERED> }
         },
         R_OBJECT_LIFTED {
             when: <collab_demo_fsm_events.E_OBJECT_LIFTED>,

@@ -37,6 +37,9 @@ context (ns=app) shared {
         joint-position gripper-pos {
             joint: <gripper.g_left_driver_joint>
         },
+        joint-current gripper-cur {
+            joint: <gripper.g_left_driver_joint>
+        },
         velocity-twist twist-ee-base {
             of:         <gripper.g_base.g_pinch>,
             wrt:        <kinova.base_link.base_link_origin>,
@@ -54,8 +57,10 @@ context (ns=app) shared {
         duration handle-validity    = 1.0 s,
         angle gripper-closed        = 0.8 rad,
         angle gripper-open          = 0.0 rad,
-        angle grasp-threshold       = 0.5 rad,
-        angle grasp-max             = 0.72 rad,
+        // Bench values, to be confirmed: idle gCU at rest, and 0.8 - 0.786 closed on nothing.
+        current contact-idle        = 0.02 A,
+        angle e-min                 = 0.03 rad,
+        angle open-band             = 0.5 rad,
         linear-velocity zero-linvel = 0.0 m/s,
         linear-velocity descend-vel = -0.05 m/s,
         linear-acceleration touchdown-accel-limit = 0.25 m/s^2,
@@ -365,12 +370,18 @@ guarded-motion (ns=app) hold-close {
         hold-elbow:       keeping <shared.world.joint-3-angle> equal to <shared.spec.joint-3-target>
     }
 
-    until all {
-        settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
-        settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
-        settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
-        grasped: <shared.world.gripper-pos>
-            between <shared.spec.grasp-threshold> and <shared.spec.grasp-max>
+    until {
+        grasped all {
+            fingers-stopped: <shared.world.gripper-cur> less than <shared.spec.contact-idle>,
+            short-of-goal:   <shared.world.gripper-pos> less than (<shared.spec.gripper-closed> - <shared.spec.e-min>),
+            settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
+            settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
+            settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
+        },
+        failed all {
+            stopped:  <shared.world.gripper-cur> less than <shared.spec.contact-idle>,
+            at-goal:  <shared.world.gripper-pos> greater than (<shared.spec.gripper-closed> - <shared.spec.e-min>)
+        }
     }
 }
 
@@ -378,8 +389,11 @@ constraint-handler (ns=app) handler-hold-close {
     handles: <hold-close>
     runs-in: <collab-coord.S_CLOSE>
     monitors {
-        mon-closed: monitor <hold-close.until> {
-            satisfied for 1 s { trigger: event <collab-coord.E_OBJ_GRASPED> }
+        mon-grasped: monitor <hold-close.grasped> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_OBJ_GRASPED> }
+        },
+        mon-failed: monitor <hold-close.failed> {
+            satisfied for 0.3 s { trigger: event <collab-coord.E_GRASP_FAILED> }
         }
     }
     controllers {
@@ -739,7 +753,7 @@ guarded-motion (ns=app) hold-open {
         settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
         settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
         settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>,
-        gripper-opened: <shared.world.gripper-pos> less than <shared.spec.grasp-threshold>
+        gripper-opened: <shared.world.gripper-pos> less than <shared.spec.open-band>
     }
 }
 
