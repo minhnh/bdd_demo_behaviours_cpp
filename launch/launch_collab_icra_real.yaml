@@ -1,8 +1,29 @@
 %YAML 1.2
 ---
 launch:
+  - arg:
+      name: "launch_aruco"
+      default: "true"
+      description: "false when the detector is already running"
+  - arg:
+      name: "perception_config"
+      default: "$(find-pkg-share aruco_perception)/config/table_setup.yml"
+      description: "aruco_perception setup YAML naming the cameras, markers and frames"
+  - arg:
+      name: "publish_markers"
+      default: "false"
+
   - include:
       file: "$(find-pkg-share bdd_collab_bhv_cpp)/launch/launch_collab_bdd.yaml"
       arg:
         - name: "graph_models"
           value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab_icra/collab_icra_real_models.yaml"
+
+  - include:
+      file: "$(find-pkg-share aruco_perception)/launch/table_setup.launch.yaml"
+      if: "$(var launch_aruco)"
+      arg:
+        - name: "config_path"
+          value: "$(var perception_config)"
+        - name: "publish_markers"
+          value: "$(var publish_markers)"
