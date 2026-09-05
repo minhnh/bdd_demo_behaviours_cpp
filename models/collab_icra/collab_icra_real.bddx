@@ -11,6 +11,12 @@ obs provider (ns=collab-icra) ee-wrench {
     ros topic: "/ee_wrench" type: "geometry_msgs/msg/WrenchStamped"
 }
 
+obs provider (ns=collab-icra) tf-poses {
+    ros transform listener
+    reference-frame: "base_link"
+    update-rate: 20.0 Hz
+}
+
 observation (ns=collab-icra) drawer-position-aruco {
     provider: <aruco> observes var <transport-tmpl.container>
     time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
@@ -44,6 +50,21 @@ observation (ns=collab-icra) place-pose-aruco {
 observation (ns=collab-icra) ee-wrench-obs {
     provider: <ee-wrench>
     time extractor: py { module: bdd_exec_ros2.observation, attr: header_stamp }
+}
+
+observation (ns=collab-icra) drawer-position-tf {
+    provider: <tf-poses> observes var <transport-tmpl.container>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: latest_identified_pose_stamp }
+    entity mapper: string {
+        "drawer_handle" to var <transport-tmpl.container>
+    }
+}
+observation (ns=collab-icra) ee-position-tf {
+    provider: <tf-poses> observes var <transport-tmpl.robot>
+    time extractor: py { module: bdd_exec_ros2.observation, attr: latest_identified_pose_stamp }
+    entity mapper: string {
+        "g_pinch" to var <transport-tmpl.robot>
+    }
 }
 
 obs policy (ns=collab-icra) pick-distance-aruco-policy for <transport-tmpl.pick-distance-aruco> horizon: 2.0 seconds {
@@ -83,7 +104,8 @@ obs policy (ns=collab-icra) force-rms-policy for <transport-tmpl.force-rms> {
     evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: real_force_rms_within_limit }
 }
 obs policy (ns=collab-icra) container-not-dropped-policy for <transport-tmpl.container-not-dropped> {
-    trinary topic: "/obs_policy/container_not_dropped"
+    observations: { <drawer-position-tf>, <ee-position-tf> }
+    evaluator: linear distance { less-than: 0.12 m }
 }
 
 Scenario Exec (ns=collab-icra) collab-transport-real-exec {

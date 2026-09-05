@@ -566,7 +566,10 @@ constraint-handler (ns=app) handler-go-pre-place {
     runs-in: <collab-coord.S_TRANSPORT>
     monitors {
         mon-interaction: monitor <go-pre-place.interaction> {
-            satisfied for 0.1 s { trigger: event <collab-coord.E_INTERACTION_DETECTED> },
+            satisfied for 0.1 s {
+                trigger: event <collab-coord.E_INTERACTION_DETECTED>,
+                publish: events { <collab-coord.E_INTERACTION_DETECTED> } to <ros.publishers.bdd-events>
+            },
         },
         mon-opened: monitor <go-pre-place.until> {
             satisfied for 0.1 s {
