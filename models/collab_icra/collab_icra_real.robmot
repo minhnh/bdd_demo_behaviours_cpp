@@ -37,6 +37,9 @@ context (ns=app) shared {
         joint-position gripper-pos {
             joint: <gripper.g_left_driver_joint>
         },
+        joint-velocity gripper-vel {
+            joint: <gripper.g_left_driver_joint>
+        },
         joint-current gripper-cur {
             joint: <gripper.g_left_driver_joint>
         },
@@ -57,11 +60,13 @@ context (ns=app) shared {
         duration handle-validity    = 1.0 s,
         angle gripper-closed        = 0.8 rad,
         angle gripper-open          = 0.0 rad,
-        // Bench values, to be confirmed: idle gCU at rest, and 0.8 - 0.786 closed on nothing.
-        current contact-idle        = 0.02 A,
+        // Bench value, to be confirmed: 0.8 - 0.786 closed on nothing.
         angle e-min                 = 0.03 rad,
         angle open-band             = 0.5 rad,
         linear-velocity zero-linvel = 0.0 m/s,
+        angular-velocity zero-angvel = 0.0 rad/s,
+        // A quarter of the 2F-85's slowest closure (20 mm/s over the 85 mm stroke, ~0.19 rad/s).
+        angular-velocity stall-band = 0.05 rad/s,
         linear-velocity descend-vel = -0.05 m/s,
         linear-acceleration touchdown-accel-limit = 0.25 m/s^2,
         linear-velocity lift-up-vel = 0.05 m/s,
@@ -383,14 +388,14 @@ guarded-motion (ns=app) hold-close {
 
     until {
         grasped all {
-            fingers-stopped: <shared.world.gripper-cur> less than <shared.spec.contact-idle>,
+            fingers-stopped: <shared.world.gripper-vel> equal to <shared.spec.zero-angvel> within <shared.spec.stall-band>,
             short-of-goal:   <shared.world.gripper-pos> less than (<shared.spec.gripper-closed> - <shared.spec.e-min>),
             settled-x-vel: <shared.world.twist-ee-base>.linvel.x equal to <shared.spec.zero-linvel>,
             settled-y-vel: <shared.world.twist-ee-base>.linvel.y equal to <shared.spec.zero-linvel>,
             settled-z-vel: <shared.world.twist-ee-base>.linvel.z equal to <shared.spec.zero-linvel>
         },
         failed all {
-            stopped:  <shared.world.gripper-cur> less than <shared.spec.contact-idle>,
+            stopped:  <shared.world.gripper-vel> equal to <shared.spec.zero-angvel> within <shared.spec.stall-band>,
             at-goal:  <shared.world.gripper-pos> greater than (<shared.spec.gripper-closed> - <shared.spec.e-min>)
         }
     }
