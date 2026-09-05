@@ -53,6 +53,13 @@ context (ns=app) shared {
             as-seen-by: <kinova.base_link.base_link_origin>,
             ft-sensor:  <wrist_ft>,
             re-tare-on: { <collab-coord.E_RUN_STARTED>, <collab-coord.E_TARE_ENTERED>, <collab-coord.E_OBJ_RELEASED> }
+        },
+        // Starting values from the KDL example's range, to be tuned against the FT reading in sim.
+        wrench ext-force-est {
+            ref-point:      <ft_tree.wrist_ft_body.wrist_ft_site>,
+            as-seen-by:     <kinova.base_link.base_link_origin>,
+            estimated-from: <collab-agents.kinova> { gain: 30.0 Hz, filter: 0.5 },
+            re-tare-on:     { <collab-coord.E_RUN_STARTED>, <collab-coord.E_TARE_ENTERED>, <collab-coord.E_OBJ_RELEASED> }
         }
     },
     spec {
@@ -96,6 +103,7 @@ context (ns=app) shared {
 ros (ns=app) {
     publishers {
         ext-force-wrench: topic "/ee_wrench" message "geometry_msgs/msg/WrenchStamped",
+        ext-force-est-wrench: topic "/ee_wrench_est" message "geometry_msgs/msg/WrenchStamped",
         ee-pose: topic "/ee_pose" message "geometry_msgs/msg/PoseStamped",
         bdd-events: topic "/bdd/events" message "bdd_ros2_interfaces/msg/Event",
     },
@@ -121,6 +129,7 @@ ros (ns=app) {
     },
     always {
         publish at 100.0 Hz to <ros.publishers.ext-force-wrench> with <shared.world.ext-force>,
+        publish at 100.0 Hz to <ros.publishers.ext-force-est-wrench> with <shared.world.ext-force-est>,
         publish at 100.0 Hz to <ros.publishers.ee-pose> with <shared.world.pose-ee-base>,
     },
 }

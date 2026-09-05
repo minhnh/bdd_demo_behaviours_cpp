@@ -34,6 +34,7 @@ topics = [
     "/bdd/events",
     "/obs_policy/container_not_dropped",
     "/ee_wrench",
+    "/ee_wrench_est",
     "/ee_pose",
     "/recognized_objects",
     "/tf",
