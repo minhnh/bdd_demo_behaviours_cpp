@@ -6,7 +6,7 @@ distrib (ns=collab-scn) place-xy {
     uniform {
         dimension: 3
         lower: (-0.105, 0.50, 0.050)
-        upper: (0.695, 0.75, 0.051)
+        upper: (0.695, 0.80, 0.051)
     }
 }
 // The place band quartered, measured from the table anchor: 0.50 m to 0.75 m out, split at
@@ -15,28 +15,28 @@ distrib (ns=collab-scn) place-xy-near-right {
     uniform {
         dimension: 3
         lower: (0.295, 0.50, 0.050)
-        upper: (0.695, 0.625, 0.051)
+        upper: (0.695, 0.65, 0.051)
     }
 }
 distrib (ns=collab-scn) place-xy-far-right {
     uniform {
         dimension: 3
-        lower: (0.295, 0.625, 0.050)
-        upper: (0.695, 0.75, 0.051)
+        lower: (0.295, 0.65, 0.050)
+        upper: (0.695, 0.80, 0.051)
     }
 }
 distrib (ns=collab-scn) place-xy-far-left {
     uniform {
         dimension: 3
-        lower: (-0.105, 0.625, 0.050)
-        upper: (0.295, 0.75, 0.051)
+        lower: (-0.105, 0.65, 0.050)
+        upper: (0.295, 0.80, 0.051)
     }
 }
 distrib (ns=collab-scn) place-xy-near-left {
     uniform {
         dimension: 3
         lower: (-0.105, 0.50, 0.050)
-        upper: (0.295, 0.625, 0.051)
+        upper: (0.295, 0.65, 0.051)
     }
 }
 distrib (ns=collab-scn) push-gate-y {
