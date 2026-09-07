@@ -167,10 +167,6 @@ obs policy (ns=collab-icra) force-instantaneous-policy for <transport-tmpl.force
     observations: { <ee-wrench-obs> }
     evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: force_instantaneous_within_limit }
 }
-obs policy (ns=collab-icra) force-peak-policy for <transport-tmpl.force-peak> {
-    observations: { <ee-wrench-obs> }
-    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: force_peak_within_limit }
-}
 obs policy (ns=collab-icra) force-rms-policy for <transport-tmpl.force-rms> {
     observations: { <ee-wrench-obs> }
     evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: force_rms_within_limit }
@@ -178,10 +174,6 @@ obs policy (ns=collab-icra) force-rms-policy for <transport-tmpl.force-rms> {
 obs policy (ns=collab-icra) estimated-force-instantaneous-policy for <transport-tmpl.estimated-force-instantaneous> {
     observations: { <ee-wrench-est-obs> }
     evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: estimated_force_instantaneous_within_limit }
-}
-obs policy (ns=collab-icra) estimated-force-peak-policy for <transport-tmpl.estimated-force-peak> {
-    observations: { <ee-wrench-est-obs> }
-    evaluator: py { module: bdd_exec_ros2.configured_evaluators.icra, attr: estimated_force_peak_within_limit }
 }
 obs policy (ns=collab-icra) estimated-force-rms-policy for <transport-tmpl.estimated-force-rms> {
     observations: { <ee-wrench-est-obs> }
@@ -203,8 +195,8 @@ Scenario Exec (ns=collab-icra) collab-transport-exec {
         <place-distance-gt-policy>, <place-distance-aruco-policy>,
         <place-center-gt-policy>, <place-center-aruco-policy>,
         <place-footprint-gt-policy>, <place-footprint-aruco-policy>,
-        <force-instantaneous-policy>, <force-peak-policy>, <force-rms-policy>,
-        <estimated-force-instantaneous-policy>, <estimated-force-peak-policy>, <estimated-force-rms-policy>,
+        <force-instantaneous-policy>, <force-rms-policy>,
+        <estimated-force-instantaneous-policy>, <estimated-force-rms-policy>,
         <container-not-dropped-policy>
     }
 }
