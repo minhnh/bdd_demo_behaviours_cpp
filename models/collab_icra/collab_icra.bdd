@@ -72,6 +72,21 @@ Scenario Template (ns=collab-icra) transport-tmpl {
             pred("\"{robot}\" rolling RMS force norm is within limit", robot=<robot>),
             from <E_PICK_END> until <E_PLACE_START>
         )
+        and
+        estimated-force-instantaneous: holds(
+            pred("\"{robot}\" estimated instantaneous force norm is within limit", robot=<robot>),
+            from <E_PICK_END> until <E_PLACE_START>
+        )
+        and
+        estimated-force-peak: holds(
+            pred("\"{robot}\" estimated peak force norm is within limit", robot=<robot>),
+            from <E_PICK_END> until <E_PLACE_START>
+        )
+        and
+        estimated-force-rms: holds(
+            pred("\"{robot}\" estimated rolling RMS force norm is within limit", robot=<robot>),
+            from <E_PICK_END> until <E_PLACE_START>
+        )
     )
 }
 

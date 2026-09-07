@@ -2,7 +2,7 @@
   format: "robbdd"
   path_type: "ros"
   package_name: "bdd_collab_bhv_cpp"
-- path: "models/collab_icra/collab_icra_real.bddx"
+- path: "models/collab_icra/collab_icra.bddx"
   format: "robbdd"
   path_type: "ros"
   package_name: "bdd_collab_bhv_cpp"

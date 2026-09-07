@@ -17,7 +17,7 @@ launch:
       file: "$(find-pkg-share bdd_collab_bhv_cpp)/launch/launch_collab_bdd.yaml"
       arg:
         - name: "graph_models"
-          value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab_icra/collab_icra_real_models.yaml"
+          value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab_icra/collab_icra_models.yaml"
 
   - include:
       file: "$(find-pkg-share aruco_perception)/launch/table_setup.launch.yaml"

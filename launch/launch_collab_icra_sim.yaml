@@ -8,7 +8,7 @@ launch:
       file: "$(find-pkg-share bdd_collab_bhv_cpp)/launch/launch_collab_icra.yaml"
       arg:
         - name: "graph_models"
-          value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab_icra/collab_icra_sim_models.yaml"
+          value: "$(find-pkg-share bdd_collab_bhv_cpp)/models/collab_icra/collab_icra_models.yaml"
         - name: "perception_config"
           value: "$(find-pkg-share bdd_collab_bhv_cpp)/config/collab_sim_perception.yml"
         - name: "launch_aruco"
