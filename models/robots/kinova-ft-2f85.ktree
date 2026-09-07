@@ -13,12 +13,13 @@ ktree (ns=robots) ft_tree {
         // bracelet mating face, +z along the tool axis -- which is -z of the bracelet.
         frame wrist_ft_body_origin { }
         // The sensing element sits mid-cylinder, as it does on the real tool; ft_mount.xml
-        // puts the site there.
+        // puts the site there. The sensor's x points away from its connector (FT 300-S manual
+        // 5.1), which on this tool sits on the bracelet's +x side: half a turn about the tool axis.
         frame wrist_ft_site {
             pose wrist_ft_site_in_wrist_ft_body {
                 wrt: <wrist_ft_body.wrist_ft_body_origin>
                 xyz: (0.0, 0.0, 0.0325) m
-                orientation: euler { angles: (0.0, 0.0, 0.0) unit: rad }
+                orientation: euler { axes: xyz extrinsic angles: (0.0, 0.0, 3.141592653589793) unit: rad }
             }
         }
         // The far face, where the gripper bolts on.
