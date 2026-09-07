@@ -273,6 +273,17 @@ def build_spec(
         sites.append(site)
     spec.sites = sites
 
+    cameras = []
+    for camera in scene.static_cameras:
+        camera_spec = mjk.CameraSpec()
+        camera_spec.name = camera.name
+        camera_spec.body = camera.body
+        camera_spec.pos = [camera.pos_x, camera.pos_y, camera.pos_z]
+        camera_spec.quat = [camera.quat_x, camera.quat_y, camera.quat_z, camera.quat_w]
+        camera_spec.fovy = camera.fovy_deg
+        cameras.append(camera_spec)
+    spec.cameras = cameras
+
     spec.add_floor = True
     return spec
 

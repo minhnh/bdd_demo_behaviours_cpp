@@ -163,7 +163,7 @@ scene inst (ns=collab-scn) collab-scene-simreal {
 
     agn <collab-agents.kinova> {
         model kinova-mjc as mjcf {
-            sys path = 'src/mj_kdl_wrapper/third_party/menagerie/kinova_gen3/gen3.xml'
+            sys path = 'src/mj_kdl_wrapper/assets/kinova_gen3/gen3.xml'
             map tree <kinova> to "base_link"
         }
 
