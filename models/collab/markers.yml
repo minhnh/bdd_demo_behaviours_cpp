@@ -5,6 +5,9 @@
 dictionary: DICT_4X4_50
 module_px: 100
 quiet_modules: 1
+# The sim sun is overhead: a vertical tray wall renders at gray ~47, and the borderless handle
+# marker on it needs a lower adaptive-threshold constant than OpenCV's default 7 to be found.
+adaptive_thresh_constant: 3
 
 sensors:
   robot_table_camera:
@@ -40,7 +43,9 @@ markers:
   # Printed onto a copy of the tray asset: a weld onto an object frame loses its offset.
   - frame: marker_handle
     id: 1
-    size: 0.05
+    size: 0.08
+    # The real print stops at the black square; the tray wall is its quiet zone.
+    quiet_modules: 0
     mount:
       asset: ../tray/tray.xml
       out: ../tray/tray_markers.xml

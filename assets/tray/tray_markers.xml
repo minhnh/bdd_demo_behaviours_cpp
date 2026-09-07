@@ -43,7 +43,7 @@
       <geom name="handle" class="collision" pos="0.008 -0.120 0.040" size="0.010 0.0375 0.020" euler="1.5708 0 0" friction="1.2 0.05 0.005" />
       <!-- grasp target: right half of the fin -->
       <site name="grasp" pos="0.0157 -0.1068 0.040" size="0.006" rgba="1 0.2 0.2 0" group="3" />
-      <geom name="aruco_1" type="box" size="0.0333333 0.0333333 0.0005" pos="0.0650000 -0.1005000 0.0400000" quat="0.707106781 0.707106781 0.000000000 0.000000000" material="aruco_1_mat" mass="0.001" contype="0" conaffinity="0" />
+      <geom name="aruco_1" type="box" size="0.0400000 0.0400000 0.0005" pos="0.0650000 -0.1005000 0.0400000" quat="0.707106781 0.707106781 0.000000000 0.000000000" material="aruco_1_mat" mass="0.001" contype="0" conaffinity="0" />
       <geom name="aruco_2" type="box" size="0.0333333 0.0333333 0.0005" pos="0.0000000 0.1005000 0.0400000" quat="0.000000000 0.000000000 0.707106781 0.707106781" material="aruco_2_mat" mass="0.001" contype="0" conaffinity="0" />
     </body>
   </worldbody>
